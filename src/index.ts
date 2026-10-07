@@ -52,6 +52,7 @@ export {
   type SwitchFieldProps,
 } from './components/Field';
 export { InlineAlert, type InlineAlertProps } from './components/InlineAlert';
+export { KanbanBoard, type KanbanBoardProps, type KanbanColumn, type KanbanItem, type KanbanLane, type KanbanMove } from './components/KanbanBoard';
 export { LoadingState } from './components/LoadingState';
 export { Breadcrumbs, PageHeader, type BreadcrumbItem, type PageHeaderProps } from './components/PageHeader';
 export { Panel, type PanelProps } from './components/Panel';

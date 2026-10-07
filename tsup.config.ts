@@ -14,7 +14,8 @@ export default defineConfig({
   clean: true,
   target: 'es2022',
   splitting: false,
-  external: ['react', 'react-dom', 'react/jsx-runtime', '@chakra-ui/react', '@emotion/react', 'next-themes', 'lucide-react'],
+  // Charts and drag and drop stay external too: the host bundles them once, and pages that don't use them don't load them.
+  external: ['react', 'react-dom', 'react/jsx-runtime', '@chakra-ui/react', '@emotion/react', 'next-themes', 'lucide-react', '@chakra-ui/charts', 'recharts', /^@dnd-kit\//],
   banner: { js: '"use client";' },
   define: { __TODA_UI_VERSION__: JSON.stringify(version) },
 });
