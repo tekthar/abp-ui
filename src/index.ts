@@ -37,6 +37,7 @@ export {
   type DataTableSort,
   type SortDirection,
 } from './components/DataTable';
+export { CategoryProgress, type CategoryProgressProps } from './components/CategoryProgress';
 export { DirectionalIcon } from './components/DirectionalIcon';
 export { EmptyState, type EmptyStateProps } from './components/EmptyState';
 export {
