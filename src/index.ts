@@ -77,6 +77,7 @@ export {
 } from './components/QueryableList';
 export { RecordKey, type RecordKeyProps } from './components/RecordKey';
 export { SearchInput, type SearchInputProps } from './components/SearchInput';
+export { SortableSections, type SectionMove, type SortableSection, type SortableSectionsProps } from './components/SortableSections';
 export { StatusPill, type StatusCategory, type StatusPillProps, type StatusTone } from './components/StatusPill';
 export { notify, toaster, Toaster } from './components/Toaster';
 export { Tooltip, type TooltipProps } from './components/Tooltip';
