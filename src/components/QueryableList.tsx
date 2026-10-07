@@ -194,7 +194,7 @@ export function QueryableList({
   }, [complex, failed]);
 
   const label = (id: string) => byId.get(id)?.label ?? id;
-  const opLabel = (op: string) => labels.operators[op] ?? op;
+  const opLabel = (op: string, field?: string) => (byId.get(field ?? '')?.kind === 'number' ? labels.numberOperators[op] : undefined) ?? labels.operators[op] ?? op;
   const change = (next: QueryJson) => onStateChange({ query: next, columns: state.columns });
 
   function setConditions(next: QueryConditionJson[]) {
@@ -301,7 +301,7 @@ export function QueryableList({
                 textStyle="sm"
               >
                 <Text as="span" fontWeight="medium">{label(c.field)}</Text>
-                <Text as="span" color="fg.muted">{opLabel(c.op)}</Text>
+                <Text as="span" color="fg.muted">{opLabel(c.op, c.field)}</Text>
                 {!NO_VALUE_OPS.has(c.op) && <Text as="span">{valueText(c.value)}</Text>}
                 <IconButton size="xs" variant="ghost" aria-label={fill(labels.removeFilter, { field: label(c.field) })} onClick={() => setConditions(conditions.filter((_, j) => j !== i))}>
                   <X />
@@ -510,7 +510,7 @@ function AddFilter({
         aria-label={labels.operator}
         value={op}
         onChange={(e) => setOp(e.target.value)}
-        options={(field?.operators ?? []).map((o) => ({ value: o, label: labels.operators[o] ?? o }))}
+        options={(field?.operators ?? []).map((o) => ({ value: o, label: (field?.kind === 'number' ? labels.numberOperators[o] : undefined) ?? labels.operators[o] ?? o }))}
       />
       {!NO_VALUE_OPS.has(op) && (
         <>

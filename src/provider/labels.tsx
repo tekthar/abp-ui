@@ -64,6 +64,8 @@ export interface QueryListLabels {
   empty: string;
   /** Operator names by JSON-form op: eq, ne, in, notIn, contains… */
   operators: Record<string, string>;
+  /** Comparisons as they read for numbers ("is at least") rather than dates ("is on or after"). */
+  numberOperators: Record<string, string>;
   /** Suggestion kinds: field, operator, value, function, keyword, person. */
   kinds: Record<string, string>;
 }
@@ -117,6 +119,7 @@ export const defaultQueryListLabels: QueryListLabels = {
     hasAny: 'has any of',
     hasAll: 'has all of',
   },
+  numberOperators: { lt: 'is less than', lte: 'is at most', gt: 'is more than', gte: 'is at least' },
   kinds: { field: 'field', operator: 'operator', value: 'value', function: 'function', keyword: 'keyword', person: 'person' },
 };
 
