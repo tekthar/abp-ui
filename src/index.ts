@@ -11,6 +11,7 @@ export { ColorModeProvider, ColorModeToggle, useColorMode, type ColorMode } from
 export { defaultLabels, defaultQueryListLabels, useTodaLabels, type TodaLabels, type QueryListLabels } from './provider/labels';
 export { AppLink, useLinkComponent, type AppLinkProps, type LinkComponent } from './provider/link';
 export { directionOf, useTodaLocale, type Direction } from './provider/locale';
+export { PluginTextsProvider, usePluginTexts } from './provider/texts';
 export { EMPTY_VALUE, formatDateTime, formatNumber, useFormatters } from './utils/format';
 
 // Components

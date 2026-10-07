@@ -6,6 +6,7 @@ import { system } from '../theme/system';
 import { ColorModeProvider } from './color-mode';
 import { LabelsProvider, type TodaLabels } from './labels';
 import { LinkComponentProvider, type LinkComponent } from './link';
+import { PluginTextsProvider } from './texts';
 
 export interface TodaProviderProps {
   children: ReactNode;
@@ -17,6 +18,8 @@ export interface TodaProviderProps {
   linkComponent?: LinkComponent;
   /** Initial colour mode when the user has not chosen one. */
   defaultColorMode?: 'light' | 'dark' | 'system';
+  /** Each plugin's texts in the current language, from the site (see usePluginTexts). */
+  pluginTexts?: Record<string, Record<string, unknown>>;
 }
 
 /**
@@ -26,17 +29,19 @@ export interface TodaProviderProps {
  *
  * The host must also set `<html lang dir>` and `suppressHydrationWarning` on <html>.
  */
-export function TodaProvider({ children, locale = 'en', labels, linkComponent, defaultColorMode = 'system' }: TodaProviderProps) {
+export function TodaProvider({ children, locale = 'en', labels, linkComponent, defaultColorMode = 'system', pluginTexts }: TodaProviderProps) {
   return (
     <ChakraProvider value={system}>
       <ColorModeProvider defaultTheme={defaultColorMode}>
         <LocaleProvider locale={locale}>
           <LabelsProvider value={labels}>
             <LinkComponentProvider value={linkComponent}>
-              <ConfirmProvider>
-                {children}
-                <Toaster />
-              </ConfirmProvider>
+              <PluginTextsProvider value={pluginTexts as never}>
+                <ConfirmProvider>
+                  {children}
+                  <Toaster />
+                </ConfirmProvider>
+              </PluginTextsProvider>
             </LinkComponentProvider>
           </LabelsProvider>
         </LocaleProvider>
