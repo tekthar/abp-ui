@@ -23,7 +23,102 @@ export interface TodaLabels {
   sortAscending: string;
   sortDescending: string;
   path: string;
+  queryList: QueryListLabels;
 }
+
+/** Strings of QueryableList. {name} placeholders are filled in by the component. */
+export interface QueryListLabels {
+  views: string;
+  unsavedView: string;
+  saveView: string;
+  viewName: string;
+  save: string;
+  cancel: string;
+  deleteView: string;
+  groupBy: string;
+  /** "Group by {field}" */
+  groupByField: string;
+  noGrouping: string;
+  groups: string;
+  filterToGroup: string;
+  columns: string;
+  filterMode: string;
+  basic: string;
+  rql: string;
+  rqlLabel: string;
+  rqlPlaceholder: string;
+  run: string;
+  suggestions: string;
+  addFilter: string;
+  /** "Remove the {field} filter" */
+  removeFilter: string;
+  field: string;
+  operator: string;
+  value: string;
+  valuesHint: string;
+  add: string;
+  /** "{from}–{to} of {total}" */
+  range: string;
+  previous: string;
+  next: string;
+  empty: string;
+  /** Operator names by JSON-form op: eq, ne, in, notIn, contains… */
+  operators: Record<string, string>;
+  /** Suggestion kinds: field, operator, value, function, keyword, person. */
+  kinds: Record<string, string>;
+}
+
+export const defaultQueryListLabels: QueryListLabels = {
+  views: 'Saved views',
+  unsavedView: 'Unsaved view',
+  saveView: 'Save view',
+  viewName: 'View name',
+  save: 'Save',
+  cancel: 'Cancel',
+  deleteView: 'Delete this view',
+  groupBy: 'Group by',
+  groupByField: 'Group by {field}',
+  noGrouping: 'No grouping',
+  groups: 'Groups',
+  filterToGroup: 'Show only this group',
+  columns: 'Columns',
+  filterMode: 'Filter mode',
+  basic: 'Basic',
+  rql: 'RQL',
+  rqlLabel: 'Query (RQL)',
+  rqlPlaceholder: 'type = story AND status IN (open, in-progress) ORDER BY updatedAt DESC',
+  run: 'Run',
+  suggestions: 'Suggestions',
+  addFilter: 'Add filter',
+  removeFilter: 'Remove the {field} filter',
+  field: 'Field',
+  operator: 'Operator',
+  value: 'Value',
+  valuesHint: 'Values, separated by commas',
+  add: 'Add',
+  range: '{from}–{to} of {total}',
+  previous: 'Previous page',
+  next: 'Next page',
+  empty: 'Nothing matches this query.',
+  operators: {
+    eq: 'is',
+    ne: 'is not',
+    in: 'is any of',
+    notIn: 'is none of',
+    lt: 'is before',
+    lte: 'is on or before',
+    gt: 'is after',
+    gte: 'is on or after',
+    between: 'is between',
+    contains: 'contains',
+    notContains: 'doesn’t contain',
+    isEmpty: 'is empty',
+    isNotEmpty: 'is not empty',
+    hasAny: 'has any of',
+    hasAll: 'has all of',
+  },
+  kinds: { field: 'field', operator: 'operator', value: 'value', function: 'function', keyword: 'keyword', person: 'person' },
+};
 
 export const defaultLabels: TodaLabels = {
   close: 'Close',
@@ -44,12 +139,14 @@ export const defaultLabels: TodaLabels = {
   sortAscending: 'Sort ascending',
   sortDescending: 'Sort descending',
   path: 'Path',
+  queryList: defaultQueryListLabels,
 };
 
 const LabelsContext = createContext<TodaLabels>(defaultLabels);
 
 export function LabelsProvider({ value, children }: { value?: Partial<TodaLabels>; children: ReactNode }) {
-  return <LabelsContext.Provider value={{ ...defaultLabels, ...value }}>{children}</LabelsContext.Provider>;
+  const merged = { ...defaultLabels, ...value, queryList: { ...defaultQueryListLabels, ...value?.queryList } };
+  return <LabelsContext.Provider value={merged}>{children}</LabelsContext.Provider>;
 }
 
 export function useTodaLabels(): TodaLabels {
