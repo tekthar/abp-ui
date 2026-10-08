@@ -37,6 +37,7 @@ export {
   type DataTableSort,
   type SortDirection,
 } from './components/DataTable';
+export { CalendarGrid, type CalendarGridProps, type CalendarItem } from './components/CalendarGrid';
 export { CategoryProgress, type CategoryProgressProps } from './components/CategoryProgress';
 export { DirectionalIcon } from './components/DirectionalIcon';
 export { EmptyState, type EmptyStateProps } from './components/EmptyState';
@@ -80,4 +81,5 @@ export { SearchInput, type SearchInputProps } from './components/SearchInput';
 export { SortableSections, type SectionMove, type SortableSection, type SortableSectionsProps } from './components/SortableSections';
 export { StatusPill, type StatusCategory, type StatusPillProps, type StatusTone } from './components/StatusPill';
 export { notify, toaster, Toaster } from './components/Toaster';
+export { TimelineChart, type TimelineChartProps, type TimelineItem, type TimelineRow } from './components/TimelineChart';
 export { Tooltip, type TooltipProps } from './components/Tooltip';
