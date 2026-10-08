@@ -38,6 +38,7 @@ export {
   type SortDirection,
 } from './components/DataTable';
 export { CalendarGrid, type CalendarGridProps, type CalendarItem } from './components/CalendarGrid';
+export { Chart, type ChartProps, type ChartSeries } from './components/Chart';
 export { CategoryProgress, type CategoryProgressProps } from './components/CategoryProgress';
 export { DirectionalIcon } from './components/DirectionalIcon';
 export { EmptyState, type EmptyStateProps } from './components/EmptyState';
