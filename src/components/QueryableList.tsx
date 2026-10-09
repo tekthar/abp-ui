@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Box, chakra, HStack, Input, Menu, Portal, Stack, Text } from '@chakra-ui/react';
-import { ChevronLeft, ChevronRight, Columns3, Plus, Save, Trash2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Columns3, Download, Plus, Save, Trash2, X } from 'lucide-react';
 import { useTodaLabels } from '../provider/labels';
 import { useFormatters } from '../utils/format';
 import { Button, IconButton } from './Button';
@@ -77,6 +77,17 @@ export interface QueryableListView {
   isOwner: boolean;
 }
 
+/** The files an export can be: CSV, or an Excel workbook. */
+export type QueryExportFormat = 'csv' | 'xlsx';
+
+/** What an export held (from the response's headers): rows in the file, rows that matched, and the limit that cut it. */
+export interface QueryableListExport {
+  rows: number;
+  total: number;
+  limit: number;
+  truncated: boolean;
+}
+
 export interface QueryableListError {
   message: string;
   /** Where in the RQL the problem is, when the server knows. */
@@ -105,6 +116,11 @@ export interface QueryableListProps {
   onSelectView?: (id: string | null) => void;
   onSaveView?: (name: string, replaceId: string | null) => void;
   onDeleteView?: (id: string) => void;
+  /**
+   * Downloads what the list shows (its query and columns, every page) as a file; without it there's no Export menu.
+   * Resolves with what the file held, so the list can say when it was cut short; a rejection is shown as an error.
+   */
+  onExport?: (format: QueryExportFormat) => Promise<QueryableListExport | void>;
   /** Extra buttons on the toolbar (e.g. "Create record"). */
   actions?: ReactNode;
   empty?: ReactNode;
@@ -174,6 +190,7 @@ export function QueryableList({
   onSelectView,
   onSaveView,
   onDeleteView,
+  onExport,
   actions,
   empty,
 }: QueryableListProps) {
@@ -185,6 +202,8 @@ export function QueryableList({
   const [mode, setMode] = useState<'basic' | 'rql'>(conditions === null ? 'rql' : 'basic');
   const [adding, setAdding] = useState(false);
   const [naming, setNaming] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exported, setExported] = useState<{ tone: 'warning' | 'danger'; message: string } | null>(null);
 
   const complex = conditions === null;
   const failed = Boolean(error && state.rql);
@@ -216,6 +235,25 @@ export function QueryableList({
   const to = Math.min(skip + take, total);
   const groupable = (fields ?? []).filter((f) => f.groupable);
   const activeView = views?.find((v) => v.id === activeViewId) ?? null;
+
+  async function runExport(format: QueryExportFormat) {
+    if (!onExport) return;
+    setExporting(true);
+    setExported(null);
+    try {
+      const done = await onExport(format);
+      if (done?.truncated) {
+        setExported({
+          tone: 'warning',
+          message: fill(labels.exportCut, { rows: fmt.number(done.rows), total: fmt.number(done.total), limit: fmt.number(done.limit) }),
+        });
+      }
+    } catch (e) {
+      setExported({ tone: 'danger', message: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <Stack gap="3">
@@ -268,6 +306,7 @@ export function QueryableList({
             options={[{ value: '', label: labels.noGrouping }, ...groupable.map((f) => ({ value: f.id, label: fill(labels.groupByField, { field: f.label }) }))]}
           />
           <ColumnChooser fields={fields ?? []} columns={state.columns} onChange={(next) => onStateChange({ ...state, rql: result?.rql ?? state.rql, query: undefined, columns: next })} />
+          {onExport && <ExportMenu busy={exporting} disabled={!result || Boolean(loading)} onExport={runExport} />}
           {actions}
         </HStack>
       </HStack>
@@ -338,6 +377,17 @@ export function QueryableList({
 
       {mode === 'basic' && error && <InlineAlert tone="danger">{error.message}</InlineAlert>}
 
+      {exported && (
+        <InlineAlert tone={exported.tone} title={exported.tone === 'danger' ? labels.exportFailed : undefined}>
+          <HStack justify="space-between" gap="2" align="start">
+            <Text as="span">{exported.message}</Text>
+            <IconButton size="xs" variant="ghost" aria-label={labels.dismiss} onClick={() => setExported(null)}>
+              <X />
+            </IconButton>
+          </HStack>
+        </InlineAlert>
+      )}
+
       {result?.groups && result.groups.length > 0 && (
         <HStack gap="2" wrap="wrap" aria-label={labels.groups} role="list">
           {result.groups.map((g) => (
@@ -404,6 +454,29 @@ export function QueryableList({
         />
       </Panel>
     </Stack>
+  );
+}
+
+/** Export: the list's query and columns as CSV or an Excel workbook, every page of it. */
+function ExportMenu({ busy, disabled, onExport }: { busy: boolean; disabled: boolean; onExport: (format: QueryExportFormat) => void }) {
+  const labels = useTodaLabels().queryList;
+  return (
+    <Menu.Root positioning={{ placement: 'bottom-end' }} onSelect={(d) => onExport(d.value as QueryExportFormat)}>
+      <Menu.Trigger asChild>
+        <Button size="sm" variant="secondary" disabled={disabled || busy} loading={busy} loadingText={labels.exporting}>
+          <Download />
+          {labels.export}
+        </Button>
+      </Menu.Trigger>
+      <Portal>
+        <Menu.Positioner>
+          <Menu.Content minW="48">
+            <Menu.Item value="csv">{labels.exportCsv}</Menu.Item>
+            <Menu.Item value="xlsx">{labels.exportExcel}</Menu.Item>
+          </Menu.Content>
+        </Menu.Positioner>
+      </Portal>
+    </Menu.Root>
   );
 }
 

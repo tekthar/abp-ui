@@ -62,6 +62,14 @@ export interface QueryListLabels {
   previous: string;
   next: string;
   empty: string;
+  export: string;
+  exportCsv: string;
+  exportExcel: string;
+  exporting: string;
+  /** "The file holds {rows} of {total} rows: an export stops at {limit}." */
+  exportCut: string;
+  exportFailed: string;
+  dismiss: string;
   /** Operator names by JSON-form op: eq, ne, in, notIn, contains… */
   operators: Record<string, string>;
   /** Comparisons as they read for numbers ("is at least") rather than dates ("is on or after"). */
@@ -102,6 +110,13 @@ export const defaultQueryListLabels: QueryListLabels = {
   previous: 'Previous page',
   next: 'Next page',
   empty: 'Nothing matches this query.',
+  export: 'Export',
+  exportCsv: 'CSV (.csv)',
+  exportExcel: 'Excel (.xlsx)',
+  exporting: 'Exporting…',
+  exportCut: 'The file holds {rows} of {total} rows: an export stops at {limit}. Narrow the query to get the rest.',
+  exportFailed: 'The export failed',
+  dismiss: 'Dismiss',
   operators: {
     eq: 'is',
     ne: 'is not',
