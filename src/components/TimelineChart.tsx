@@ -7,6 +7,10 @@ export interface TimelineItem {
   start?: string | null;
   end?: string | null;
   movable?: boolean;
+  /** How the bar reads: its own dates (solid), dates it takes from elsewhere (dashed), or its children's span (a thin bar). */
+  tone?: 'own' | 'inferred' | 'rollup';
+  /** Done, 0 to 1: a strip along the bottom of the bar. */
+  progress?: number | null;
 }
 
 export interface TimelineRow<T extends TimelineItem> {
@@ -194,15 +198,24 @@ export function TimelineChart<T extends TimelineItem>({
             const left = (Math.max(a, origin) - origin) * dayWidth;
             const right = (Math.min(b, origin + days - 1) - origin + 1) * dayWidth;
             const single = !item.start || !item.end;
+            const tone = item.tone ?? 'own';
+            const hollow = single || tone === 'inferred';
+            const thin = tone === 'rollup' && !single;
             return (
               <Box key={item.id} role="button" tabIndex={0} aria-label={describe(item)} position="absolute" insetStart={`${left}px`} w={`${Math.max(right - left, 6)}px`}
-                top={`${i * rowHeight + 6}px`} h={`${rowHeight - 12}px`} rounded="l2" bg={single ? 'transparent' : 'accent.solid'} color="accent.contrast"
-                borderWidth={single ? '2px' : 0} borderStyle="dashed" borderColor="accent.solid" cursor={item.movable === false ? 'default' : 'grab'}
+                top={thin ? `${i * rowHeight + rowHeight / 2 - 5}px` : `${i * rowHeight + 6}px`} h={thin ? '10px' : `${rowHeight - 12}px`} rounded={thin ? 'l1' : 'l2'}
+                bg={thin ? 'fg.muted' : hollow ? (tone === 'inferred' && !single ? 'accent.subtle' : 'transparent') : 'accent.solid'}
+                color={hollow ? 'accent.fg' : 'accent.contrast'}
+                borderWidth={hollow ? '2px' : 0} borderStyle="dashed" borderColor="accent.solid" cursor={item.movable === false ? 'default' : 'grab'}
                 display="flex" alignItems="center" px="1.5" overflow="hidden" whiteSpace="nowrap" textStyle="caption" userSelect="none" touchAction="none"
                 opacity={drag?.id === item.id ? 0.85 : 1} _focusVisible={{ outline: '2px solid', outlineColor: 'colorPalette.focusRing', outlineOffset: '2px' }}
                 onPointerDown={(e) => down(item, 'move', e)} onPointerMove={move} onPointerUp={() => up(item)} onPointerCancel={() => setDrag(null)}
                 onKeyDown={(e) => key(item, e)} data-bar={item.id}>
-                {!single && renderBar?.(item)}
+                {!single && !thin && renderBar?.(item)}
+                {item.progress != null && !single && (
+                  <Box position="absolute" insetStart="0" bottom="0" h={thin ? 'full' : '3px'} w={`${Math.round(Math.min(1, Math.max(0, item.progress)) * 100)}%`}
+                    bg="statusCategory.done.solid" roundedBottom="l2" pointerEvents="none" aria-hidden />
+                )}
                 {item.movable !== false && !single && (
                   <Box position="absolute" insetEnd="0" top="0" bottom="0" w="2" cursor="ew-resize" onPointerDown={(e) => down(item, 'end', e)}
                     onPointerMove={move} onPointerUp={() => up(item)} aria-hidden />
