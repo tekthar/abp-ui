@@ -341,7 +341,7 @@ export const pathChipsSlotRecipe = defineSlotRecipe({
 // ---- DataTable -----------------------------------------------------------------------------
 export const dataTableSlotRecipe = defineSlotRecipe({
   className: 'toda-data-table',
-  slots: ['root', 'scrollArea', 'sortTrigger', 'sortIcon', 'state'],
+  slots: ['root', 'scrollArea', 'sortTrigger', 'sortIcon', 'state', 'navigableRow'],
   base: {
     root: { position: 'relative', w: 'full', minW: '0' },
     scrollArea: { overflow: 'auto', w: 'full' },
@@ -359,6 +359,8 @@ export const dataTableSlotRecipe = defineSlotRecipe({
     },
     sortIcon: { display: 'inline-flex', color: 'fg.subtle', _icon: { boxSize: '3.5' }, '[data-sorted] &': { color: 'fg.accent' } },
     state: { px: 'panel', py: '3' },
+    // A row moved to with the keyboard (DataTable's selection): selected rows use the table's bg.selected.
+    navigableRow: { cursor: 'default', outline: 'none', focusVisibleRing: 'inside' },
   },
 });
 

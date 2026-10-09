@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState, type ReactNode } from 'react';
+import { Fragment, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { chakra, Skeleton, Table, useSlotRecipe, type TableRowProps } from '@chakra-ui/react';
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
 import { useTodaLabels } from '../provider/labels';
@@ -62,6 +62,29 @@ export interface DataTableProps<T> {
   rowProps?: (row: T) => TableRowProps | undefined;
   /** A full-width row rendered under a row (details, inline forms); return null for none. */
   renderSubRow?: (row: T) => ReactNode | null;
+  /**
+   * Draws a row its own way, in one cell across every column (a plugin's row view); null draws its cells as usual.
+   * The row itself stays the table's: selection and the keyboard work the same.
+   */
+  renderRow?: (row: T, index: number) => ReactNode | null;
+  /**
+   * One selected row you move with the keyboard: ↑ ↓ Home End select the next row and focus it, Enter opens the
+   * selected row, a click selects. The selected row is marked (aria-selected) and is the one Tab reaches.
+   */
+  selection?: DataTableSelection<T>;
+}
+
+export interface DataTableSelection<T> {
+  /** The selected row's id; null selects none (Tab then reaches the first row). */
+  selectedId: string | null;
+  onSelect: (row: T) => void;
+  /** Enter on the selected row. */
+  onOpen?: (row: T) => void;
+}
+
+/** Keys typed in a control inside a row stay with the control. */
+function typing(target: HTMLElement) {
+  return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
 }
 
 function compare(a: SortValue, b: SortValue, collator: Intl.Collator): number {
@@ -95,6 +118,8 @@ export function DataTable<T>({
   sortMode = 'client',
   rowProps,
   renderSubRow,
+  renderRow,
+  selection,
   'aria-label': ariaLabel,
 }: DataTableProps<T>) {
   const labels = useTodaLabels();
@@ -103,6 +128,7 @@ export function DataTable<T>({
   const styles = recipe({});
   const [sortState, setSortState] = useState<DataTableSort | null>(defaultSort);
   const sort = sortProp !== undefined ? sortProp : sortState;
+  const rowRefs = useRef(new Map<string, HTMLTableRowElement>());
 
   const collator = useMemo(() => new Intl.Collator(locale, { numeric: true, sensitivity: 'base' }), [locale]);
 
@@ -162,22 +188,81 @@ export function DataTable<T>({
       </Table.Row>
     );
   } else {
+    const ids = sorted.map(getRowId);
+    const tabStop = selection?.selectedId != null && ids.includes(selection.selectedId) ? selection.selectedId : ids[0];
+    const onKeyDown = (e: KeyboardEvent<HTMLTableRowElement>, row: T, index: number) => {
+      if (!selection || typing(e.target as HTMLElement)) return;
+      const onRow = e.target === e.currentTarget;
+      let next: number;
+      switch (e.key) {
+        case 'ArrowDown':
+          next = Math.min(index + 1, sorted.length - 1);
+          break;
+        case 'ArrowUp':
+          next = Math.max(index - 1, 0);
+          break;
+        case 'Home':
+          next = 0;
+          break;
+        case 'End':
+          next = sorted.length - 1;
+          break;
+        case 'Enter':
+          // On a link or button inside the row, Enter is theirs.
+          if (onRow && selection.onOpen) {
+            e.preventDefault();
+            selection.onOpen(row);
+          }
+          return;
+        case ' ':
+          if (onRow) {
+            e.preventDefault();
+            selection.onSelect(row);
+          }
+          return;
+        default:
+          return;
+      }
+      e.preventDefault();
+      selection.onSelect(sorted[next]);
+      rowRefs.current.get(ids[next])?.focus();
+    };
     body = sorted.map((row, index) => {
-      const id = getRowId(row);
+      const id = ids[index];
       const sub = renderSubRow?.(row);
+      const own = renderRow?.(row, index);
+      const selected = selection ? selection.selectedId === id : undefined;
       return (
         <Fragment key={id}>
-          <Table.Row {...rowProps?.(row)}>
-            {columns.map((c) => (
-              <Table.Cell
-                key={c.id}
-                textAlign={align(c)}
-                whiteSpace={c.nowrap ? 'nowrap' : undefined}
-                textStyle={c.numeric ? 'numeric' : undefined}
-              >
-                {c.cell(row, index)}
+          <Table.Row
+            ref={(el: HTMLTableRowElement | null) => {
+              if (el) rowRefs.current.set(id, el);
+              else rowRefs.current.delete(id);
+            }}
+            data-row-id={selection ? id : undefined}
+            tabIndex={selection ? (id === tabStop ? 0 : -1) : undefined}
+            aria-selected={selected}
+            onClick={selection ? () => selection.onSelect(row) : undefined}
+            onKeyDown={selection ? (e: KeyboardEvent<HTMLTableRowElement>) => onKeyDown(e, row, index) : undefined}
+            css={selection ? styles.navigableRow : undefined}
+            {...rowProps?.(row)}
+          >
+            {own != null ? (
+              <Table.Cell colSpan={colCount} data-own-row="">
+                {own}
               </Table.Cell>
-            ))}
+            ) : (
+              columns.map((c) => (
+                <Table.Cell
+                  key={c.id}
+                  textAlign={align(c)}
+                  whiteSpace={c.nowrap ? 'nowrap' : undefined}
+                  textStyle={c.numeric ? 'numeric' : undefined}
+                >
+                  {c.cell(row, index)}
+                </Table.Cell>
+              ))
+            )}
           </Table.Row>
           {sub != null && (
             <Table.Row>
@@ -194,7 +279,14 @@ export function DataTable<T>({
   return (
     <chakra.div css={styles.root} aria-busy={loading || undefined}>
       <chakra.div css={[styles.scrollArea, maxHeight ? { maxH: maxHeight } : undefined]}>
-        <Table.Root size={size} stickyHeader={stickyHeader} interactive={interactive} aria-label={ariaLabel}>
+        <Table.Root
+          size={size}
+          stickyHeader={stickyHeader}
+          interactive={interactive || Boolean(selection)}
+          aria-label={ariaLabel}
+          // Rows you move through are a grid's rows: that's where aria-selected belongs.
+          role={selection ? 'grid' : undefined}
+        >
           <Table.Header>
             <Table.Row>
               {columns.map((c) => {

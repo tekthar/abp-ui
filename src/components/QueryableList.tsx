@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Columns3, Download, Plus, Save, Trash2, X } 
 import { useTodaLabels } from '../provider/labels';
 import { useFormatters } from '../utils/format';
 import { Button, IconButton } from './Button';
-import { DataTable, type DataTableColumn, type DataTableSort } from './DataTable';
+import { DataTable, type DataTableColumn, type DataTableSelection, type DataTableSort } from './DataTable';
 import { DirectionalIcon } from './DirectionalIcon';
 import { SelectField } from './Field';
 import { InlineAlert } from './InlineAlert';
@@ -106,6 +106,10 @@ export interface QueryableListProps {
   loading?: boolean;
   error?: QueryableListError | null;
   renderCell: (columnId: string, value: unknown, row: QueryRow) => ReactNode;
+  /** Draws a row its own way, across every column (a plugin's row view); null draws its cells. */
+  renderRow?: (row: QueryRow) => ReactNode | null;
+  /** One selected row, moved with the keyboard (↑ ↓ Home End), opened with Enter. */
+  selection?: DataTableSelection<QueryRow>;
   /** RQL autocomplete at the caret; without it the RQL box is a plain input. */
   suggest?: (rql: string, caret: number) => Promise<QuerySuggestions>;
   skip: number;
@@ -181,6 +185,8 @@ export function QueryableList({
   loading,
   error,
   renderCell,
+  renderRow,
+  selection,
   suggest,
   skip,
   take,
@@ -451,6 +457,8 @@ export function QueryableList({
           sortMode="manual"
           sort={sort}
           onSortChange={(next) => change({ ...query, orderBy: next ? [{ field: next.columnId, desc: next.direction === 'desc' }] : [] })}
+          renderRow={renderRow ? (row) => renderRow(row) : undefined}
+          selection={selection}
         />
       </Panel>
     </Stack>

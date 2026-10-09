@@ -35,6 +35,7 @@ export {
   DataTable,
   type DataTableColumn,
   type DataTableProps,
+  type DataTableSelection,
   type DataTableSort,
   type SortDirection,
 } from './components/DataTable';
