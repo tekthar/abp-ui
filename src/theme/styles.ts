@@ -39,7 +39,7 @@ export const textStyles = defineTextStyles({
 export const layerStyles = defineLayerStyles({
   /** A bordered surface on the canvas. */
   panel: {
-    value: { bg: 'bg.panel', borderWidth: '1px', borderColor: 'border', borderRadius: 'l3' },
+    value: { bg: 'bg.panel', borderWidth: '1px', borderColor: 'border', borderRadius: 'l3', boxShadow: 'xs' },
   },
   /** Floating surfaces: menus, popovers, dialogs. */
   'panel.raised': {

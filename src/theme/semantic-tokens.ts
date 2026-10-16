@@ -179,10 +179,10 @@ export const semanticShadows = defineSemanticTokens.shadows({
 export const semanticRadii = defineSemanticTokens.radii({
   /** Small controls inside other controls (checkbox, tag). */
   l1: { value: '{radii.xs}' },
-  /** Buttons, inputs, badges, menus items. */
-  l2: { value: '{radii.sm}' },
+  /** Buttons, inputs, badges, menus items. A little round, so the UI feels soft (ADR 0058). */
+  l2: { value: '{radii.md}' },
   /** Panels, dialogs, popovers. */
-  l3: { value: '{radii.md}' },
+  l3: { value: '{radii.lg}' },
 });
 
 /** Layout rhythm. Use these names for page-level spacing instead of raw steps. */
