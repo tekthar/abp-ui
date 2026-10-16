@@ -14,10 +14,13 @@ export const EMPTY_VALUE = '—';
  * software. Month names and word order still follow the locale.
  */
 
+/** How a moment is written unless the caller says otherwise. */
+const DATE_TIME: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' };
+
 export function formatDateTime(
   value: string | number | Date | null | undefined,
   locale: string,
-  options: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' },
+  options: Intl.DateTimeFormatOptions = DATE_TIME,
   timeZone?: string,
 ): string {
   if (value == null || value === '') return EMPTY_VALUE;

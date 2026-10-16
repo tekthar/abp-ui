@@ -13,6 +13,7 @@ export { AppLink, useLinkComponent, type AppLinkProps, type LinkComponent } from
 export { directionOf, useTodaLocale, type Direction } from './provider/locale';
 export { useTodaTimeZone } from './provider/time-zone';
 export { PluginTextsProvider, usePluginTexts } from './provider/texts';
+export { compareOrdinal } from './utils/compare';
 export { EMPTY_VALUE, formatDateTime, formatNumber, useFormatters } from './utils/format';
 
 // Components
