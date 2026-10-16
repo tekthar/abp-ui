@@ -197,13 +197,21 @@ export const zIndex = defineTokens.zIndex({
 export const durations = defineTokens.durations({
   instant: { value: '50ms' },
   fast: { value: '120ms' },
+  press: { value: '160ms' },
   moderate: { value: '200ms' },
   slow: { value: '300ms' },
 });
 
+/** The motion components (src/motion/tokens.ts) use the same curves, so CSS and Motion move alike (ADR 0058). */
 export const easings = defineTokens.easings({
   standard: { value: 'cubic-bezier(0.2, 0, 0, 1)' },
   exit: { value: 'cubic-bezier(0.3, 0, 1, 1)' },
+  /** Entering and leaving: quick at first, settling softly. */
+  out: { value: 'cubic-bezier(0.23, 1, 0.32, 1)' },
+  /** Moving or changing shape on screen. */
+  inOut: { value: 'cubic-bezier(0.77, 0, 0.175, 1)' },
+  /** Drawers and sheets. */
+  drawer: { value: 'cubic-bezier(0.32, 0.72, 0, 1)' },
 });
 
 export const tokens = { colors, fonts, fontSizes, fontWeights, lineHeights, radii, sizes, zIndex, durations, easings };

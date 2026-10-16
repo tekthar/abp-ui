@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { TimeZoneProvider } from './time-zone';
 import { ChakraProvider, LocaleProvider } from '@chakra-ui/react';
 import { ConfirmProvider } from '../components/ConfirmDialog';
+import { MotionProvider } from '../motion/MotionProvider';
 import { Toaster } from '../components/Toaster';
 import { system } from '../theme/system';
 import { ColorModeProvider } from './color-mode';
@@ -27,7 +28,7 @@ export interface TodaProviderProps {
 
 /**
  * Chakra (with the Toda system), colour mode (next-themes, class on <html>), locale and
- * direction, labels, confirm dialogs and the toaster. The host renders it once; plugins render
+ * direction, labels, motion (reduced motion respected, ADR 0058), confirm dialogs and the toaster. The host renders it once; plugins render
  * inside it and never render their own.
  *
  * The host must also set `<html lang dir>` and `suppressHydrationWarning` on <html>.
@@ -41,10 +42,12 @@ export function TodaProvider({ children, locale = 'en', labels, linkComponent, d
           <LabelsProvider value={labels}>
             <LinkComponentProvider value={linkComponent}>
               <PluginTextsProvider value={pluginTexts as never}>
-                <ConfirmProvider>
-                  {children}
-                  <Toaster />
-                </ConfirmProvider>
+                <MotionProvider>
+                  <ConfirmProvider>
+                    {children}
+                    <Toaster />
+                  </ConfirmProvider>
+                </MotionProvider>
               </PluginTextsProvider>
             </LinkComponentProvider>
           </LabelsProvider>

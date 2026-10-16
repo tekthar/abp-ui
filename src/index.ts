@@ -15,6 +15,38 @@ export { useTodaTimeZone } from './provider/time-zone';
 export { PluginTextsProvider, usePluginTexts } from './provider/texts';
 export { EMPTY_VALUE, formatDateTime, formatNumber, useFormatters } from './utils/format';
 
+// Motion (ADR 0058): pages and plugins move through these, never through Motion itself
+export {
+  Collapse,
+  Counter,
+  FadeIn,
+  Indicator,
+  Moves,
+  Presence,
+  PresenceItem,
+  PresenceList,
+  Pressable,
+  Reveal,
+  RevealItem,
+  Swap,
+  type CollapseProps,
+  type CounterProps,
+  type FadeInProps,
+  type IndicatorProps,
+  type MovesProps,
+  type PresenceItemProps,
+  type PresenceListProps,
+  type PresenceProps,
+  type PressableProps,
+  type RevealItemProps,
+  type RevealProps,
+  type SwapProps,
+} from './motion/components';
+export { useCelebrate, type CelebrateTarget } from './motion/Celebrate';
+export { MotionProvider } from './motion/MotionProvider';
+export { burst, hiddenPose, SHOWN, staggerDelay, type Arrival, type Particle, type Pose } from './motion/presets';
+export { curves, durations as motionDurations, springs } from './motion/tokens';
+
 // Components
 export {
   AppShell,
