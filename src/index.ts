@@ -53,7 +53,9 @@ export {
   type AppShellBrand,
   type AppShellNavItem,
   type AppShellNavSection,
+  type AppShellPlace,
   type AppShellProps,
+  type AppShellSidebar,
 } from './components/AppShell';
 export { Button, IconButton, type ButtonProps, type ButtonSize, type ButtonVariant, type IconButtonProps } from './components/Button';
 export {

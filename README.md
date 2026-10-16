@@ -33,8 +33,9 @@ Plugins import components directly: `import { Panel, StatusPill, DataTable, useT
 
 - `system`, `todaConfig`, `scales`
 - `TodaProvider`, `useTodaLocale`, `useTodaLabels`, `useColorMode`, `ColorModeToggle`, `AppLink`, `useFormatters`, `formatDateTime`, `formatNumber`
-- `AppShell`, `PageHeader`, `Breadcrumbs`, `Panel`, `PropertyList`
+- `AppShell` (ADR 0058: the site's pages in the top bar, a place's own menu in the sidebar, a drawer on small screens), `PageHeader`, `Breadcrumbs`, `Panel`, `PropertyList`
 - `Button`, `IconButton`, `Field`/`FormField`, `SelectField`, `CheckboxField`, `SwitchField`
 - `StatusPill` (status tones and status categories), `RecordKey`, `PathChips`
 - `DataTable`: typed columns, sortable headers with `aria-sort`, sticky header, loading, empty and error states, sub-rows, and `sortMode="manual"` for server-side sorting (the M2 QueryableList builds on it)
 - `InlineAlert`, `EmptyState`, `LoadingState`, `ConfirmDialog`/`useConfirm`, `toaster`/`notify`/`Toaster`, `Tooltip`, `DirectionalIcon`
+- Motion (ADR 0058, on Motion; never import it directly): `FadeIn`, `Reveal`/`RevealItem`, `Presence`, `PresenceList`/`PresenceItem`, `Moves`, `Collapse`, `Swap`, `Counter`, `Indicator`, `Pressable`, `useCelebrate`. Reduced motion is respected for you; the design page's Motion tab shows each
