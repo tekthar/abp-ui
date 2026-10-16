@@ -16,6 +16,7 @@ export const appShellSlotRecipe = defineSlotRecipe({
     'brandMark',
     'brandText',
     'brandName',
+    'topbarStart',
     'topNav',
     'topNavItem',
     'topNavIndicator',
@@ -28,6 +29,7 @@ export const appShellSlotRecipe = defineSlotRecipe({
     'placeText',
     'placeName',
     'placeDetail',
+    'sidebarTop',
     'nav',
     'navSection',
     'navSectionTitle',
@@ -93,6 +95,7 @@ export const appShellSlotRecipe = defineSlotRecipe({
     },
     brandText: { display: { base: 'none', sm: 'flex' }, flexDirection: 'column', minW: '0' },
     brandName: { textStyle: 'heading.section', truncate: true },
+    topbarStart: { display: 'flex', alignItems: 'center', gap: '2', ms: '2', minW: '0' },
     topNav: { display: { base: 'none', lg: 'flex' }, alignItems: 'stretch', gap: '0.5', ms: '4', flex: '1', minW: '0' },
     topNavItem: {
       position: 'relative',
@@ -163,6 +166,7 @@ export const appShellSlotRecipe = defineSlotRecipe({
     placeText: { display: 'flex', flexDirection: 'column', minW: '0' },
     placeName: { textStyle: 'label', fontWeight: 'semibold', truncate: true },
     placeDetail: { textStyle: 'caption', color: 'fg.subtle', truncate: true },
+    sidebarTop: { px: '2', pt: '3', pb: '1', flexShrink: '0' },
     nav: {
       flex: '1',
       overflowY: 'auto',

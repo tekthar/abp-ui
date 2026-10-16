@@ -13,6 +13,12 @@ const MotionDiv = chakra(m.div, {}, { forwardProps: ['transition', 'layout'] });
 const MotionSpan = chakra(m.span, {}, { forwardProps: ['transition', 'layout'] });
 const MotionLi = chakra(m.li, {}, { forwardProps: ['transition', 'layout'] });
 
+/**
+ * Where something that arrives once settles: in place, and then without a transform at all, so it doesn't become the
+ * containing block of the fixed and sticky things inside it.
+ */
+const SETTLED = { ...SHOWN, transitionEnd: { transform: 'none' } };
+
 type BoxProps = Omit<HTMLChakraProps<'div'>, 'transition' | 'translate' | 'rotate' | 'scale'>;
 
 /** The hidden pose for an arrival in the current language, and whether movement is off. */
@@ -36,7 +42,7 @@ export interface FadeInProps extends BoxProps {
 export function FadeIn({ from = 'fade', delay = 0, children, ...rest }: FadeInProps) {
   const hidden = useArrival(from);
   return (
-    <MotionDiv initial={hidden} animate={SHOWN} transition={{ duration: durations.base, ease: curves.out, delay }} {...(rest as object)}>
+    <MotionDiv initial={hidden} animate={SETTLED} transition={{ duration: durations.base, ease: curves.out, delay }} {...(rest as object)}>
       {children}
     </MotionDiv>
   );
@@ -82,7 +88,7 @@ export function RevealItem({ index, from = 'rise', as = 'div', children, ...rest
   return (
     <Element
       initial={hidden}
-      animate={SHOWN}
+      animate={SETTLED}
       transition={{ duration: durations.panel, ease: curves.out, delay: staggerDelay(index) }}
       {...(rest as object)}
     >

@@ -49,11 +49,15 @@ export interface AppShellSidebar {
   /** Which place: the current page's mark slides within it, and a new place arrives softly. */
   id: string;
   place?: AppShellPlace;
+  /** Above the sections (e.g. a box to find a page in the menu). */
+  top?: ReactNode;
   sections: AppShellNavSection[];
 }
 
 export interface AppShellProps {
   brand: AppShellBrand;
+  /** Right after the brand, always shown (e.g. the way back from Administration). */
+  topbarStart?: ReactNode;
   /** The site's pages, in the top bar. */
   topNav: AppShellNavItem[];
   /** After the site's pages in the top bar (e.g. an Apps menu). */
@@ -82,6 +86,7 @@ const MAIN_ID = 'toda-main';
  */
 export function AppShell({
   brand,
+  topbarStart,
   topNav,
   topNavEnd,
   sidebar,
@@ -101,7 +106,7 @@ export function AppShell({
   const recipe = useSlotRecipe({ key: 'todaAppShell' });
   const styles = recipe({ collapsed });
   const mobileStyles = recipe({ collapsed: false });
-  const hasSidebar = sidebar != null && sidebar.sections.some((s) => s.items.length > 0);
+  const hasSidebar = sidebar != null && (sidebar.top != null || sidebar.sections.some((s) => s.items.length > 0));
 
   const toggle = useCallback(() => {
     const next = !collapsed;
@@ -137,6 +142,7 @@ export function AppShell({
         ) : (
           <chakra.span css={styles.brand}>{brandInner}</chakra.span>
         )}
+        {topbarStart != null && <chakra.div css={styles.topbarStart}>{topbarStart}</chakra.div>}
         <chakra.nav css={styles.topNav} aria-label={labels.navigation}>
           {topNav.map((item) => (
             <TopNavItem key={item.id} item={item} styles={styles} />
@@ -194,6 +200,7 @@ export function AppShell({
                   // The site's pages first, then the place's, headed by its name.
                   sidebar={{
                     id: `drawer-${sidebar?.id ?? 'site'}`,
+                    top: hasSidebar ? sidebar.top : undefined,
                     sections: [
                       { id: 'site', items: topNav },
                       ...(hasSidebar
@@ -267,6 +274,7 @@ function SidebarContents({
           )}
         </chakra.div>
       )}
+      {sidebar.top != null && !collapsed && <chakra.div css={styles.sidebarTop}>{sidebar.top}</chakra.div>}
       <chakra.nav css={styles.nav} aria-label={place?.name ?? labels.navigation}>
         {sidebar.sections
           .filter((section) => section.items.length > 0)
