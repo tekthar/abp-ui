@@ -1,7 +1,7 @@
 import { useCallback, useState, type ReactNode } from 'react';
 import { chakra, Drawer, Portal, SkipNavContent, SkipNavLink, useSlotRecipe, type SystemStyleObject } from '@chakra-ui/react';
 import { ChevronDown, Menu as MenuIcon, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
-import { Collapse, FadeIn, Indicator } from '../motion/components';
+import { ArriveOnChange, Collapse, FadeIn, Indicator } from '../motion/components';
 import { useTodaLabels } from '../provider/labels';
 import { useLinkComponent } from '../provider/link';
 import { useTodaLocale } from '../provider/locale';
@@ -73,6 +73,8 @@ export interface AppShellProps {
   collapsed?: boolean;
   defaultCollapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
+  /** Changes with the page (its address): the content then arrives with a quick fade, without remounting. */
+  pageKey?: string;
   children: ReactNode;
 }
 
@@ -96,6 +98,7 @@ export function AppShell({
   collapsed: collapsedProp,
   defaultCollapsed = false,
   onCollapsedChange,
+  pageKey,
   children,
 }: AppShellProps) {
   const labels = useTodaLabels();
@@ -169,7 +172,9 @@ export function AppShell({
         <chakra.div css={styles.main}>
           <SkipNavContent id={MAIN_ID} />
           <chakra.main css={styles.content}>
-            <chakra.div css={styles.contentInner}>{children}</chakra.div>
+            <ArriveOnChange token={pageKey ?? ''} css={styles.contentInner}>
+              {children}
+            </ArriveOnChange>
           </chakra.main>
         </chakra.div>
       </chakra.div>

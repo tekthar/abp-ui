@@ -1,5 +1,5 @@
 import { Children, isValidElement, useEffect, useRef, type ComponentProps, type ReactNode } from 'react';
-import { animate, AnimatePresence, LayoutGroup, m, useReducedMotion } from 'motion/react';
+import { animate, AnimatePresence, LayoutGroup, m, useAnimate, useReducedMotion } from 'motion/react';
 import { chakra, type HTMLChakraProps, type SystemStyleObject } from '@chakra-ui/react';
 import { useTodaLocale } from '../provider/locale';
 import { hiddenPose, SHOWN, staggerDelay, type Arrival } from './presets';
@@ -310,5 +310,55 @@ export function Pressable({ lift = false, css, ...rest }: PressableProps) {
       }}
       {...(rest as object)}
     />
+  );
+}
+
+export interface ArriveOnChangeProps extends BoxProps {
+  /** When it changes (the page's address), the content arrives again: a quick fade, nothing travels. */
+  token: string;
+}
+
+/**
+ * Shows that the page changed without remounting it: the content fades up from a little transparent in 150 ms when the
+ * token changes. Pages change many times a day, so nothing moves and it's barely there; the first render just shows.
+ */
+export function ArriveOnChange({ token, children, ...rest }: ArriveOnChangeProps) {
+  const [scope, run] = useAnimate<HTMLDivElement>();
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    if (scope.current) void run(scope.current, { opacity: [0.55, 1] }, { duration: durations.quick, ease: curves.out });
+  }, [token, run, scope]);
+  return (
+    <chakra.div ref={scope} {...(rest as object)}>
+      {children}
+    </chakra.div>
+  );
+}
+
+export interface NudgeProps {
+  /** A count: when it grows, the content gives a little wiggle (a bell when a notice comes). Not when it shrinks. */
+  on: number;
+  children: ReactNode;
+}
+
+/** A small wiggle that says something new arrived. Never on the first render, never with reduced motion. */
+export function Nudge({ on, children }: NudgeProps) {
+  const reduce = useReducedMotion();
+  const [scope, run] = useAnimate<HTMLSpanElement>();
+  const last = useRef<number | null>(null);
+  useEffect(() => {
+    const before = last.current;
+    last.current = on;
+    if (before == null || on <= before || reduce || !scope.current) return;
+    void run(scope.current, { rotate: [0, -14, 11, -7, 4, 0] }, { duration: durations.burst, ease: curves.out });
+  }, [on, reduce, run, scope]);
+  return (
+    <chakra.span ref={scope} display="inline-flex" transformOrigin="top center">
+      {children}
+    </chakra.span>
   );
 }

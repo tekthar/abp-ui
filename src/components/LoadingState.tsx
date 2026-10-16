@@ -8,7 +8,7 @@ export function LoadingState({ lines = 3, label }: { lines?: number; label?: str
     <Stack gap="2" aria-busy="true" role="status">
       <VisuallyHidden>{label ?? labels.loading}</VisuallyHidden>
       {Array.from({ length: lines }, (_, i) => (
-        <Skeleton key={i} height="4" width={i === lines - 1 ? '3/5' : 'full'} />
+        <Skeleton key={i} variant="shine" height="4" width={i === lines - 1 ? '3/5' : 'full'} />
       ))}
     </Stack>
   );

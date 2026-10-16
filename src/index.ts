@@ -17,11 +17,13 @@ export { EMPTY_VALUE, formatDateTime, formatNumber, useFormatters } from './util
 
 // Motion (ADR 0058): pages and plugins move through these, never through Motion itself
 export {
+  ArriveOnChange,
   Collapse,
   Counter,
   FadeIn,
   Indicator,
   Moves,
+  Nudge,
   Presence,
   PresenceItem,
   PresenceList,
@@ -29,11 +31,13 @@ export {
   Reveal,
   RevealItem,
   Swap,
+  type ArriveOnChangeProps,
   type CollapseProps,
   type CounterProps,
   type FadeInProps,
   type IndicatorProps,
   type MovesProps,
+  type NudgeProps,
   type PresenceItemProps,
   type PresenceListProps,
   type PresenceProps,

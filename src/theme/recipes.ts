@@ -10,8 +10,10 @@ import {
   drawerAnatomy,
   emptyStateAnatomy,
   fieldAnatomy,
+  comboboxAnatomy,
   menuAnatomy,
   nativeSelectAnatomy,
+  popoverAnatomy,
   selectAnatomy,
   switchAnatomy,
   tableAnatomy,
@@ -25,6 +27,12 @@ import {
  * each block only states what Toda changes: denser sizes, Toda surfaces and borders, the accent
  * focus ring. Control heights share one ladder (sizes.control.*): xs 24, sm 28, md 32, lg 36.
  */
+
+/**
+ * Overlays keep Chakra's open and close animations (scale and fade from the trigger, slide for drawers) on Toda's
+ * curves (ADR 0058): ease-out both ways, never ease-in, and drawers on the drawer curve.
+ */
+const opens = { _open: { animationTimingFunction: 'out' }, _closed: { animationTimingFunction: 'out' } } as const;
 
 // Token keys for style props (h, minW) ...
 const controlHeights = {
@@ -180,7 +188,7 @@ export const nativeSelectSlotRecipe = defineSlotRecipe({
 export const selectSlotRecipe = defineSlotRecipe({
   slots: selectAnatomy.keys(),
   base: {
-    content: { bg: 'bg.panel', borderWidth: '1px', borderColor: 'border', boxShadow: 'lg', borderRadius: 'l3' },
+    content: { bg: 'bg.panel', borderWidth: '1px', borderColor: 'border', boxShadow: 'lg', borderRadius: 'l3', ...opens },
     item: { borderRadius: 'l1', _highlighted: { bg: 'bg.muted' } },
   },
   variants: {
@@ -300,7 +308,7 @@ export const tabsSlotRecipe = defineSlotRecipe({
 });
 
 // ---- Dialog / Drawer -----------------------------------------------------------------------
-const overlayContent = { bg: 'bg.panel', color: 'fg', boxShadow: 'xl', borderRadius: 'l3' } as const;
+const overlayContent = { bg: 'bg.panel', color: 'fg', boxShadow: 'xl', borderRadius: 'l3', ...opens } as const;
 
 export const dialogSlotRecipe = defineSlotRecipe({
   slots: dialogAnatomy.keys(),
@@ -320,7 +328,13 @@ export const drawerSlotRecipe = defineSlotRecipe({
   slots: drawerAnatomy.keys(),
   base: {
     backdrop: { bg: 'bg.backdrop' },
-    content: { bg: 'bg.panel', color: 'fg', boxShadow: 'xl' },
+    content: {
+      bg: 'bg.panel',
+      color: 'fg',
+      boxShadow: 'xl',
+      _open: { animationDuration: 'slow', animationTimingFunction: 'drawer' },
+      _closed: { animationDuration: 'moderate', animationTimingFunction: 'out' },
+    },
     header: { px: '4', pt: '4', pb: '2' },
     title: { textStyle: 'lg', fontWeight: 'semibold' },
     body: { px: '4', py: '2' },
@@ -329,11 +343,15 @@ export const drawerSlotRecipe = defineSlotRecipe({
   },
 });
 
+/** Popovers, comboboxes: only the curve changes. (Selects get theirs in selectSlotRecipe.) */
+export const popoverSlotRecipe = defineSlotRecipe({ slots: popoverAnatomy.keys(), base: { content: opens } });
+export const comboboxSlotRecipe = defineSlotRecipe({ slots: comboboxAnatomy.keys(), base: { content: opens } });
+
 // ---- Menu / Tooltip / Toast ----------------------------------------------------------------
 export const menuSlotRecipe = defineSlotRecipe({
   slots: menuAnatomy.keys(),
   base: {
-    content: { bg: 'bg.panel', borderWidth: '1px', borderColor: 'border', boxShadow: 'lg', borderRadius: 'l3', p: '1' },
+    content: { bg: 'bg.panel', borderWidth: '1px', borderColor: 'border', boxShadow: 'lg', borderRadius: 'l3', p: '1', ...opens },
     item: { borderRadius: 'l2', textStyle: 'md', _highlighted: { bg: 'bg.muted' } },
     itemGroupLabel: { textStyle: 'overline', color: 'fg.subtle' },
     separator: { bg: 'border.muted' },
@@ -359,6 +377,7 @@ export const tooltipSlotRecipe = defineSlotRecipe({
       borderRadius: 'l2',
       boxShadow: 'md',
       '--tooltip-bg': 'colors.bg.inverted',
+      ...opens,
     },
   },
 });
@@ -522,6 +541,8 @@ export const slotRecipes = {
   dialog: dialogSlotRecipe,
   drawer: drawerSlotRecipe,
   menu: menuSlotRecipe,
+  popover: popoverSlotRecipe,
+  combobox: comboboxSlotRecipe,
   tooltip: tooltipSlotRecipe,
   toast: toastSlotRecipe,
   alert: alertSlotRecipe,
