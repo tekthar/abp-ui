@@ -1,6 +1,8 @@
 import { forwardRef } from 'react';
 import { Input, InputGroup, type InputProps } from '@chakra-ui/react';
 import { Search } from 'lucide-react';
+import { useLoading } from '../skeleton/loading';
+import { ghostCss } from '../skeleton/bones';
 
 export interface SearchInputProps extends Omit<InputProps, 'size' | 'width' | 'maxW'> {
   size?: 'xs' | 'sm' | 'md' | 'lg';
@@ -13,8 +15,17 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
   { size = 'md', maxW, ...rest },
   ref,
 ) {
+  const skeleton = useLoading();
   return (
-    <InputGroup startElement={<Search />} startOffset="-0.25rem" startElementProps={{ color: 'fg.subtle', _icon: { boxSize: '4' } }} maxW={maxW}>
+    <InputGroup
+      startElement={<Search />}
+      startOffset="-0.25rem"
+      startElementProps={{ color: 'fg.subtle', _icon: { boxSize: '4' } }}
+      maxW={maxW}
+      borderRadius="l2"
+      aria-hidden={skeleton || undefined}
+      css={skeleton ? ghostCss : undefined}
+    >
       <Input ref={ref} type="search" size={size} {...rest} />
     </InputGroup>
   );

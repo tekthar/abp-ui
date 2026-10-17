@@ -1,10 +1,14 @@
 import { Fragment, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { chakra, Skeleton, Table, useSlotRecipe, type TableRowProps } from '@chakra-ui/react';
+import { chakra, Table, useSlotRecipe, type TableRowProps } from '@chakra-ui/react';
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
 import { useTodaLabels } from '../provider/labels';
 import { useTodaLocale } from '../provider/locale';
 import { EmptyState } from './EmptyState';
 import { InlineAlert } from './InlineAlert';
+import { RecordKey } from './RecordKey';
+import { StatusPill } from './StatusPill';
+import { useLoading } from '../skeleton/loading';
+import { boneWidth, TextBone } from '../skeleton/bones';
 
 export type SortDirection = 'asc' | 'desc';
 
@@ -28,6 +32,14 @@ export interface DataTableColumn<T> {
   width?: string;
   /** Prevent wrapping in this column. */
   nowrap?: boolean;
+  /**
+   * What the column's cells are while the table loads (ADR 0061), so a placeholder row is as tall as a real one: text
+   * (the default), a record key, a status pill, a person's name, a number, a date, nothing, or the column's own
+   * drawing for a row (drawn in a `Loading` scope, its buttons and pills as their ghosts).
+   */
+  skeleton?: 'text' | 'key' | 'pill' | 'person' | 'number' | 'date' | 'none' | ((index: number) => ReactNode);
+  /** How many characters wide its text placeholder is. */
+  skeletonWidth?: number;
 }
 
 export interface DataTableProps<T> {
@@ -37,7 +49,10 @@ export interface DataTableProps<T> {
   getRowId: (row: T) => string;
   /** Accessible name of the table. */
   'aria-label'?: string;
+  /** Its rows are coming (ADR 0061): rows of placeholders. The nearest `Loading` scope's when not given. */
   loading?: boolean;
+  /** How many placeholder rows it draws while it loads: as many as it's about to show (5). */
+  skeletonRows?: number;
   /** An error message replaces the body. */
   error?: ReactNode;
   /** Shown when rows is an empty array. A string becomes an EmptyState title. */
@@ -82,6 +97,28 @@ export interface DataTableSelection<T> {
   onOpen?: (row: T) => void;
 }
 
+/** A column's cell while the table loads, as its `skeleton` says. */
+function placeholder<T>(column: DataTableColumn<T>, row: number, at: number): ReactNode {
+  const kind = column.skeleton ?? (column.numeric ? 'number' : 'text');
+  if (typeof kind === 'function') return kind(row);
+  switch (kind) {
+    case 'none':
+      return null;
+    case 'key':
+      return <RecordKey loading />;
+    case 'pill':
+      return <StatusPill loading skeletonWidth={column.skeletonWidth ?? boneWidth(at, 6, 11)} />;
+    case 'number':
+      return <TextBone width={column.skeletonWidth ?? 4} />;
+    case 'date':
+      return <TextBone width={column.skeletonWidth ?? 11} />;
+    case 'person':
+      return <TextBone width={column.skeletonWidth ?? boneWidth(at, 9, 15)} />;
+    default:
+      return <TextBone width={column.skeletonWidth ?? boneWidth(at, 8, 24)} />;
+  }
+}
+
 /** Keys typed in a control inside a row stay with the control. */
 function typing(target: HTMLElement) {
   return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
@@ -105,7 +142,8 @@ export function DataTable<T>({
   columns,
   rows,
   getRowId,
-  loading,
+  loading: own,
+  skeletonRows = 5,
   error,
   empty,
   size = 'md',
@@ -124,6 +162,7 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   const labels = useTodaLabels();
   const { locale } = useTodaLocale();
+  const loading = useLoading(own);
   const recipe = useSlotRecipe({ key: 'todaDataTable' });
   const styles = recipe({});
   const [sortState, setSortState] = useState<DataTableSort | null>(defaultSort);
@@ -170,11 +209,12 @@ export function DataTable<T>({
       </Table.Row>
     );
   } else if (!sorted || (loading && sorted.length === 0)) {
-    body = Array.from({ length: 3 }, (_, r) => (
+    // Rows of placeholders, each as tall as a real one: every cell drawn as its column says (ADR 0061).
+    body = Array.from({ length: skeletonRows }, (_, r) => (
       <Table.Row key={`skeleton-${r}`} aria-hidden="true">
-        {columns.map((c) => (
-          <Table.Cell key={c.id}>
-            <Skeleton height="4" width={r === 2 ? '3/5' : 'full'} />
+        {columns.map((c, i) => (
+          <Table.Cell key={c.id} textAlign={align(c)} whiteSpace={c.nowrap ? 'nowrap' : undefined} textStyle={c.numeric ? 'numeric' : undefined}>
+            {placeholder(c, r, r * columns.length + i)}
           </Table.Cell>
         ))}
       </Table.Row>

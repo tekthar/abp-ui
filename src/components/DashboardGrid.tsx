@@ -4,6 +4,8 @@ import { useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointer
 import { Box, chakra } from '@chakra-ui/react';
 import { GripVertical, MoveDiagonal2 } from 'lucide-react';
 import { useTodaLocale } from '../provider/locale';
+import { useLoading } from '../skeleton/loading';
+import { shineCss } from '../skeleton/bones';
 
 /** A widget's place on the grid, in cells: column, row, width and height. */
 export interface GridItem {
@@ -34,9 +36,23 @@ export interface DashboardGridProps<T extends GridItem> {
     instructions: string;
   };
   'aria-label': string;
+  /**
+   * Its layout is coming (ADR 0061): a few placeholder tiles where widgets will be. Once the layout is known, each widget
+   * draws its own content loading. The nearest `Loading` scope's when not given.
+   */
+  loading?: boolean;
 }
 
 const GAP = 16;
+
+/** The tiles a dashboard shows while its layout loads: two wide, three narrow. */
+const PLACEHOLDER_TILES: GridItem[] = [
+  { id: 'skeleton-1', x: 0, y: 0, w: 6, h: 3 },
+  { id: 'skeleton-2', x: 6, y: 0, w: 6, h: 3 },
+  { id: 'skeleton-3', x: 0, y: 3, w: 4, h: 3 },
+  { id: 'skeleton-4', x: 4, y: 3, w: 4, h: 3 },
+  { id: 'skeleton-5', x: 8, y: 3, w: 4, h: 3 },
+];
 const MAX_HEIGHT = 12;
 
 const overlaps = (a: GridItem, b: GridItem) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
@@ -87,8 +103,10 @@ export function DashboardGrid<T extends GridItem>({
   renderItem,
   labels,
   'aria-label': ariaLabel,
+  loading: own,
 }: DashboardGridProps<T>) {
   const { isRtl } = useTodaLocale();
+  const placeholders = useLoading(own) && items.length === 0;
   const ref = useRef<HTMLDivElement>(null);
   const gesture = useRef<Gesture | null>(null);
   const [preview, setPreview] = useState<GridItem[] | null>(null);
@@ -179,6 +197,19 @@ export function DashboardGrid<T extends GridItem>({
         onPointerUp={end}
         onPointerCancel={end}
       >
+        {placeholders &&
+          PLACEHOLDER_TILES.map((tile) => (
+            <Box
+              key={tile.id}
+              role="listitem"
+              aria-hidden="true"
+              minW="0"
+              borderRadius="l3"
+              gridColumn={{ base: '1 / -1', md: `${tile.x + 1} / span ${tile.w}` }}
+              gridRow={{ base: `span ${tile.h}`, md: `${tile.y + 1} / span ${tile.h}` }}
+              css={shineCss}
+            />
+          ))}
         {layout.map((place) => {
           const item = byId.get(place.id);
           if (!item) return null;

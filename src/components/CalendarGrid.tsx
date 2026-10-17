@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Box, Grid, Stack, Text } from '@chakra-ui/react';
 import { DndContext, DragOverlay, PointerSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
+import { useLoading } from '../skeleton/loading';
+import { Bone } from '../skeleton/bones';
 
 /** A thing on the calendar: its first day and, for a span, its last (yyyy-mm-dd). */
 export interface CalendarItem {
@@ -33,6 +35,8 @@ export interface CalendarGridProps<T extends CalendarItem> {
   more?: (count: number) => ReactNode;
   /** Week grids are taller: every item shows. */
   tall?: boolean;
+  /** Its items are coming (ADR 0061): the grid as it is, a few days holding placeholders. The nearest `Loading` scope's when not given. */
+  loading?: boolean;
 }
 
 const addDays = (day: string, n: number) => {
@@ -60,7 +64,9 @@ export function CalendarGrid<T extends CalendarItem>({
   maxPerDay = 4,
   more,
   tall,
+  loading: own,
 }: CalendarGridProps<T>) {
+  const loading = useLoading(own);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const [active, setActive] = useState<T | null>(null);
   const root = useRef<HTMLDivElement>(null);
@@ -119,7 +125,11 @@ export function CalendarGrid<T extends CalendarItem>({
               return (
                 <DayCell key={day} day={day} name={dayName(day)} dim={inPeriod ? !inPeriod(day) : false} today={day === today} tall={tall} last={i === 6}
                   label={dayLabel(day)} dragging={!!active}>
-                  {shown.map(({ item, continued }) => (
+                  {loading &&
+                    Array.from({ length: (week * 7 + i) % 4 === 1 ? 2 : (week * 7 + i) % 3 === 0 ? 1 : 0 }, (_, n) => (
+                      <Bone key={n} height="5" width={n === 0 ? 'full' : '3/4'} aria-hidden="true" />
+                    ))}
+                  {!loading && shown.map(({ item, continued }) => (
                     <Chip key={`${item.id}:${day}`} item={item} continued={continued} onKeyDown={(e) => key(item, e)}>
                       {(dragging) => renderItem(item, { dragging, continued })}
                     </Chip>

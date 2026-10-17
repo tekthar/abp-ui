@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { Box, HStack, Text } from '@chakra-ui/react';
+import { useLoading } from '../skeleton/loading';
+import { Bone, boneWidth, TextBone } from '../skeleton/bones';
 
 /** A bar: its first and last day (yyyy-mm-dd); with only one of them, it's that one day. */
 export interface TimelineItem {
@@ -44,6 +46,10 @@ export interface TimelineChartProps<T extends TimelineItem> {
   labelWidth?: number;
   rowHeight?: number;
   instructions?: string;
+  /** Its rows are coming (ADR 0061): `skeletonRows` rows of placeholders, each a row's height. The nearest `Loading` scope's when not given. */
+  loading?: boolean;
+  /** How many placeholder rows it draws while it loads (6). */
+  skeletonRows?: number;
 }
 
 const DAY = 86_400_000;
@@ -71,7 +77,11 @@ export function TimelineChart<T extends TimelineItem>({
   labelWidth = 260,
   rowHeight = 36,
   instructions,
+  loading: own,
+  skeletonRows = 6,
 }: TimelineChartProps<T>) {
+  const placeholders = useLoading(own) && rows.length === 0;
+  const shown: TimelineRow<T>[] = placeholders ? Array.from({ length: skeletonRows }, (_, i) => ({ id: `skeleton-${i}` })) : rows;
   const origin = toDay(from);
   const days = toDay(to) - origin + 1;
   const width = days * dayWidth;
@@ -170,15 +180,15 @@ export function TimelineChart<T extends TimelineItem>({
 
         {/* labels */}
         <Box position="sticky" insetStart="0" zIndex="1" bg="bg.panel" borderInlineEndWidth="1px" borderColor="border">
-          {rows.map((r) => (
+          {shown.map((r, i) => (
             <HStack key={r.id} h={`${rowHeight}px`} px="3" gap="2" borderBottomWidth="1px" borderColor="border.muted" bg={r.heading ? 'bg.subtle' : undefined} minW="0">
-              {r.heading ?? (r.item && renderLabel(r.item))}
+              {placeholders ? <TextBone width={boneWidth(i, 12, 26)} /> : (r.heading ?? (r.item && renderLabel(r.item)))}
             </HStack>
           ))}
         </Box>
 
         {/* bars */}
-        <Box position="relative" h={`${rows.length * rowHeight}px`}>
+        <Box position="relative" h={`${shown.length * rowHeight}px`}>
           {ticks.map((t) => (
             <Box key={t.day} position="absolute" insetStart={`${t.day * dayWidth}px`} top="0" bottom="0" borderInlineStartWidth="1px" borderColor="border.muted" aria-hidden />
           ))}
@@ -186,10 +196,15 @@ export function TimelineChart<T extends TimelineItem>({
             <Box position="absolute" insetStart={`${todayAt * dayWidth + dayWidth / 2}px`} top="0" bottom="0" borderInlineStartWidth="2px" borderColor="accent.solid" opacity={0.5}
               aria-hidden />
           )}
-          {rows.map((r, i) => (
+          {shown.map((r, i) => (
             <Box key={r.id} position="absolute" insetStart="0" insetEnd="0" top={`${i * rowHeight}px`} h={`${rowHeight}px`} borderBottomWidth="1px"
               borderColor="border.muted" bg={r.heading ? 'bg.subtle' : undefined} aria-hidden={!r.item} />
           ))}
+          {placeholders &&
+            shown.map((r, i) => (
+              <Bone key={`bar-${r.id}`} position="absolute" insetStart={`${Math.round(width * (((i * 13) % 40) / 100))}px`} w={`${Math.round(width * (0.15 + ((i * 7) % 25) / 100))}px`}
+                top={`${i * rowHeight + 6}px`} height={`${rowHeight - 12}px`} borderRadius="l2" />
+            ))}
           {rows.map((r, i) => {
             const item = r.item;
             if (!item || (!item.start && !item.end)) return null;

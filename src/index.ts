@@ -102,6 +102,9 @@ export {
 export { InlineAlert, type InlineAlertProps } from './components/InlineAlert';
 export { KanbanBoard, type KanbanBoardProps, type KanbanColumn, type KanbanItem, type KanbanLane, type KanbanMove } from './components/KanbanBoard';
 export { LoadingState } from './components/LoadingState';
+// Skeletons (ADR 0061): every component draws itself while its data loads.
+export { Loading, useArriving, useLoading, type LoadingProps } from './skeleton/loading';
+export { arriveCss, Bone, boneWidth, ghostCss, shineCss, TextBone, TextSlot, type BoneProps, type TextBoneProps, type TextSlotProps } from './skeleton/bones';
 export { Breadcrumbs, PageHeader, type BreadcrumbItem, type PageHeaderProps } from './components/PageHeader';
 export { Panel, type PanelProps } from './components/Panel';
 export { PathChips, type PathChipsProps } from './components/PathChips';

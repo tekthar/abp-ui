@@ -15,6 +15,8 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useLoading } from '../skeleton/loading';
+import { Bone, boneWidth, TextBone } from '../skeleton/bones';
 
 export interface SortableSection<T extends { id: string }> {
   id: string;
@@ -40,6 +42,14 @@ export interface SortableSectionsProps<T extends { id: string }> {
   onMove: (item: T, to: SectionMove) => void;
   announcements?: Announcements;
   screenReaderInstructions?: string;
+  /**
+   * Its items are coming (ADR 0061): each section without items holds `skeletonItems` placeholder rows, `skeletonItemHeight`
+   * tall (a row's height); with no sections yet, two placeholder sections. The nearest `Loading` scope's when not given.
+   */
+  loading?: boolean;
+  skeletonItems?: number;
+  /** A row's height while it loads, as a size token or CSS length ("9", 36px). */
+  skeletonItemHeight?: string;
 }
 
 const sectionId = (id: string) => `section:${id}`;
@@ -56,7 +66,15 @@ export function SortableSections<T extends { id: string }>({
   onMove,
   announcements,
   screenReaderInstructions,
+  loading: own,
+  skeletonItems = 4,
+  skeletonItemHeight = '9',
 }: SortableSectionsProps<T>) {
+  const loading = useLoading(own);
+  const shown: SortableSection<T>[] =
+    loading && sections.length === 0
+      ? [0, 1].map((n) => ({ id: `skeleton-${n}`, header: <TextBone width={boneWidth(n, 14, 22)} />, items: [] }))
+      : sections;
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -106,14 +124,22 @@ export function SortableSections<T extends { id: string }>({
       accessibility={{ announcements, screenReaderInstructions: screenReaderInstructions ? { draggable: screenReaderInstructions } : undefined }}
     >
       <Stack role="region" aria-label={ariaLabel} gap="4">
-        {sections.map((s) => (
+        {shown.map((s) => (
           <Section key={s.id} section={s} dragging={!!active}>
+            {loading &&
+              s.items.length === 0 &&
+              Array.from({ length: skeletonItems }, (_, n) => (
+                <Box key={n} h={skeletonItemHeight} px="2" display="flex" alignItems="center" gap="3" aria-hidden="true">
+                  <Bone width="14" height="4" />
+                  <TextBone width={boneWidth(n, 16, 36)} />
+                </Box>
+              ))}
             {s.items.map((item) => (
               <SortableItem key={item.id} id={item.id}>
                 {(dragging) => renderItem(item, { dragging })}
               </SortableItem>
             ))}
-            {s.items.length === 0 && s.empty && (
+            {!loading && s.items.length === 0 && s.empty && (
               <Text textStyle="caption" color="fg.subtle" textAlign="center" py="4">{s.empty}</Text>
             )}
           </Section>

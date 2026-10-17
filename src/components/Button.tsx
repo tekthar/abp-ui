@@ -5,6 +5,8 @@ import {
   type ButtonProps as ChakraButtonProps,
   type IconButtonProps as ChakraIconButtonProps,
 } from '@chakra-ui/react';
+import { useLoading } from '../skeleton/loading';
+import { ghostCss } from '../skeleton/bones';
 
 /**
  * Toda button semantics on top of Chakra's button recipe:
@@ -32,10 +34,15 @@ function palette(variant: ButtonVariant, danger: boolean | undefined): string {
 
 export type ButtonProps = Omit<ChakraButtonProps, 'variant' | 'size' | 'colorPalette'> & TodaButtonProps;
 
+/**
+ * Inside a `Loading` scope a button is drawn as its own ghost, at its size, and can't be pressed (ADR 0061). Its own
+ * `loading` is Chakra's: an action is running.
+ */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant = 'secondary', size = 'md', danger, type = 'button', ...rest },
+  { variant = 'secondary', size = 'md', danger, type = 'button', css, ...rest },
   ref,
 ) {
+  const skeleton = useLoading();
   return (
     <ChakraButton
       ref={ref}
@@ -43,6 +50,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       size={size}
       variant={chakraVariant[variant]}
       colorPalette={palette(variant, danger)}
+      css={skeleton ? [ghostCss, css] : css}
+      tabIndex={skeleton ? -1 : undefined}
+      aria-hidden={skeleton || undefined}
       {...rest}
     />
   );
@@ -53,9 +63,10 @@ export type IconButtonProps = Omit<ChakraIconButtonProps, 'variant' | 'size' | '
 
 /** Square icon-only button. `aria-label` is required; it is also shown as the native tooltip. */
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
-  { variant = 'ghost', size = 'md', danger, type = 'button', title, ...rest },
+  { variant = 'ghost', size = 'md', danger, type = 'button', title, css, ...rest },
   ref,
 ) {
+  const skeleton = useLoading();
   return (
     <ChakraIconButton
       ref={ref}
@@ -64,6 +75,9 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       variant={chakraVariant[variant]}
       colorPalette={palette(variant, danger)}
       title={title ?? rest['aria-label']}
+      css={skeleton ? [ghostCss, css] : css}
+      tabIndex={skeleton ? -1 : undefined}
+      aria-hidden={skeleton || undefined}
       {...rest}
     />
   );

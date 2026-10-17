@@ -1,6 +1,8 @@
 import { forwardRef, ViewTransition, type ReactNode } from 'react';
 import { chakra, useRecipe, type HTMLChakraProps } from '@chakra-ui/react';
 import { useLinkComponent } from '../provider/link';
+import { useLoading } from '../skeleton/loading';
+import { ghostCss } from '../skeleton/bones';
 
 export interface RecordKeyProps extends Omit<HTMLChakraProps<'span'>, 'children'> {
   /** The key, e.g. "PAY-41". Children win when both are given. */
@@ -16,6 +18,8 @@ export interface RecordKeyProps extends Omit<HTMLChakraProps<'span'>, 'children'
    * column, never to a parent's key or to lists that can show a record twice.
    */
   glide?: boolean;
+  /** Its key is coming (ADR 0061): drawn as its own ghost, as wide as a key. The nearest `Loading` scope's when not given. */
+  loading?: boolean;
 }
 
 /** The view transition's name for a record's key: one per record, a valid CSS name whatever the key holds. */
@@ -23,13 +27,21 @@ export const glideName = (key: string) => `toda-key-${key.toUpperCase().replace(
 
 /** A record key or identifier in mono, always left-to-right, never wrapped. */
 export const RecordKey = forwardRef<HTMLElement, RecordKeyProps>(function RecordKey(
-  { value, children, href, variant = 'plain', size = 'sm', glide = false, css, ...rest },
+  { value, children, href, variant = 'plain', size = 'sm', glide = false, loading: own, css, ...rest },
   ref,
 ) {
   const recipe = useRecipe({ key: 'todaRecordKey' });
   const styles = recipe({ variant, size, link: Boolean(href) });
   const Link = useLinkComponent();
   const content = children ?? value;
+  if (useLoading(own)) {
+    return (
+      <chakra.span ref={ref as never} dir="ltr" aria-hidden="true" css={[styles, ghostCss, css]} {...rest}>
+        {content ?? 'XXXX-000'}
+      </chakra.span>
+    );
+  }
+
   const key = href ? (
     <chakra.span asChild css={[styles, css]} {...rest}>
       <Link href={href} dir="ltr" ref={ref as never}>

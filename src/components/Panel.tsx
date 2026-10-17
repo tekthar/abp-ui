@@ -1,5 +1,6 @@
 import { forwardRef, type ReactNode } from 'react';
 import { chakra, useSlotRecipe, type HTMLChakraProps } from '@chakra-ui/react';
+import { Loading } from '../skeleton/loading';
 
 export interface PanelProps extends Omit<HTMLChakraProps<'section'>, 'title'> {
   title?: ReactNode;
@@ -11,11 +12,13 @@ export interface PanelProps extends Omit<HTMLChakraProps<'section'>, 'title'> {
   flush?: boolean;
   /** Heading level of the title (default h2). */
   headingAs?: 'h2' | 'h3' | 'h4';
+  /** What it holds is waiting for its data (ADR 0061): a `Loading` scope for its body. Its title and actions stay. */
+  loading?: boolean;
 }
 
 /** The bordered surface every block of content sits in. */
 export const Panel = forwardRef<HTMLElement, PanelProps>(function Panel(
-  { title, description, actions, footer, flush = false, headingAs = 'h2', children, css, ...rest },
+  { title, description, actions, footer, flush = false, headingAs = 'h2', loading, children, css, ...rest },
   ref,
 ) {
   const recipe = useSlotRecipe({ key: 'todaPanel' });
@@ -36,7 +39,7 @@ export const Panel = forwardRef<HTMLElement, PanelProps>(function Panel(
           {actions != null && <chakra.div css={styles.actions}>{actions}</chakra.div>}
         </chakra.header>
       )}
-      <chakra.div css={styles.body}>{children}</chakra.div>
+      <chakra.div css={styles.body}>{loading === undefined ? children : <Loading when={loading}>{children}</Loading>}</chakra.div>
       {footer != null && <chakra.footer css={styles.footer}>{footer}</chakra.footer>}
     </chakra.section>
   );

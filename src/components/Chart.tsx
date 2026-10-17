@@ -1,9 +1,11 @@
 'use client';
 
-import { Box, Text } from '@chakra-ui/react';
+import { Box, Flex, Text } from '@chakra-ui/react';
 import { Chart as ChakraChart, useChart } from '@chakra-ui/charts';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useTodaLocale } from '../provider/locale';
+import { useLoading } from '../skeleton/loading';
+import { Bone } from '../skeleton/bones';
 
 export interface ChartSeries {
   key: string;
@@ -28,6 +30,8 @@ export interface ChartProps {
   height?: number | string;
   formatX?: (value: string) => string;
   formatValue?: (value: number) => string;
+  /** Its numbers are coming (ADR 0061): a plot of placeholders, as tall as the chart. The nearest `Loading` scope's when not given. */
+  loading?: boolean;
 }
 
 const PALETTE = ['teal.solid', 'blue.solid', 'orange.solid', 'purple.solid', 'green.solid', 'pink.solid', 'cyan.solid', 'yellow.solid', 'red.solid'];
@@ -36,8 +40,9 @@ const PALETTE = ['teal.solid', 'blue.solid', 'orange.solid', 'purple.solid', 'gr
  * A chart (ADR 0031) on `@chakra-ui/charts`: design tokens, dark mode, right to left (the axes mirror), a tooltip and a
  * legend. The same numbers are in a table screen readers read, so nothing is only in the picture.
  */
-export function Chart({ kind, stacked, data, x, series, 'aria-label': ariaLabel, height = 280, formatX, formatValue }: ChartProps) {
+export function Chart({ kind, stacked, data, x, series, 'aria-label': ariaLabel, height = 280, formatX, formatValue, loading: own }: ChartProps) {
   const { isRtl: rtl } = useTodaLocale();
+  const loading = useLoading(own);
   const chart = useChart({
     data,
     series: series.map((s, i) => ({ name: s.key, label: s.label, color: s.color ?? PALETTE[i % PALETTE.length], stackId: stacked ? 'stack' : undefined, strokeDasharray: s.dashed ? '5 4' : undefined })),
@@ -50,6 +55,19 @@ export function Chart({ kind, stacked, data, x, series, 'aria-label': ariaLabel,
   const grid = <CartesianGrid stroke={chart.color('border.muted')} vertical={false} />;
   const tooltip = <Tooltip cursor={{ fill: chart.color('bg.muted') }} animationDuration={100} content={<ChakraChart.Tooltip />} labelFormatter={label} />;
   const legend = series.length > 1 ? <Legend content={<ChakraChart.Legend />} /> : null;
+
+  if (loading) {
+    // As tall as the chart, with room for its axes: bars for a bar chart, a skyline for the others.
+    return (
+      <Box aria-hidden="true">
+        <Flex h={typeof height === 'number' ? `${height}px` : height} align="flex-end" gap={kind === 'bar' ? '2' : '0.5'} ps="12" pe="2" pb="8" pt="2">
+          {Array.from({ length: 12 }, (_, i) => (
+            <Bone key={i} flex="1" width="auto" height={`${28 + ((i * 37) % 60)}%`} borderRadius={kind === 'bar' ? 'l1' : '0'} />
+          ))}
+        </Flex>
+      </Box>
+    );
+  }
 
   return (
     <Box>

@@ -9,6 +9,7 @@ import { DirectionalIcon } from './DirectionalIcon';
 import { SelectField } from './Field';
 import { InlineAlert } from './InlineAlert';
 import { Panel } from './Panel';
+import { useLoading } from '../skeleton/loading';
 
 /** A field a query can use, as GET /api/query/{entity}/fields returns it. */
 export interface QueryField {
@@ -103,6 +104,7 @@ export interface QueryableListProps {
   onStateChange: (next: QueryableListState) => void;
   /** The last result: rows, total, groups, and the query the server ran (canonical RQL and JSON). */
   result?: { total: number; items: QueryRow[]; groups?: QueryGroup[] | null; rql: string; query: QueryJson } | null;
+  /** Its rows are coming (ADR 0061): a page of placeholder rows, each column's by its field. The nearest `Loading` scope's when not given. */
   loading?: boolean;
   error?: QueryableListError | null;
   renderCell: (columnId: string, value: unknown, row: QueryRow) => ReactNode;
@@ -182,7 +184,7 @@ export function QueryableList({
   state,
   onStateChange,
   result,
-  loading,
+  loading: own,
   error,
   renderCell,
   renderRow,
@@ -227,6 +229,7 @@ export function QueryableList({
   }
 
   const sort: DataTableSort | null = query.orderBy?.[0] ? { columnId: query.orderBy[0].field, direction: query.orderBy[0].desc ? 'desc' : 'asc' } : null;
+  const loading = useLoading(own);
   const columns: DataTableColumn<QueryRow>[] = state.columns.map((id) => ({
     id,
     header: label(id),
@@ -234,6 +237,7 @@ export function QueryableList({
     // Manual sort: the column reports the change and the server orders the rows.
     sortValue: byId.get(id)?.sortable ? () => null : undefined,
     nowrap: id !== 'title',
+    skeleton: placeholderOf(id, byId.get(id)?.kind),
   }));
 
   const total = result?.total ?? 0;
@@ -453,6 +457,7 @@ export function QueryableList({
           rows={error && !result ? [] : result?.items}
           getRowId={(r) => r.id}
           loading={loading}
+          skeletonRows={take}
           empty={empty ?? labels.empty}
           sortMode="manual"
           sort={sort}
@@ -463,6 +468,24 @@ export function QueryableList({
       </Panel>
     </Stack>
   );
+}
+
+/** What a column's cells are while the list loads, by its field: keys, statuses as pills, people, dates, numbers, text. */
+function placeholderOf(id: string, kind: string | undefined): DataTableColumn<QueryRow>['skeleton'] {
+  if (id === 'key') return 'key';
+  if (id === 'status' || kind === 'status') return 'pill';
+  switch (kind) {
+    case 'person':
+    case 'people':
+      return 'person';
+    case 'date':
+    case 'dateTime':
+      return 'date';
+    case 'number':
+      return 'number';
+    default:
+      return 'text';
+  }
 }
 
 /** Export: the list's query and columns as CSV or an Excel workbook, every page of it. */
