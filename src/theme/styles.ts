@@ -81,6 +81,16 @@ export const globalCss = defineGlobalStyles({
   'code, kbd, samp, pre': { fontFamily: 'mono' },
   '*::selection': { bg: 'accent.muted', color: 'fg' },
   '*::placeholder, *[data-placeholder]': { color: 'fg.subtle' },
+  // A record's key gliding into its page (ADR 0058, RecordKey's glide): the one thing that moves when a record opens,
+  // on the curve for moving on screen. The rest of the page changes at once, not in a crossfade (the old page isn't
+  // drawn, the new one plays nothing), and clicks reach the page meanwhile.
+  '::view-transition': { pointerEvents: 'none' },
+  '::view-transition-group(.morph), ::view-transition-old(.morph), ::view-transition-new(.morph)': {
+    animationDuration: 'slow',
+    animationTimingFunction: 'inOut',
+  },
+  '::view-transition-old(root)': { display: 'none' },
+  '::view-transition-new(root)': { animation: 'none' },
   // A person who chose less motion (ADR 0058): keyframe animations end at once, and the browser's view transitions
   // don't play. The same for a system that asks for less, unless the person chose full.
   'html[data-motion=reduced] *, html[data-motion=reduced] *::before, html[data-motion=reduced] *::after': {
