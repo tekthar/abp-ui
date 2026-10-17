@@ -81,4 +81,16 @@ export const globalCss = defineGlobalStyles({
   'code, kbd, samp, pre': { fontFamily: 'mono' },
   '*::selection': { bg: 'accent.muted', color: 'fg' },
   '*::placeholder, *[data-placeholder]': { color: 'fg.subtle' },
+  // A person who chose less motion (ADR 0058): keyframe animations end at once, and the browser's view transitions
+  // don't play. The same for a system that asks for less, unless the person chose full.
+  'html[data-motion=reduced] *, html[data-motion=reduced] *::before, html[data-motion=reduced] *::after': {
+    animationDuration: '0.01ms !important',
+    animationIterationCount: '1 !important',
+  },
+  'html[data-motion=reduced]::view-transition-group(*), html[data-motion=reduced]::view-transition-old(*), html[data-motion=reduced]::view-transition-new(*)': {
+    animation: 'none !important',
+  },
+  'html:not([data-motion=full])::view-transition-group(*), html:not([data-motion=full])::view-transition-old(*), html:not([data-motion=full])::view-transition-new(*)': {
+    '@media (prefers-reduced-motion: reduce)': { animation: 'none !important' },
+  },
 });

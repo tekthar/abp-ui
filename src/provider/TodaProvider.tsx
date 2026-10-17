@@ -3,6 +3,7 @@ import { TimeZoneProvider } from './time-zone';
 import { ChakraProvider, LocaleProvider } from '@chakra-ui/react';
 import { ConfirmProvider } from '../components/ConfirmDialog';
 import { MotionProvider } from '../motion/MotionProvider';
+import type { MotionSetting } from '../motion/setting';
 import { Toaster } from '../components/Toaster';
 import { system } from '../theme/system';
 import { ColorModeProvider } from './color-mode';
@@ -24,6 +25,8 @@ export interface TodaProviderProps {
   pluginTexts?: Record<string, Record<string, unknown>>;
   /** The person's time zone (IANA); times show in the browser's when it's not given. */
   timeZone?: string;
+  /** How much the interface moves for the person (ADR 0058); as their system says when it's not given. */
+  motion?: MotionSetting;
 }
 
 /**
@@ -33,7 +36,7 @@ export interface TodaProviderProps {
  *
  * The host must also set `<html lang dir>` and `suppressHydrationWarning` on <html>.
  */
-export function TodaProvider({ children, locale = 'en', labels, linkComponent, defaultColorMode = 'system', pluginTexts, timeZone }: TodaProviderProps) {
+export function TodaProvider({ children, locale = 'en', labels, linkComponent, defaultColorMode = 'system', pluginTexts, timeZone, motion }: TodaProviderProps) {
   return (
     <ChakraProvider value={system}>
       <ColorModeProvider defaultTheme={defaultColorMode}>
@@ -42,7 +45,7 @@ export function TodaProvider({ children, locale = 'en', labels, linkComponent, d
           <LabelsProvider value={labels}>
             <LinkComponentProvider value={linkComponent}>
               <PluginTextsProvider value={pluginTexts as never}>
-                <MotionProvider>
+                <MotionProvider setting={motion}>
                   <ConfirmProvider>
                     {children}
                     <Toaster />

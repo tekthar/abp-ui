@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
-import { AnimatePresence, m, useReducedMotion } from 'motion/react';
+import { AnimatePresence, m } from 'motion/react';
 import { chakra, Portal } from '@chakra-ui/react';
 import { burst, type Particle } from './presets';
+import { useMotionSetting } from './setting';
 import { curves, durations } from './tokens';
 
 /** Where a burst starts: an element (its centre) or a point on the screen. */
@@ -33,7 +34,7 @@ const PARTICLES = 14;
 
 /** Holds the bursts above everything else; MotionProvider renders it. */
 export function CelebrationLayer({ children }: { children: ReactNode }) {
-  const reduce = useReducedMotion();
+  const { reduce } = useMotionSetting();
   const [bursts, setBursts] = useState<Burst[]>([]);
   const next = useRef(1);
 

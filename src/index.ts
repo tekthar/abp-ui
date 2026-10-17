@@ -49,6 +49,7 @@ export {
 } from './motion/components';
 export { useCelebrate, type CelebrateTarget } from './motion/Celebrate';
 export { MotionProvider } from './motion/MotionProvider';
+export { asMotionSetting, useMotionSetting, type MotionSetting, type MotionState } from './motion/setting';
 export { burst, hiddenPose, SHOWN, staggerDelay, type Arrival, type Particle, type Pose } from './motion/presets';
 export { curves, durations as motionDurations, springs } from './motion/tokens';
 

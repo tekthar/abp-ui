@@ -203,6 +203,7 @@ export const appShellSlotRecipe = defineSlotRecipe({
       transform: 'rotate(-90deg)',
       _rtl: { transform: 'rotate(90deg)' },
       '&[data-open]': { transform: 'rotate(0deg)' },
+      'html[data-motion=reduced] &': { transitionProperty: 'none' },
     },
     navSectionItems: { display: 'flex', flexDirection: 'column', gap: '0.5' },
     navItem: {

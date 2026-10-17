@@ -1,8 +1,9 @@
 import { Children, isValidElement, useEffect, useRef, type ComponentProps, type ReactNode } from 'react';
-import { animate, AnimatePresence, LayoutGroup, m, useAnimate, useReducedMotion } from 'motion/react';
+import { animate, AnimatePresence, LayoutGroup, m, useAnimate } from 'motion/react';
 import { chakra, type HTMLChakraProps, type SystemStyleObject } from '@chakra-ui/react';
 import { useTodaLocale } from '../provider/locale';
 import { hiddenPose, SHOWN, staggerDelay, type Arrival } from './presets';
+import { useMotionSetting } from './setting';
 import { curves, durations, springs } from './tokens';
 
 /**
@@ -24,7 +25,7 @@ type BoxProps = Omit<HTMLChakraProps<'div'>, 'transition' | 'translate' | 'rotat
 /** The hidden pose for an arrival in the current language, and whether movement is off. */
 function useArrival(kind: Arrival) {
   const { isRtl } = useTodaLocale();
-  const reduce = useReducedMotion() ?? false;
+  const { reduce } = useMotionSetting();
   return hiddenPose(kind, { rtl: isRtl, reduce });
 }
 
@@ -237,7 +238,7 @@ export interface CounterProps extends Omit<HTMLChakraProps<'span'>, 'children'> 
 /** A number counts to its value: a dashboard's totals the first time they show, and when they change. */
 export function Counter({ value, format, fromZero = true, ...rest }: CounterProps) {
   const { locale } = useTodaLocale();
-  const reduce = useReducedMotion();
+  const { reduce } = useMotionSetting();
   const ref = useRef<HTMLSpanElement>(null);
   const shown = useRef(fromZero ? 0 : value);
   const write = format ?? ((n: number) => new Intl.NumberFormat(locale, { maximumFractionDigits: Number.isInteger(value) ? 0 : 1 }).format(n));
@@ -305,7 +306,8 @@ export function Pressable({ lift = false, css, ...rest }: PressableProps) {
         ...(lift
           ? { '@media (hover: hover) and (pointer: fine)': { _hover: { transform: 'translateY(-2px)', boxShadow: 'md' } } }
           : {}),
-        '@media (prefers-reduced-motion: reduce)': { transitionProperty: 'box-shadow', _active: { transform: 'none' }, _hover: { transform: 'none' } },
+        '@media (prefers-reduced-motion: reduce)': { 'html:not([data-motion=full]) &': { transitionProperty: 'box-shadow', _active: { transform: 'none' }, _hover: { transform: 'none' } } },
+        'html[data-motion=reduced] &': { transitionProperty: 'box-shadow', _active: { transform: 'none' }, _hover: { transform: 'none' } },
         ...css,
       }}
       {...(rest as object)}
@@ -347,7 +349,7 @@ export interface NudgeProps {
 
 /** A small wiggle that says something new arrived. Never on the first render, never with reduced motion. */
 export function Nudge({ on, children }: NudgeProps) {
-  const reduce = useReducedMotion();
+  const { reduce } = useMotionSetting();
   const [scope, run] = useAnimate<HTMLSpanElement>();
   const last = useRef<number | null>(null);
   useEffect(() => {
