@@ -125,7 +125,18 @@ export {
   type QuerySuggestions,
 } from './components/QueryableList';
 export { RecordKey, type RecordKeyProps } from './components/RecordKey';
+export { DropHint, FileDropArea, type DropHintProps, type FileDropAreaProps } from './components/FileDrop';
 export { UploadList, type UploadListProps, type UploadRow } from './components/UploadList';
+export {
+  droppedFiles,
+  useDropZone,
+  useFilesOverPage,
+  usePageDrop,
+  usePastedFiles,
+  type DropZoneOptions,
+  type DropZoneState,
+  type DroppedFile,
+} from './files/drop';
 export {
   covers,
   folderOf,
