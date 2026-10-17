@@ -125,6 +125,21 @@ export {
   type QuerySuggestions,
 } from './components/QueryableList';
 export { RecordKey, type RecordKeyProps } from './components/RecordKey';
+export { UploadList, type UploadListProps, type UploadRow } from './components/UploadList';
+export {
+  covers,
+  folderOf,
+  foldersFor,
+  pastedName,
+  progressOf,
+  refusal,
+  targetOf,
+  toStart,
+  UPLOADS_AT_ONCE,
+  type QueueProgress,
+  type UploadJob,
+  type UploadState,
+} from './files/upload-plan';
 export { SearchInput, type SearchInputProps } from './components/SearchInput';
 export { SortableSections, type SectionMove, type SortableSection, type SortableSectionsProps } from './components/SortableSections';
 export { StatusPill, type StatusCategory, type StatusPillProps, type StatusTone } from './components/StatusPill';
