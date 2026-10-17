@@ -1,18 +1,25 @@
-import { Children, isValidElement, useEffect, useRef, type ComponentProps, type ReactNode } from 'react';
-import { animate, AnimatePresence, LayoutGroup, m, useAnimate } from 'motion/react';
+import { Children, cloneElement, isValidElement, useEffect, useLayoutEffect, useRef, type ComponentProps, type ReactElement, type ReactNode } from 'react';
+import { AnimatePresence, m } from 'motion/react';
 import { chakra, type HTMLChakraProps, type SystemStyleObject } from '@chakra-ui/react';
 import { useTodaLocale } from '../provider/locale';
+import { cubicBezier } from './flip-math';
+import { placeOf, slide, useSlideItems } from './flip';
 import { hiddenPose, SHOWN, staggerDelay, type Arrival } from './presets';
 import { useMotionSetting } from './setting';
 import { curves, durations, springs } from './tokens';
 
 /**
- * Motion's light elements with Chakra's style props: `transition` and `layout` are Motion's here, not the CSS
- * properties of the same name. Not exported: pages use the components below, never Motion itself.
+ * Motion's light elements with Chakra's style props: `transition` is Motion's here, not the CSS property of the same
+ * name. Not exported: pages use the components below, never Motion itself. (Layout motion isn't Motion's here: the
+ * FLIP helper in flip.ts moves things to their new places, ADR 0058 amended.)
  */
-const MotionDiv = chakra(m.div, {}, { forwardProps: ['transition', 'layout'] });
-const MotionSpan = chakra(m.span, {}, { forwardProps: ['transition', 'layout'] });
-const MotionLi = chakra(m.li, {}, { forwardProps: ['transition', 'layout'] });
+const MotionDiv = chakra(m.div, {}, { forwardProps: ['transition'] });
+const MotionSpan = chakra(m.span, {}, { forwardProps: ['transition'] });
+const MotionLi = chakra(m.li, {}, { forwardProps: ['transition'] });
+
+/** Toda's out curve, for what eases in a frame loop or Web Animations. */
+const OUT = `cubic-bezier(${curves.out.join(', ')})`;
+const easeOut = cubicBezier(...curves.out);
 
 /**
  * Where something that arrives once settles: in place, and then without a transform at all, so it doesn't become the
@@ -130,12 +137,25 @@ export interface PresenceListProps {
  * to their new places. What's there on first render just is. Each child must be a PresenceItem with a key.
  */
 export function PresenceList({ children }: PresenceListProps) {
+  const marker = useRef<HTMLSpanElement>(null);
+  const parent = useRef<HTMLElement | null>(null);
+  const keys = Children.toArray(children)
+    .map((c) => (isValidElement(c) ? String(c.key) : ''))
+    .join('|');
+  // The list's own element is its parent's: the items are its children, measured against it.
+  useLayoutEffect(() => {
+    parent.current = marker.current?.parentElement ?? null;
+  });
+  useSlideItems(parent, keys);
   return (
-    <LayoutGroup>
+    <>
+      <chakra.span ref={marker} display="none" aria-hidden="true" />
       <AnimatePresence initial={false} mode="popLayout">
-        {children}
+        {Children.map(children, (child) =>
+          isValidElement(child) ? cloneElement(child as ReactElement<{ 'data-slide'?: string }>, { 'data-slide': String(child.key) }) : child,
+        )}
       </AnimatePresence>
-    </LayoutGroup>
+    </>
   );
 }
 
@@ -150,7 +170,6 @@ export function PresenceItem({ from = 'rise', as = 'div', children, ...rest }: P
   const Element = as === 'li' ? MotionLi : MotionDiv;
   return (
     <Element
-      layout="position"
       initial={hidden}
       animate={SHOWN}
       exit={{ ...hidden, transition: { duration: durations.quick, ease: curves.out } }}
@@ -162,17 +181,36 @@ export function PresenceItem({ from = 'rise', as = 'div', children, ...rest }: P
   );
 }
 
-export interface MovesProps extends BoxProps {
-  /** A stable id when the same thing moves between two containers (a card from one column to another). */
-  layoutId?: string;
+export interface SlideListProps extends BoxProps {
+  /** Changes when the items change (their order, or where they are): those that moved slide to their new places. */
+  token: unknown;
 }
 
-/** Slides to its new place when the layout around it changes (a board card, a reordered row) instead of jumping. */
-export function Moves({ layoutId, children, ...rest }: MovesProps) {
+/**
+ * Items that change places slide there instead of jumping (a reordered list, cards moved between columns): each item
+ * is a SlideItem with an id. Measured against this element, so scrolling isn't taken for a move.
+ */
+export function SlideList({ token, children, ...rest }: SlideListProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  useSlideItems(ref, token);
   return (
-    <MotionDiv layout layoutId={layoutId} transition={springs.soft} {...(rest as object)}>
+    <chakra.div ref={ref} {...(rest as object)}>
       {children}
-    </MotionDiv>
+    </chakra.div>
+  );
+}
+
+export interface SlideItemProps extends BoxProps {
+  /** Stays the same wherever the item goes. */
+  slideId: string;
+}
+
+/** One item of a SlideList. */
+export function SlideItem({ slideId, children, ...rest }: SlideItemProps) {
+  return (
+    <chakra.div data-slide={slideId} {...(rest as object)}>
+      {children}
+    </chakra.div>
   );
 }
 
@@ -251,15 +289,20 @@ export function Counter({ value, format, fromZero = true, ...rest }: CounterProp
       element.textContent = write(value);
       return;
     }
-    const controls = animate(shown.current, value, {
-      duration: durations.count,
-      ease: curves.out,
-      onUpdate: (n) => {
-        shown.current = n;
-        element.textContent = write(Number.isInteger(value) ? Math.round(n) : n);
-      },
-    });
-    return () => controls.stop();
+    // A frame loop on Toda's out curve (Motion's own animate would cost more than the rest of it).
+    const from = shown.current;
+    const start = performance.now();
+    const length = durations.count * 1000;
+    let frame = 0;
+    const step = (now: number) => {
+      const progress = Math.min(1, (now - start) / length);
+      const n = from + (value - from) * easeOut(progress);
+      shown.current = n;
+      element.textContent = write(Number.isInteger(value) ? Math.round(n) : n);
+      if (progress < 1) frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
     // write depends on locale and value only
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, reduce, locale]);
@@ -278,12 +321,27 @@ export interface IndicatorProps {
   css?: SystemStyleObject;
 }
 
+/** Where each group's mark last was, so the next one slides from there. */
+const lastMarks = new Map<string, { left: number; top: number; width: number; height: number }>();
+
 /**
  * The mark under (or behind) the current item of a menu, tabs or a segmented control. Render it inside the current
- * item only: when the current item changes, it slides from the old one to the new.
+ * item only: when the current item changes, it slides from the old one to the new (FLIP, measured against the menu
+ * it's in, so a scroll isn't a move).
  */
 export function Indicator({ group, css }: IndicatorProps) {
-  return <MotionSpan layoutId={`toda-indicator-${group}`} transition={springs.snappy} aria-hidden="true" css={css} />;
+  const ref = useRef<HTMLSpanElement>(null);
+  const { reduce } = useMotionSetting();
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const menu = element.closest('nav, [role=tablist], [role=radiogroup], [data-indicator-group]');
+    const now = placeOf(element, menu);
+    const before = lastMarks.get(group);
+    if (before && !reduce) slide(element, before, now, true);
+    lastMarks.set(group, now);
+  });
+  return <chakra.span ref={ref} aria-hidden="true" css={css} />;
 }
 
 export type PressableProps = ComponentProps<typeof chakra.div> & {
@@ -325,17 +383,18 @@ export interface ArriveOnChangeProps extends BoxProps {
  * token changes. Pages change many times a day, so nothing moves and it's barely there; the first render just shows.
  */
 export function ArriveOnChange({ token, children, ...rest }: ArriveOnChangeProps) {
-  const [scope, run] = useAnimate<HTMLDivElement>();
+  const ref = useRef<HTMLDivElement>(null);
   const first = useRef(true);
   useEffect(() => {
     if (first.current) {
       first.current = false;
       return;
     }
-    if (scope.current) void run(scope.current, { opacity: [0.55, 1] }, { duration: durations.quick, ease: curves.out });
-  }, [token, run, scope]);
+    // A fade only, so it plays with less motion too; Web Animations, no library.
+    ref.current?.animate?.([{ opacity: 0.55 }, { opacity: 1 }], { duration: durations.quick * 1000, easing: OUT });
+  }, [token]);
   return (
-    <chakra.div ref={scope} {...(rest as object)}>
+    <chakra.div ref={ref} {...(rest as object)}>
       {children}
     </chakra.div>
   );
@@ -350,16 +409,19 @@ export interface NudgeProps {
 /** A small wiggle that says something new arrived. Never on the first render, never with reduced motion. */
 export function Nudge({ on, children }: NudgeProps) {
   const { reduce } = useMotionSetting();
-  const [scope, run] = useAnimate<HTMLSpanElement>();
+  const ref = useRef<HTMLSpanElement>(null);
   const last = useRef<number | null>(null);
   useEffect(() => {
     const before = last.current;
     last.current = on;
-    if (before == null || on <= before || reduce || !scope.current) return;
-    void run(scope.current, { rotate: [0, -14, 11, -7, 4, 0] }, { duration: durations.burst, ease: curves.out });
-  }, [on, reduce, run, scope]);
+    if (before == null || on <= before || reduce) return;
+    ref.current?.animate?.(
+      [{ rotate: '0deg' }, { rotate: '-14deg' }, { rotate: '11deg' }, { rotate: '-7deg' }, { rotate: '4deg' }, { rotate: '0deg' }],
+      { duration: durations.burst * 1000, easing: OUT },
+    );
+  }, [on, reduce]);
   return (
-    <chakra.span ref={scope} display="inline-flex" transformOrigin="top center">
+    <chakra.span ref={ref} display="inline-flex" transformOrigin="top center">
       {children}
     </chakra.span>
   );

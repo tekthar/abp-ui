@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { domMax, LazyMotion, MotionConfig } from 'motion/react';
+import { domAnimation, LazyMotion, MotionConfig } from 'motion/react';
 import { CelebrationLayer } from './Celebrate';
 import { MotionContext, type MotionSetting } from './setting';
 import { springs } from './tokens';
@@ -26,7 +26,8 @@ function useSystemReduces(): boolean {
  * Motion for everything under it (ADR 0058). The person's setting decides: as their system says (Motion's own
  * reduced-motion handling: movement off, fades kept), less (always reduced), or full (even when the system asks for
  * less). The page's root element carries it (`data-motion`), so CSS motion follows the same choice. Springs are soft
- * unless a component asks otherwise, and only the light `m` components are allowed (strict). TodaProvider renders it;
+ * unless a component asks otherwise, and only the light `m` components are allowed (strict), with Motion's
+ * `domAnimation` features: layout motion is the FLIP helper's (flip.ts), a third lighter. TodaProvider renders it;
  * plugins render inside it.
  */
 export function MotionProvider({ setting: initial = 'system', children }: { setting?: MotionSetting; children: ReactNode }) {
@@ -43,7 +44,7 @@ export function MotionProvider({ setting: initial = 'system', children }: { sett
 
   return (
     <MotionContext.Provider value={value}>
-      <LazyMotion features={domMax} strict>
+      <LazyMotion features={domAnimation} strict>
         <MotionConfig reducedMotion={setting === 'reduced' ? 'always' : setting === 'full' ? 'never' : 'user'} transition={springs.soft}>
           <CelebrationLayer>{children}</CelebrationLayer>
         </MotionConfig>
