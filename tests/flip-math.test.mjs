@@ -2,7 +2,7 @@
 // curve that a number counting up follows. `pnpm --dir packages/ui test`.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cubicBezier, flipTransform, relativeTo } from '../src/motion/flip-math.ts';
+import { cubicBezier, flipTransform, liftOf, relativeTo } from '../src/motion/flip-math.ts';
 
 const box = (left, top, width = 100, height = 20) => ({ left, top, width, height });
 
@@ -27,6 +27,13 @@ test('measured against its scrolling container, a scroll is not a move', () => {
   // the container scrolled 120 px sideways: the card's screen position moved, its place in the container didn't
   const after = relativeTo(box(80, 150), container, 120, 0);
   assert.equal(flipTransform(before, after, false), null);
+});
+
+test('the farther something travels, the higher it is drawn, within 1 to 9', () => {
+  assert.equal(liftOf(box(0, 0), box(0, 98)), 1, 'a card making room one place down');
+  assert.equal(liftOf(box(646, 253), box(271, 253)), 4, 'a card crossing to the next column passes over it');
+  assert.ok(liftOf(box(0, 0), box(375, 0)) > liftOf(box(0, 0), box(0, 98)));
+  assert.equal(liftOf(box(0, 0), box(5000, 4000)), 9, 'never above what floats over the page');
 });
 
 test("the curve starts and ends where it should and follows Toda's out curve", () => {

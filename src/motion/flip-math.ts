@@ -22,6 +22,14 @@ export function flipTransform(prev: Box, next: Box, scale: boolean): string | nu
     : `translate(${round(dx, 2)}px, ${round(dy, 2)}px)`;
 }
 
+/**
+ * How high something sliding is drawn (1 to 9): the farther it travels, the higher, so a card crossing the board passes
+ * over the ones making room for it.
+ */
+export function liftOf(from: Box, to: Box): number {
+  return 1 + Math.min(8, Math.floor(Math.hypot(from.left - to.left, from.top - to.top) / 100));
+}
+
 /** A box relative to another (its scrolling container), so scrolling between two measurements isn't taken for a move. */
 export function relativeTo(box: Box, container: Box, scrollLeft = 0, scrollTop = 0): Box {
   return { left: box.left - container.left + scrollLeft, top: box.top - container.top + scrollTop, width: box.width, height: box.height };

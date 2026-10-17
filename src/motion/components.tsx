@@ -338,7 +338,7 @@ export function Indicator({ group, css }: IndicatorProps) {
     const menu = element.closest('nav, [role=tablist], [role=radiogroup], [data-indicator-group]');
     const now = placeOf(element, menu);
     const before = lastMarks.get(group);
-    if (before && !reduce) slide(element, before, now, true);
+    if (before && !reduce) slide(element, before, now, { scale: true });
     lastMarks.set(group, now);
   });
   return <chakra.span ref={ref} aria-hidden="true" css={css} />;
