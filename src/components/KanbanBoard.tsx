@@ -7,12 +7,14 @@ import {
   KeyboardSensor,
   PointerSensor,
   closestCorners,
+  defaultDropAnimationSideEffects,
   useDroppable,
   useSensor,
   useSensors,
   type DragEndEvent,
   type DragStartEvent,
   type Announcements,
+  type DropAnimation,
 } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -137,6 +139,7 @@ export function KanbanBoard<T extends KanbanItem>({
   // Where Shift+click counts from, and when a drag last ended (its pointer's click isn't a selection).
   const anchor = useRef<string | null>(null);
   const draggedAt = useRef(0);
+  const { reduce } = useMotionSetting();
   const region = useRef<HTMLDivElement>(null);
   const dropped = useRef<string | null>(null);
   // Where every card is (its cell and its place in it): a new value means cards moved.
@@ -309,12 +312,11 @@ export function KanbanBoard<T extends KanbanItem>({
           ))}
         </Box>
       </Box>
-      <DragOverlay>
+      <DragOverlay dropAnimation={reduce ? null : landing}>
         {active ? (
-          <Box shadow="lg" rounded="l2" position="relative">
+          <Lifted carried={carried.length} reduce={reduce} count={carried.length > 1 ? (carrying ? carrying(carried.length) : String(carried.length)) : undefined}>
             {renderCard(active, { dragging: true })}
-            {carried.length > 1 && <Count>{carrying ? carrying(carried.length) : carried.length}</Count>}
-          </Box>
+          </Lifted>
         ) : null}
       </DragOverlay>
     </DndContext>
@@ -403,6 +405,64 @@ function SortableCard({
 }
 
 const OUT = `cubic-bezier(${curves.out.join(', ')})`;
+/** How the card under the pointer is held: lifted a little and tilted, as a card in a hand. */
+const HELD = 'rotate(-2deg) scale(1.03)';
+const LAND_MS = 220;
+
+/**
+ * Let go, the preview flies to its place (dnd-kit's drop animation, on Toda's out curve) and straightens as it lands; the
+ * cards stacked behind it fade, since the others travel on the board itself.
+ */
+const landing: DropAnimation = {
+  duration: LAND_MS,
+  easing: OUT,
+  sideEffects: (params) => {
+    const restore = defaultDropAnimationSideEffects({ styles: { active: { opacity: '0' } } })(params);
+    const node = params.dragOverlay.node;
+    node.querySelector('[data-held]')?.animate([{ transform: HELD }, { transform: 'none' }], { duration: LAND_MS, easing: OUT, fill: 'forwards' });
+    for (const layer of node.querySelectorAll('[data-layer]')) layer.animate([{ opacity: 1 }, { opacity: 0 }], { duration: LAND_MS / 2, fill: 'forwards' });
+    node.querySelector('[data-testid=carry-count]')?.animate([{ opacity: 1 }, { opacity: 0 }], { duration: LAND_MS / 2, fill: 'forwards' });
+    return restore;
+  },
+};
+
+/**
+ * The card under the pointer while it's dragged: it stays with the pointer where it was taken, lifted and tilted a
+ * little (it eases into that as it's picked up); carrying several, two cards peek out behind it and a badge says how
+ * many. With less motion it's simply the card, with a shadow.
+ */
+function Lifted({ carried, count, reduce, children }: { carried: number; count?: string; reduce: boolean; children: ReactNode }) {
+  const held = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (reduce) return;
+    held.current?.animate?.([{ transform: 'none', boxShadow: 'var(--toda-shadows-sm)' }, { transform: HELD, boxShadow: 'var(--toda-shadows-xl)' }], { duration: 160, easing: OUT });
+    // once, when it's picked up
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const layers = Math.min(2, Math.max(0, carried - 1));
+  return (
+    <Box position="relative" cursor="grabbing" data-testid="drag-preview">
+      {Array.from({ length: layers }, (_, i) => (
+        <Box
+          key={i}
+          data-layer
+          position="absolute"
+          inset="0"
+          rounded="l2"
+          bg="bg.panel"
+          borderWidth="1px"
+          borderColor="border"
+          shadow="sm"
+          style={{ transform: reduce ? `translate(${(i + 1) * 5}px, ${(i + 1) * 5}px)` : `translate(${(i + 1) * 6}px, ${(i + 1) * 5}px) rotate(${(i + 1) * 2.5}deg)`, zIndex: -1 - i }}
+        />
+      ))}
+      <Box ref={held} data-held rounded="l2" shadow={reduce ? 'lg' : 'xl'} style={{ transform: reduce ? undefined : HELD, transformOrigin: '50% 40%' }}>
+        {children}
+      </Box>
+      {count != null && <Count>{count}</Count>}
+    </Box>
+  );
+}
 
 /** The tick on a selected card's corner: it pops in (not with less motion). */
 function Mark() {
@@ -444,8 +504,8 @@ function Count({ children }: { children: ReactNode }) {
   return (
     <chakra.span
       position="absolute"
-      top="-2.5"
-      insetEnd="-2.5"
+      top="-3.5"
+      insetEnd="-3"
       minW="6"
       h="6"
       px="1.5"
