@@ -6,6 +6,22 @@ import { defineRecipe, defineSlotRecipe } from '@chakra-ui/react';
  */
 
 // ---- AppShell ------------------------------------------------------------------------------
+
+/*
+ * The sidebar collapsing to its rail and back (ADR 0058): the width eases on the drawer's curve while nothing inside
+ * moves (icons, the place's mark and the toggle sit where the rail centres them, in both states); words fade out
+ * quickly as it narrows and back in once there's room; titles and the top box fold their height away. With less
+ * motion, all of it changes at once.
+ */
+const SIDEBAR_EASE = '300ms var(--toda-easings-drawer)';
+/** Words fading: in after the room opens (a short wait), out at once. */
+const WORDS_IN = 'opacity 200ms ease 120ms';
+const WORDS_OUT = 'opacity 120ms ease';
+const still = {
+  'html[data-motion=reduced] &': { transition: 'none' },
+  _motionReduce: { 'html:not([data-motion=full]) &': { transition: 'none' } },
+} as const;
+
 export const appShellSlotRecipe = defineSlotRecipe({
   className: 'toda-app-shell',
   slots: [
@@ -30,6 +46,8 @@ export const appShellSlotRecipe = defineSlotRecipe({
     'placeName',
     'placeDetail',
     'sidebarTop',
+    'fold',
+    'foldInner',
     'nav',
     'navSection',
     'navSectionTitle',
@@ -131,18 +149,20 @@ export const appShellSlotRecipe = defineSlotRecipe({
       borderInlineEndWidth: '1px',
       borderColor: 'border',
       zIndex: 'sidebar',
-      transitionProperty: 'width',
-      transitionDuration: 'moderate',
-      transitionTimingFunction: 'out',
+      overflowX: 'hidden',
+      transition: `width ${SIDEBAR_EASE}`,
+      ...still,
       '&[data-mobile]': { display: 'flex', position: 'static', h: 'full', w: 'full', borderInlineEndWidth: '0' },
     },
-    placeHeader: { px: '2', pt: '3', pb: '1', flexShrink: '0' },
+    // In both states the place's mark is 12px from the edges: centred in the 56px rail.
+    placeHeader: { px: '1', pt: '3', pb: '1', flexShrink: '0' },
     place: {
       display: 'flex',
       alignItems: 'center',
       gap: '2.5',
       p: '2',
       minW: '0',
+      overflow: 'hidden',
       borderRadius: 'l3',
       color: 'fg',
       textDecoration: 'none',
@@ -163,10 +183,19 @@ export const appShellSlotRecipe = defineSlotRecipe({
       textStyle: 'label',
       fontWeight: 'semibold',
     },
-    placeText: { display: 'flex', flexDirection: 'column', minW: '0' },
+    placeText: { display: 'flex', flexDirection: 'column', minW: '0', transition: WORDS_IN, ...still },
     placeName: { textStyle: 'label', fontWeight: 'semibold', truncate: true },
     placeDetail: { textStyle: 'caption', color: 'fg.subtle', truncate: true },
-    sidebarTop: { px: '2', pt: '3', pb: '1', flexShrink: '0' },
+    sidebarTop: { px: '2', pt: '3', pb: '1' },
+    // What folds away in the rail (a section's title, the box at the top): its height glides to nothing as it fades.
+    fold: {
+      display: 'grid',
+      gridTemplateRows: '1fr',
+      flexShrink: '0',
+      transition: `grid-template-rows ${SIDEBAR_EASE}, ${WORDS_IN}`,
+      ...still,
+    },
+    foldInner: { minH: '0', overflow: 'hidden' },
     nav: {
       flex: '1',
       overflowY: 'auto',
@@ -212,7 +241,9 @@ export const appShellSlotRecipe = defineSlotRecipe({
       alignItems: 'center',
       gap: '2.5',
       h: 'control.md',
-      px: '2',
+      // 8px of the menu's and 12px here: the 16px icon is centred in the 56px rail, and stays where it is
+      px: '3',
+      overflow: 'hidden',
       borderRadius: 'l2',
       color: 'fg.muted',
       textStyle: 'md',
@@ -226,20 +257,21 @@ export const appShellSlotRecipe = defineSlotRecipe({
     // The current page's pill, behind its icon and name; it slides when the page changes.
     navItemIndicator: { position: 'absolute', inset: '0', borderRadius: 'l2', bg: 'bg.selected' },
     navItemIcon: { position: 'relative', display: 'inline-flex', flexShrink: '0', _icon: { boxSize: '4' } },
-    navItemLabel: { position: 'relative', truncate: true, minW: '0' },
+    navItemLabel: { position: 'relative', truncate: true, minW: '0', transition: WORDS_IN, ...still },
+    // The toggle first, 12px from the edge (centred in the rail), its words after it.
     sidebarFooter: {
       flexShrink: '0',
-      px: '2',
+      px: '3',
       py: '2',
       borderTopWidth: '1px',
       borderColor: 'border.muted',
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'space-between',
       gap: '2',
+      overflow: 'hidden',
       '[data-mobile] &': { display: 'none' },
     },
-    sidebarFooterText: { textStyle: 'caption', color: 'fg.subtle', truncate: true, px: '1' },
+    sidebarFooterText: { textStyle: 'caption', color: 'fg.subtle', truncate: true, px: '1', transition: WORDS_IN, ...still },
     drawerHeader: {
       display: 'flex',
       alignItems: 'center',
@@ -259,13 +291,10 @@ export const appShellSlotRecipe = defineSlotRecipe({
     collapsed: {
       true: {
         sidebar: { w: 'sidebarRail' },
-        placeHeader: { px: '1.5' },
-        place: { justifyContent: 'center', p: '1' },
-        placeText: { display: 'none' },
-        navSectionTitle: { srOnly: true },
-        navItem: { justifyContent: 'center', px: '0' },
-        navItemLabel: { srOnly: true },
-        sidebarFooter: { justifyContent: 'center' },
+        placeText: { opacity: 0, transition: WORDS_OUT },
+        fold: { gridTemplateRows: '0fr', opacity: 0, transition: `grid-template-rows ${SIDEBAR_EASE}, ${WORDS_OUT}` },
+        navItemLabel: { opacity: 0, textOverflow: 'clip', transition: WORDS_OUT },
+        sidebarFooterText: { opacity: 0, textOverflow: 'clip', transition: WORDS_OUT },
       },
       false: {},
     },

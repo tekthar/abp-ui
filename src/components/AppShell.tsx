@@ -1,7 +1,7 @@
 import { useCallback, useState, type ReactNode } from 'react';
 import { chakra, Drawer, Portal, SkipNavContent, SkipNavLink, useSlotRecipe, type SystemStyleObject } from '@chakra-ui/react';
 import { ChevronDown, Menu as MenuIcon, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
-import { ArriveOnChange, Collapse, FadeIn, Indicator } from '../motion/components';
+import { ArriveOnChange, Collapse, FadeIn, Indicator, Swap } from '../motion/components';
 import { useTodaLabels } from '../provider/labels';
 import { useLinkComponent } from '../provider/link';
 import { useTodaLocale } from '../provider/locale';
@@ -162,10 +162,14 @@ export function AppShell({
               <SidebarContents styles={styles} sidebar={sidebar} navFooter={navFooter} collapsed={collapsed} />
             </FadeIn>
             <chakra.div css={styles.sidebarFooter}>
-              {!collapsed && <chakra.span css={styles.sidebarFooterText}>{sidebarFooter}</chakra.span>}
               <IconButton size="sm" aria-label={collapsed ? labels.expandSidebar : labels.collapseSidebar} aria-expanded={!collapsed} onClick={toggle}>
-                <DirectionalIcon>{collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}</DirectionalIcon>
+                <Swap swapKey={collapsed ? 'open' : 'close'} from="fade">
+                  <DirectionalIcon>{collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}</DirectionalIcon>
+                </Swap>
               </IconButton>
+              <chakra.span css={styles.sidebarFooterText} aria-hidden={collapsed || undefined}>
+                {sidebarFooter}
+              </chakra.span>
             </chakra.div>
           </chakra.aside>
         )}
@@ -279,14 +283,25 @@ function SidebarContents({
           )}
         </chakra.div>
       )}
-      {sidebar.top != null && !collapsed && <chakra.div css={styles.sidebarTop}>{sidebar.top}</chakra.div>}
+      {sidebar.top != null && (
+        // Folded away in the rail (and out of reach of the keyboard there).
+        <chakra.div css={styles.fold} inert={collapsed || undefined}>
+          <chakra.div css={styles.foldInner}>
+            <chakra.div css={styles.sidebarTop}>{sidebar.top}</chakra.div>
+          </chakra.div>
+        </chakra.div>
+      )}
       <chakra.nav css={styles.nav} aria-label={place?.name ?? labels.navigation}>
         {sidebar.sections
           .filter((section) => section.items.length > 0)
           .map((section) => (
             <NavSection key={section.id} section={section} styles={styles} collapsed={collapsed} group={sidebar.id} />
           ))}
-        {!collapsed && navFooter}
+        {navFooter != null && (
+          <chakra.div css={styles.fold} inert={collapsed || undefined}>
+            <chakra.div css={styles.foldInner}>{navFooter}</chakra.div>
+          </chakra.div>
+        )}
       </chakra.nav>
     </>
   );
@@ -297,22 +312,29 @@ function NavSection({ section, styles, collapsed, group }: { section: AppShellNa
   const [open, setOpen] = useState(holdsCurrent || !section.collapsible);
   const shown = !section.collapsible || collapsed || open || holdsCurrent;
   const items = section.items.map((item) => <NavItem key={item.id} item={item} styles={styles} collapsed={collapsed} group={group} />);
+  // The same elements in the rail and out of it, so collapsing is only transitions: the title folds away (the group
+  // keeps its name for screen readers), a section that opens and closes shows its pages in the rail.
   return (
     <chakra.div css={styles.navSection} role="group" aria-label={section.title}>
-      {section.title &&
-        (section.collapsible && !collapsed ? (
-          <chakra.button type="button" css={styles.navSectionToggle} aria-expanded={shown} onClick={() => setOpen(!shown)}>
-            <chakra.span>{section.title}</chakra.span>
-            <chakra.span css={styles.navSectionChevron} data-open={shown || undefined} aria-hidden="true">
-              <ChevronDown />
-            </chakra.span>
-          </chakra.button>
-        ) : (
-          <chakra.div css={styles.navSectionTitle} aria-hidden="true">
-            {section.title}
+      {section.title && (
+        <chakra.div css={styles.fold} inert={collapsed || undefined}>
+          <chakra.div css={styles.foldInner}>
+            {section.collapsible ? (
+              <chakra.button type="button" css={styles.navSectionToggle} aria-expanded={shown} onClick={() => setOpen(!shown)}>
+                <chakra.span>{section.title}</chakra.span>
+                <chakra.span css={styles.navSectionChevron} data-open={shown || undefined} aria-hidden="true">
+                  <ChevronDown />
+                </chakra.span>
+              </chakra.button>
+            ) : (
+              <chakra.div css={styles.navSectionTitle} aria-hidden="true">
+                {section.title}
+              </chakra.div>
+            )}
           </chakra.div>
-        ))}
-      {section.collapsible && !collapsed ? (
+        </chakra.div>
+      )}
+      {section.collapsible ? (
         <Collapse open={shown}>
           <chakra.div css={styles.navSectionItems}>{items}</chakra.div>
         </Collapse>
@@ -337,9 +359,9 @@ function NavItem({ item, styles, collapsed, group }: { item: AppShellNavItem; st
       </Link>
     </chakra.a>
   );
-  if (!collapsed) return link;
+  // Its name beside it in the rail; the tooltip stays in place either way, so the link isn't remounted (its name fades).
   return (
-    <Tooltip content={item.label} positioning={{ placement: isRtl ? 'left' : 'right' }}>
+    <Tooltip content={item.label} inactive={!collapsed} positioning={{ placement: isRtl ? 'left' : 'right' }}>
       {link}
     </Tooltip>
   );
