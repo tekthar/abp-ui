@@ -1,5 +1,6 @@
-import { useMemo, useRef, useState, type ReactNode } from 'react';
-import { Box, HStack, Stack, Text } from '@chakra-ui/react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import { Box, chakra, HStack, Stack, Text } from '@chakra-ui/react';
+import { Check } from 'lucide-react';
 import {
   DndContext,
   DragOverlay,
@@ -16,7 +17,9 @@ import {
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useSlideItems } from '../motion/flip';
-import { withMove } from './kanban-place';
+import { useMotionSetting } from '../motion/setting';
+import { curves } from '../motion/tokens';
+import { between, withMoves } from './kanban-place';
 
 export interface KanbanColumn {
   id: string;
@@ -65,6 +68,17 @@ export interface KanbanBoardProps<T extends KanbanItem> {
   /** The drag ended, dropped or cancelled (the host may refresh the board again). */
   onDragEnd?: () => void;
   onMove: (item: T, to: KanbanMove) => void;
+  /**
+   * The selected cards (several moved at once, ADR 0058 amended). The host keeps them; with `onSelect` the board
+   * selects: a click takes one card, Ctrl or Cmd+click adds or takes one away, Shift+click the cards between in a cell,
+   * Esc or a click on the board's empty space clears.
+   */
+  selected?: ReadonlySet<string>;
+  onSelect?: (ids: ReadonlySet<string>) => void;
+  /** Selected cards dropped together, in the board's order, the dragged one among them; without it only that one moves. */
+  onMoveMany?: (items: T[], to: KanbanMove) => void;
+  /** What the preview under the pointer says when it carries several ("3 cards"). */
+  carrying?: (count: number) => string;
   /** Screen reader texts while dragging (translated by the host). */
   announcements?: Announcements;
   screenReaderInstructions?: string;
@@ -84,6 +98,10 @@ const cellId = (lane: string, column: string) => `cell:${lane}::${column}`;
  * slide to their new cells instead of jumping (ADR 0058): not while the person drags, and not the card they just
  * dropped, which the drag itself brought there. The slide moves a wrapper inside each card, never the element the drag
  * moves.
+ *
+ * With `selected` and `onSelect`, cards can be selected and dragged together (ADR 0058, amended): the others wait,
+ * faded, where they are, then land beside the dragged one in their order, shown at once; they travel there from where
+ * they waited.
  */
 export function KanbanBoard<T extends KanbanItem>({
   'aria-label': ariaLabel,
@@ -95,6 +113,10 @@ export function KanbanBoard<T extends KanbanItem>({
   onDragStart,
   onDragEnd,
   onMove,
+  selected,
+  onSelect,
+  onMoveMany,
+  carrying,
   announcements,
   screenReaderInstructions,
   empty,
@@ -104,10 +126,17 @@ export function KanbanBoard<T extends KanbanItem>({
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+  const laned = !!lanes && lanes.length > 0;
   const [active, setActive] = useState<T | null>(null);
+  // The cards a drag carries: the dragged one, with the others selected with it (in the board's order).
+  const [carried, setCarried] = useState<T[]>([]);
   // The person's own move, shown until the items it was made on are replaced by the host's next ones.
-  const [pending, setPending] = useState<{ id: string; move: KanbanMove; on: T[] } | null>(null);
-  const shown = useMemo(() => (pending && pending.on === items ? withMove(items, pending.id, pending.move) : items), [items, pending]);
+  const [pending, setPending] = useState<{ ids: string[]; move: KanbanMove; on: T[] } | null>(null);
+  const shown = useMemo(() => (pending && pending.on === items ? withMoves(items, pending.ids, pending.move, !laned) : items), [items, pending, laned]);
+  const riding = useMemo(() => new Set(carried.map((i) => i.id)), [carried]);
+  // Where Shift+click counts from, and when a drag last ended (its pointer's click isn't a selection).
+  const anchor = useRef<string | null>(null);
+  const draggedAt = useRef(0);
   const region = useRef<HTMLDivElement>(null);
   const dropped = useRef<string | null>(null);
   // Where every card is (its cell and its place in it): a new value means cards moved.
@@ -138,20 +167,28 @@ export function KanbanBoard<T extends KanbanItem>({
   function start(e: DragStartEvent) {
     const item = shown.find((i) => i.id === e.active.id) ?? null;
     setActive(item);
+    // A selected card carries the others selected; any other card goes alone.
+    setCarried(item && onMoveMany && selected?.has(item.id) && selected.size > 1 ? shown.filter((i) => selected.has(i.id)) : item ? [item] : []);
     if (item) onDragStart?.(item);
   }
 
   function end(e: DragEndEvent) {
     const item = active;
+    const going = carried.length > 0 ? carried : item ? [item] : [];
+    const goingIds = new Set(going.map((i) => i.id));
     setActive(null);
+    setCarried([]);
+    draggedAt.current = Date.now();
     onDragEnd?.();
     if (!item || !e.over) return;
     const overId = String(e.over.id);
+    // Over one of the cards it carries: nowhere new.
+    if (overId !== item.id && goingIds.has(overId)) return;
     const target = overId.startsWith('cell:') ? overId : cellOf.get(overId);
     if (!target) return;
     const [lane, column] = target.slice(5).split('::');
     if (canDrop?.(item, column, lane) === false) return;
-    const cell = (byCell.get(target) ?? []).filter((i) => i.id !== item.id);
+    const cell = (byCell.get(target) ?? []).filter((i) => !goingIds.has(i.id));
     let move: KanbanMove = { column, lane };
     if (!overId.startsWith('cell:') && overId !== item.id) {
       const index = cell.findIndex((i) => i.id === overId);
@@ -164,13 +201,50 @@ export function KanbanBoard<T extends KanbanItem>({
     } else if (overId === item.id) {
       return;
     }
-    if (cellOf.get(item.id) === target && !move.before && !move.after) return;
-    // The cards slide on from where the drag left them (not yet redrawn: React hasn't rendered the drop).
+    if (going.every((i) => cellOf.get(i.id) === target) && !move.before && !move.after) return;
+    // The cards slide on from where the drag left them (not yet redrawn: React hasn't rendered the drop): the dragged
+    // one is where it was let go, the others travel from where they waited.
     notePlaces();
     dropped.current = item.id;
-    setPending({ id: item.id, move: { ...move, lane: lanes && lanes.length > 0 ? move.lane : item.lane }, on: items });
-    onMove(item, move);
+    setPending({ ids: going.map((i) => i.id), move, on: items });
+    if (going.length > 1 && onMoveMany) onMoveMany(going, move);
+    else onMove(item, move);
   }
+
+  // Selecting: a click on a card's body (its links and buttons are theirs), never the click a drag ends with.
+  function select(id: string, e: MouseEvent) {
+    if (!onSelect || !selected || Date.now() - draggedAt.current < 300) return;
+    if (e.target instanceof Element && e.target.closest('a, button, input, select, textarea, [role=menuitem]')) return;
+    const next = new Set(selected);
+    const cell = byCell.get(cellOf.get(id) ?? '')?.map((i) => i.id) ?? [];
+    if (e.shiftKey && anchor.current) {
+      for (const x of between(cell, anchor.current, id)) next.add(x);
+    } else if (e.metaKey || e.ctrlKey) {
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      anchor.current = id;
+    } else {
+      const only = next.size === 1 && next.has(id);
+      next.clear();
+      if (!only) next.add(id);
+      anchor.current = id;
+    }
+    onSelect(next);
+  }
+  const clear = () => {
+    if (onSelect && selected && selected.size > 0) onSelect(new Set());
+  };
+  // Esc clears the selection (not while dragging, where it cancels the drag, nor inside a dialog or menu).
+  useEffect(() => {
+    if (!onSelect || !selected || selected.size === 0 || active) return;
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      if (e.target instanceof Element && e.target.closest('[role=dialog], [role=menu], [role=listbox]')) return;
+      onSelect(new Set());
+    };
+    document.addEventListener('keydown', key);
+    return () => document.removeEventListener('keydown', key);
+  }, [onSelect, selected, active]);
 
   return (
     <DndContext
@@ -184,7 +258,19 @@ export function KanbanBoard<T extends KanbanItem>({
       }}
       accessibility={{ announcements, screenReaderInstructions: screenReaderInstructions ? { draggable: screenReaderInstructions } : undefined }}
     >
-      <Box ref={region} role="region" aria-label={ariaLabel} overflowX="auto" pb="2">
+      <Box
+        ref={region}
+        role="region"
+        aria-label={ariaLabel}
+        overflowX="auto"
+        pb="2"
+        userSelect={onSelect ? 'none' : undefined}
+        onClick={(e) => {
+          // A click on the board's empty space (not on a card, nor its links) clears the selection.
+          if (Date.now() - draggedAt.current < 300) return;
+          if (e.target instanceof Element && !e.target.closest('[data-card], a, button, input, select, textarea')) clear();
+        }}
+      >
         <Box display="grid" gridTemplateColumns={`repeat(${columns.length}, minmax(240px, 1fr))`} gap="3" minW="fit-content">
           {columns.map((c) => (
             <Box key={c.id} position="sticky" top="0" zIndex="1" bg="bg" pb="1" data-column-header={c.id}>
@@ -203,7 +289,13 @@ export function KanbanBoard<T extends KanbanItem>({
                 return (
                   <Cell key={id} id={id} allowed={allowed} dragging={!!active} items={list.map((i) => i.id)} column={c.id} lane={lane.id}>
                     {list.map((item) => (
-                      <SortableCard key={item.id} id={item.id}>
+                      <SortableCard
+                        key={item.id}
+                        id={item.id}
+                        selected={!!selected?.has(item.id)}
+                        riding={riding.has(item.id) && active?.id !== item.id}
+                        onClick={onSelect ? (e) => select(item.id, e) : undefined}
+                      >
                         {(dragging) => renderCard(item, { dragging })}
                       </SortableCard>
                     ))}
@@ -217,7 +309,14 @@ export function KanbanBoard<T extends KanbanItem>({
           ))}
         </Box>
       </Box>
-      <DragOverlay>{active ? <Box shadow="lg" rounded="l2">{renderCard(active, { dragging: true })}</Box> : null}</DragOverlay>
+      <DragOverlay>
+        {active ? (
+          <Box shadow="lg" rounded="l2" position="relative">
+            {renderCard(active, { dragging: true })}
+            {carried.length > 1 && <Count>{carrying ? carrying(carried.length) : carried.length}</Count>}
+          </Box>
+        ) : null}
+      </DragOverlay>
     </DndContext>
   );
 }
@@ -262,14 +361,105 @@ function Cell({ id, items, allowed, dragging, column, lane, children }: {
   );
 }
 
-function SortableCard({ id, children }: { id: string; children: (dragging: boolean) => ReactNode }) {
+function SortableCard({
+  id,
+  selected,
+  riding,
+  onClick,
+  children,
+}: {
+  id: string;
+  selected: boolean;
+  /** Carried along with the dragged card: it waits, faded, where it is. */
+  riding: boolean;
+  onClick?: (e: MouseEvent) => void;
+  children: (dragging: boolean) => ReactNode;
+}) {
   // dnd-kit's own layout animation after a drop is off: the board slides cards from where the drop left them (ADR 0058),
   // and two of them at once would move a card twice as far.
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, animateLayoutChanges: () => false });
   return (
-    <Box ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} opacity={isDragging ? 0.4 : 1} {...attributes} {...listeners}
-      data-card={id} cursor="grab" _focusVisible={{ outline: '2px solid', outlineColor: 'colorPalette.focusRing', rounded: 'l2' }}>
+    <Box
+      ref={setNodeRef}
+      position="relative"
+      rounded="l2"
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      opacity={isDragging || riding ? 0.4 : 1}
+      outline={selected && !isDragging && !riding ? '2px solid' : undefined}
+      outlineColor="accent.solid"
+      outlineOffset="1px"
+      {...attributes}
+      {...listeners}
+      onClick={onClick}
+      data-card={id}
+      data-selected={selected || undefined}
+      cursor="grab"
+      _focusVisible={{ outline: '2px solid', outlineColor: 'colorPalette.focusRing', rounded: 'l2' }}
+    >
       <Box data-slide={id}>{children(isDragging)}</Box>
+      {selected && !isDragging && !riding && <Mark />}
     </Box>
+  );
+}
+
+const OUT = `cubic-bezier(${curves.out.join(', ')})`;
+
+/** The tick on a selected card's corner: it pops in (not with less motion). */
+function Mark() {
+  const ref = useRef<HTMLSpanElement>(null);
+  const { reduce } = useMotionSetting();
+  useLayoutEffect(() => {
+    if (reduce) return;
+    ref.current?.animate?.([{ transform: 'scale(0.4)', opacity: 0 }, { transform: 'scale(1.12)', opacity: 1, offset: 0.65 }, { transform: 'scale(1)', opacity: 1 }], {
+      duration: 220,
+      easing: OUT,
+    });
+    // once, when it appears
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return (
+    <chakra.span
+      ref={ref}
+      position="absolute"
+      top="-1.5"
+      insetEnd="-1.5"
+      display="grid"
+      placeItems="center"
+      boxSize="5"
+      rounded="full"
+      bg="accent.solid"
+      color="accent.contrast"
+      boxShadow="0 0 0 2px var(--toda-colors-bg)"
+      pointerEvents="none"
+      aria-hidden="true"
+      _icon={{ boxSize: '3' }}
+    >
+      <Check strokeWidth={3} />
+    </chakra.span>
+  );
+}
+
+/** How many cards the preview carries, on its corner. */
+function Count({ children }: { children: ReactNode }) {
+  return (
+    <chakra.span
+      position="absolute"
+      top="-2.5"
+      insetEnd="-2.5"
+      minW="6"
+      h="6"
+      px="1.5"
+      display="grid"
+      placeItems="center"
+      rounded="full"
+      bg="accent.solid"
+      color="accent.contrast"
+      textStyle="caption"
+      fontWeight="semibold"
+      boxShadow="0 0 0 2px var(--toda-colors-bg)"
+      data-testid="carry-count"
+    >
+      {children}
+    </chakra.span>
   );
 }

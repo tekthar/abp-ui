@@ -2,7 +2,7 @@
 // `pnpm --dir packages/ui test`.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { withMove } from '../src/components/kanban-place.ts';
+import { between, withMove, withMoves } from '../src/components/kanban-place.ts';
 
 const card = (id, column, lane = '') => ({ id, column, lane, title: `Card ${id}` });
 const board = [card('A', 'todo'), card('B', 'todo'), card('C', 'doing'), card('D', 'doing')];
@@ -27,4 +27,26 @@ test('dropped on the cell itself, it goes last; the card keeps everything but it
 test('a card or an anchor it no longer knows changes nothing it should not', () => {
   assert.equal(withMove(board, 'Z', { column: 'doing', lane: '' }), board);
   assert.equal(where(withMove(board, 'A', { column: 'doing', lane: '', before: 'gone' })), 'B@todo C@doing D@doing A@doing');
+});
+
+test('several cards dropped together land side by side, in the order they had', () => {
+  const b = [card('A', 'todo'), card('B', 'todo'), card('C', 'doing'), card('D', 'doing'), card('E', 'todo')];
+  // carried in the order B, E, A were picked: they keep the board's order A, B, E
+  assert.equal(where(withMoves(b, ['B', 'E', 'A'], { column: 'doing', lane: '', before: 'D' })), 'C@doing A@doing B@doing E@doing D@doing');
+  assert.equal(where(withMoves(b, ['A', 'B'], { column: 'doing', lane: '', after: 'D' })), 'C@doing D@doing A@doing B@doing E@todo');
+  assert.equal(where(withMoves(b, ['A', 'C'], { column: 'done', lane: '' })), 'B@todo D@doing E@todo A@done C@done', 'dropped on the cell: last');
+});
+
+test('on a board without lanes, carried cards keep their own lane; with lanes they take the target one', () => {
+  const b = [card('A', 'todo', 'x'), card('B', 'todo', 'y')];
+  assert.deepEqual(withMoves(b, ['A', 'B'], { column: 'doing', lane: '' }, true).map((i) => i.lane), ['x', 'y']);
+  assert.deepEqual(withMoves(b, ['A', 'B'], { column: 'doing', lane: 'z' }).map((i) => i.lane), ['z', 'z']);
+});
+
+test('Shift+click takes the cards between, both ends included, either way round', () => {
+  const cell = ['A', 'B', 'C', 'D'];
+  assert.deepEqual(between(cell, 'B', 'D'), ['B', 'C', 'D']);
+  assert.deepEqual(between(cell, 'D', 'B'), ['B', 'C', 'D']);
+  assert.deepEqual(between(cell, 'C', 'C'), ['C']);
+  assert.deepEqual(between(cell, 'Z', 'B'), ['B'], 'an anchor from another cell: just the card');
 });
