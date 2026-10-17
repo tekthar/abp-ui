@@ -22,6 +22,10 @@ import { useSlideItems } from '../motion/flip';
 import { useMotionSetting } from '../motion/setting';
 import { curves } from '../motion/tokens';
 import { between, withMoves } from './kanban-place';
+import { RecordKey } from './RecordKey';
+import { StatusPill } from './StatusPill';
+import { Loading, useLoading } from '../skeleton/loading';
+import { boneWidth, TextBone } from '../skeleton/bones';
 
 export interface KanbanColumn {
   id: string;
@@ -86,6 +90,34 @@ export interface KanbanBoardProps<T extends KanbanItem> {
   screenReaderInstructions?: string;
   /** Shown in an empty cell. */
   empty?: ReactNode;
+  /**
+   * Its cards are coming (ADR 0061): each column holds a few placeholder cards, and with no columns yet the board draws
+   * `skeletonColumns` (4). A placeholder card is `skeletonCard` when given (the host's card drawn loading), else a card
+   * with a key, a title and a pill coming. The nearest `Loading` scope's when not given.
+   */
+  loading?: boolean;
+  skeletonCard?: (index: number) => ReactNode;
+  skeletonColumns?: number;
+}
+
+/** How many placeholder cards each column holds while the board loads: uneven, as a real board is. */
+const SKELETON_CARDS = [3, 2, 4, 1, 2];
+
+/** A card whose record is coming: a key, a title of a line or two, and a pill. */
+function PlaceholderCard({ index }: { index: number }) {
+  return (
+    <Box bg="bg.panel" borderWidth="1px" borderColor="border" rounded="l2" p="2.5">
+      <Box mb="1">
+        <RecordKey loading />
+      </Box>
+      <Text textStyle="body.sm">
+        <TextBone width={boneWidth(index, 14, 34)} />
+      </Text>
+      <HStack mt="2">
+        <StatusPill loading skeletonWidth={boneWidth(index, 5, 9)} />
+      </HStack>
+    </Box>
+  );
 }
 
 const cellId = (lane: string, column: string) => `cell:${lane}::${column}`;
@@ -122,7 +154,16 @@ export function KanbanBoard<T extends KanbanItem>({
   announcements,
   screenReaderInstructions,
   empty,
+  loading: own,
+  skeletonCard,
+  skeletonColumns = 4,
 }: KanbanBoardProps<T>) {
+  const loading = useLoading(own);
+  // Columns not known yet: placeholder ones, their names coming.
+  const shownColumns: KanbanColumn[] =
+    loading && columns.length === 0
+      ? Array.from({ length: skeletonColumns }, (_, n) => ({ id: `skeleton-${n}`, title: <TextBone width={boneWidth(n, 6, 12)} /> }))
+      : columns;
   const rows = lanes && lanes.length > 0 ? lanes : [{ id: '', title: null } as KanbanLane];
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -274,43 +315,53 @@ export function KanbanBoard<T extends KanbanItem>({
           if (e.target instanceof Element && !e.target.closest('[data-card], a, button, input, select, textarea')) clear();
         }}
       >
-        <Box display="grid" gridTemplateColumns={`repeat(${columns.length}, minmax(240px, 1fr))`} gap="3" minW="fit-content">
-          {columns.map((c) => (
-            <Box key={c.id} position="sticky" top="0" zIndex="1" bg="bg" pb="1" data-column-header={c.id}>
-              <HStack justify="space-between" px="2" py="1.5" rounded="l2" bg={c.over ? 'red.subtle' : 'bg.muted'}>
-                <Text textStyle="label" truncate>{c.title}</Text>
-                {c.meta && <Text textStyle="caption" color={c.over ? 'fg.error' : 'fg.muted'} flexShrink={0}>{c.meta}</Text>}
-              </HStack>
-            </Box>
-          ))}
-          {rows.map((lane) => (
-            <LaneRow key={lane.id} lane={lane} showTitle={!!lanes && lanes.length > 0} columns={columns} span={columns.length}>
-              {columns.map((c) => {
-                const id = cellId(lane.id, c.id);
-                const list = byCell.get(id) ?? [];
-                const allowed = active ? canDrop?.(active, c.id, lane.id) !== false : true;
-                return (
-                  <Cell key={id} id={id} allowed={allowed} dragging={!!active} items={list.map((i) => i.id)} column={c.id} lane={lane.id}>
-                    {list.map((item) => (
-                      <SortableCard
-                        key={item.id}
-                        id={item.id}
-                        selected={!!selected?.has(item.id)}
-                        riding={riding.has(item.id) && active?.id !== item.id}
-                        onClick={onSelect ? (e) => select(item.id, e) : undefined}
-                      >
-                        {(dragging) => renderCard(item, { dragging })}
-                      </SortableCard>
-                    ))}
-                    {list.length === 0 && empty && (
-                      <Text textStyle="caption" color="fg.subtle" textAlign="center" py="4">{empty}</Text>
-                    )}
-                  </Cell>
-                );
-              })}
-            </LaneRow>
-          ))}
-        </Box>
+        <Loading when={loading}>
+          <Box display="grid" gridTemplateColumns={`repeat(${shownColumns.length}, minmax(240px, 1fr))`} gap="3" minW="fit-content">
+            {shownColumns.map((c) => (
+              <Box key={c.id} position="sticky" top="0" zIndex="1" bg="bg" pb="1" data-column-header={c.id}>
+                <HStack justify="space-between" px="2" py="1.5" rounded="l2" bg={c.over ? 'red.subtle' : 'bg.muted'}>
+                  <Text textStyle="label" truncate>{c.title}</Text>
+                  {c.meta && <Text textStyle="caption" color={c.over ? 'fg.error' : 'fg.muted'} flexShrink={0}>{c.meta}</Text>}
+                </HStack>
+              </Box>
+            ))}
+            {rows.map((lane) => (
+              <LaneRow key={lane.id} lane={lane} showTitle={!!lanes && lanes.length > 0} columns={shownColumns} span={shownColumns.length}>
+                {shownColumns.map((c, ci) => {
+                  const id = cellId(lane.id, c.id);
+                  const list = byCell.get(id) ?? [];
+                  const allowed = active ? canDrop?.(active, c.id, lane.id) !== false : true;
+                  return (
+                    <Cell key={id} id={id} allowed={allowed} dragging={!!active} items={list.map((i) => i.id)} column={c.id} lane={lane.id}>
+                      {list.map((item) => (
+                        <SortableCard
+                          key={item.id}
+                          id={item.id}
+                          selected={!!selected?.has(item.id)}
+                          riding={riding.has(item.id) && active?.id !== item.id}
+                          onClick={onSelect ? (e) => select(item.id, e) : undefined}
+                        >
+                          {(dragging) => renderCard(item, { dragging })}
+                        </SortableCard>
+                      ))}
+                      {loading &&
+                        list.length === 0 &&
+                        // Not the board's cards: no data-slide, and not in its placement (ADR 0058's slides skip them).
+                        Array.from({ length: SKELETON_CARDS[ci % SKELETON_CARDS.length] }, (_, n) => (
+                          <Box key={`skeleton-${n}`} aria-hidden="true">
+                            {skeletonCard ? skeletonCard(ci * 5 + n) : <PlaceholderCard index={ci * 5 + n} />}
+                          </Box>
+                        ))}
+                      {!loading && list.length === 0 && empty && (
+                        <Text textStyle="caption" color="fg.subtle" textAlign="center" py="4">{empty}</Text>
+                      )}
+                    </Cell>
+                  );
+                })}
+              </LaneRow>
+            ))}
+          </Box>
+        </Loading>
       </Box>
       <DragOverlay dropAnimation={reduce ? null : landing}>
         {active ? (

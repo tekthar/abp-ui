@@ -8,6 +8,8 @@ import { useTodaLocale } from '../provider/locale';
 import { IconButton } from './Button';
 import { DirectionalIcon } from './DirectionalIcon';
 import { Tooltip } from './Tooltip';
+import { Loading, useArriving } from '../skeleton/loading';
+import { arriveCss, Bone, boneWidth, ghostCss, TextBone } from '../skeleton/bones';
 
 export interface AppShellNavItem {
   id: string;
@@ -52,6 +54,12 @@ export interface AppShellSidebar {
   /** Above the sections (e.g. a box to find a page in the menu). */
   top?: ReactNode;
   sections: AppShellNavSection[];
+  /**
+   * Its place and pages are coming (ADR 0061): the sidebar is there from the first moment, so the page beside it
+   * doesn't move when they come. Its card and `skeletonItems` pages (5) are placeholders until then.
+   */
+  loading?: boolean;
+  skeletonItems?: number;
 }
 
 export interface AppShellProps {
@@ -109,7 +117,7 @@ export function AppShell({
   const recipe = useSlotRecipe({ key: 'todaAppShell' });
   const styles = recipe({ collapsed });
   const mobileStyles = recipe({ collapsed: false });
-  const hasSidebar = sidebar != null && (sidebar.top != null || sidebar.sections.some((s) => s.items.length > 0));
+  const hasSidebar = sidebar != null && (!!sidebar.loading || sidebar.top != null || sidebar.sections.some((s) => s.items.length > 0));
 
   const toggle = useCallback(() => {
     const next = !collapsed;
@@ -210,6 +218,8 @@ export function AppShell({
                   sidebar={{
                     id: `drawer-${sidebar?.id ?? 'site'}`,
                     top: hasSidebar ? sidebar.top : undefined,
+                    loading: hasSidebar && sidebar.loading,
+                    skeletonItems: hasSidebar ? sidebar.skeletonItems : undefined,
                     sections: [
                       { id: 'site', items: topNav },
                       ...(hasSidebar
@@ -219,6 +229,7 @@ export function AppShell({
                   }}
                   navFooter={navFooter}
                   collapsed={false}
+                  drawer
                 />
               </chakra.div>
             </Drawer.Content>
@@ -249,15 +260,21 @@ function SidebarContents({
   sidebar,
   navFooter,
   collapsed,
+  drawer = false,
 }: {
   styles: ShellStyles;
   sidebar: AppShellSidebar;
   navFooter?: ReactNode;
   collapsed: boolean;
+  /** In the drawer, where the place's name heads its pages instead of a card. */
+  drawer?: boolean;
 }) {
   const Link = useLinkComponent();
   const labels = useTodaLabels();
   const { place } = sidebar;
+  const loading = !!sidebar.loading;
+  // The real card and pages fade in where their placeholders were.
+  const arrive = useArriving(loading) ? arriveCss : undefined;
   const placeMark = place ? (place.mark ?? place.name.slice(0, 1).toUpperCase()) : null;
   const placeInner = place && (
     <>
@@ -272,8 +289,8 @@ function SidebarContents({
   );
   return (
     <>
-      {place && (
-        <chakra.div css={styles.placeHeader}>
+      {place ? (
+        <chakra.div css={[styles.placeHeader, arrive]}>
           {place.href ? (
             <chakra.span asChild css={styles.place}>
               <Link href={place.href}>{placeInner}</Link>
@@ -282,6 +299,24 @@ function SidebarContents({
             <chakra.span css={styles.place}>{placeInner}</chakra.span>
           )}
         </chakra.div>
+      ) : (
+        loading &&
+        !drawer && (
+          // The place's card, its name and key coming: the same elements, so it's as tall as the real one.
+          <chakra.div css={styles.placeHeader} aria-hidden="true">
+            <chakra.span css={styles.place} pointerEvents="none">
+              <chakra.span css={[styles.placeMark, ghostCss]}>&nbsp;</chakra.span>
+              <chakra.span css={styles.placeText}>
+                <chakra.span css={styles.placeName}>
+                  <TextBone width={14} />
+                </chakra.span>
+                <chakra.span css={styles.placeDetail}>
+                  <TextBone width={4} />
+                </chakra.span>
+              </chakra.span>
+            </chakra.span>
+          </chakra.div>
+        )
       )}
       {sidebar.top != null && (
         // Folded away in the rail (and out of reach of the keyboard there).
@@ -291,12 +326,31 @@ function SidebarContents({
           </chakra.div>
         </chakra.div>
       )}
-      <chakra.nav css={styles.nav} aria-label={place?.name ?? labels.navigation}>
+      <chakra.nav css={[styles.nav, arrive]} aria-label={place?.name ?? labels.navigation}>
         {sidebar.sections
           .filter((section) => section.items.length > 0)
           .map((section) => (
             <NavSection key={section.id} section={section} styles={styles} collapsed={collapsed} group={sidebar.id} />
           ))}
+        {loading && (
+          // The place's pages, coming: rows of the nav's own items, the same in the rail and out of it (ADR 0061).
+          <Loading when>
+            <chakra.div css={styles.navSection} aria-hidden="true">
+              <chakra.div css={styles.navSectionItems}>
+                {Array.from({ length: sidebar.skeletonItems ?? 5 }, (_, n) => (
+                  <chakra.span key={n} css={styles.navItem} pointerEvents="none">
+                    <chakra.span css={styles.navItemIcon}>
+                      <Bone width="4" height="4" />
+                    </chakra.span>
+                    <chakra.span css={styles.navItemLabel}>
+                      <TextBone width={boneWidth(n, 6, 12)} />
+                    </chakra.span>
+                  </chakra.span>
+                ))}
+              </chakra.div>
+            </chakra.div>
+          </Loading>
+        )}
         {navFooter != null && (
           <chakra.div css={styles.fold} inert={collapsed || undefined}>
             <chakra.div css={styles.foldInner}>{navFooter}</chakra.div>
