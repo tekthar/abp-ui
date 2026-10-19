@@ -346,8 +346,10 @@ export function TimelineChart<T extends TimelineItem>({
                     bg="statusCategory.done.solid" roundedBottom="l2" pointerEvents="none" aria-hidden />
                 )}
                 {item.movable !== false && !single && (
+                  // The edge sits inside the bar: its moves and release stop here, or the bar would handle them too and the
+                  // change would be saved twice (the second refused as a conflict).
                   <Box position="absolute" insetEnd="0" top="0" bottom="0" w="2" cursor="ew-resize" onPointerDown={(e) => down(item, 'end', e)}
-                    onPointerMove={move} onPointerUp={() => up(item)} aria-hidden />
+                    onPointerMove={(e) => { e.stopPropagation(); move(e); }} onPointerUp={(e) => { e.stopPropagation(); up(item); }} aria-hidden />
                 )}
               </Box>
               {/* The dot to draw a dependency from, just past the bar's end, while the pointer is on the bar or the dot. */}
