@@ -49,6 +49,8 @@ export interface TimelineChartProps<T extends TimelineItem> {
   bands?: { id: string; start: string; end: string; label: string; detail?: ReactNode; current?: boolean }[];
   /** Days marked with a flag in a strip under the header and a line down the chart (releases' due dates). */
   markers?: { id: string; day: string; label: string; detail?: ReactNode; palette?: string }[];
+  /** Days off (a calendar's weekend and holidays), shaded at the finer zooms (12px a day or more); a holiday is named. */
+  offDays?: (day: string) => { kind: 'weekend' } | { kind: 'holiday'; label: string } | null;
   /** Scrolls this day to the middle of the timeline, each time a new object is given (a Today button). */
   reveal?: { day: string } | null;
   /** The label column for a record row. */
@@ -100,6 +102,7 @@ export function TimelineChart<T extends TimelineItem>({
   today,
   bands = [],
   markers = [],
+  offDays,
   reveal,
   renderLabel,
   renderBar,
@@ -307,6 +310,18 @@ export function TimelineChart<T extends TimelineItem>({
     const at = toDay(m.day) - origin;
     return at >= 0 && at < days ? [{ ...m, at }] : [];
   });
+  // Days off as runs (a weekend is one shape, not two), only where a day is wide enough to read.
+  const offRuns: { a: number; z: number; kind: 'weekend' | 'holiday'; label?: string }[] = [];
+  if (offDays && dayWidth >= 12) {
+    for (let n = 0; n < days; n++) {
+      const off = offDays(fromDay(origin + n));
+      if (!off) continue;
+      const label = off.kind === 'holiday' ? off.label : undefined;
+      const last = offRuns[offRuns.length - 1];
+      if (last && last.z === n - 1 && last.kind === off.kind && last.label === label) last.z = n;
+      else offRuns.push({ a: n, z: n, kind: off.kind, label });
+    }
+  }
   const bandsTop = tickHeight, markersTop = tickHeight + (shownBands.length ? STRIP : 0);
   const headerHeight = markersTop + (shownMarkers.length ? STRIP : 0);
   const todayAt = today ? toDay(today) - origin : -1;
@@ -336,6 +351,13 @@ export function TimelineChart<T extends TimelineItem>({
               color="fg.subtle" textAlign="center" whiteSpace="nowrap" fontVariantNumeric="tabular-nums" aria-hidden>
               {t.label}
             </Text>
+          ))}
+          {/* Holidays: a mark along the foot of the ticks, named on hover or focus. */}
+          {offRuns.filter((o) => o.kind === 'holiday').map((o) => (
+            <Tooltip key={`h${o.a}`} content={o.label}>
+              <Box position="absolute" insetStart={`${o.a * dayWidth}px`} w={`${(o.z - o.a + 1) * dayWidth}px`} top={`${tickHeight - 4}px`} h="4px" colorPalette="warning"
+                bg="colorPalette.solid" tabIndex={0} focusVisibleRing="outside" aria-label={o.label} />
+            </Tooltip>
           ))}
           {/* Sprints: a band each, its name kept in view like the ticks', what it is on hover or focus. */}
           {shownBands.map((b) => (
@@ -375,6 +397,10 @@ export function TimelineChart<T extends TimelineItem>({
 
         {/* bars */}
         <Box ref={layer} position="relative" h={`${shown.length * rowHeight}px`}>
+          {offRuns.map((o) => (
+            <Box key={`o${o.a}`} position="absolute" insetStart={`${o.a * dayWidth}px`} w={`${(o.z - o.a + 1) * dayWidth}px`} top="0" bottom="0" pointerEvents="none"
+              bg={o.kind === 'holiday' ? 'warning.subtle' : 'bg.muted'} opacity={o.kind === 'holiday' ? 0.7 : 0.8} aria-hidden />
+          ))}
           {ticks.map((t) => (
             <Box key={t.day} position="absolute" insetStart={`${t.day * dayWidth}px`} top="0" bottom="0" borderInlineStartWidth="1px" borderColor="border.muted" aria-hidden />
           ))}
