@@ -29,6 +29,8 @@ export interface TimelineChartProps<T extends TimelineItem> {
   to: string;
   /** Pixels per day: 32 shows days, 12 weeks, 4 months. */
   dayWidth: number;
+  /** Fills the width it's given: when the window is narrower than the chart, the days go on past `to`. */
+  fill?: boolean;
   rows: TimelineRow<T>[];
   /** Dependencies: <c>from</c> must end before <c>to</c> starts (drawn red when it doesn't). */
   links?: { from: string; to: string }[];
@@ -66,6 +68,7 @@ export function TimelineChart<T extends TimelineItem>({
   from,
   to,
   dayWidth,
+  fill = false,
   rows,
   links = [],
   today,
@@ -82,12 +85,21 @@ export function TimelineChart<T extends TimelineItem>({
 }: TimelineChartProps<T>) {
   const placeholders = useLoading(own) && rows.length === 0;
   const shown: TimelineRow<T>[] = placeholders ? Array.from({ length: skeletonRows }, (_, i) => ({ id: `skeleton-${i}` })) : rows;
+  const root = useRef<HTMLDivElement>(null);
+  // The room beside the labels, for `fill`: whole days past `to`, and the column stretches over what's left of a day.
+  const [room, setRoom] = useState(0);
+  useEffect(() => {
+    const el = root.current;
+    if (!fill || !el) return;
+    const observer = new ResizeObserver(() => setRoom(Math.max(0, el.clientWidth - labelWidth)));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [fill, labelWidth]);
   const origin = toDay(from);
-  const days = toDay(to) - origin + 1;
+  const days = Math.max(toDay(to) - origin + 1, fill ? Math.floor(room / dayWidth) : 0);
   const width = days * dayWidth;
   const [drag, setDrag] = useState<{ id: string; mode: 'move' | 'end'; x: number; delta: number } | null>(null);
   const moved = useRef(false);
-  const root = useRef<HTMLDivElement>(null);
   // After a keyboard move the bars redraw: focus stays on the one that moved, so arrows can keep moving it.
   const refocus = useRef<string | null>(null);
   useEffect(() => {
@@ -166,10 +178,11 @@ export function TimelineChart<T extends TimelineItem>({
   return (
     <Box ref={root} role="region" aria-label={ariaLabel} borderWidth="1px" borderColor="border" rounded="l3" overflow="auto" maxH="70vh" position="relative" bg="bg.panel">
       {instructions && <Text srOnly>{instructions}</Text>}
-      <Box display="grid" gridTemplateColumns={`${labelWidth}px ${width}px`} minW="fit-content">
+      <Box display="grid" gridTemplateColumns={fill ? `${labelWidth}px minmax(${width}px, 1fr)` : `${labelWidth}px ${width}px`} minW="fit-content">
         {/* header */}
         <Box position="sticky" top="0" insetStart="0" zIndex="3" bg="bg.muted" borderBottomWidth="1px" borderInlineEndWidth="1px" borderColor="border" h="9" />
-        <Box position="sticky" top="0" zIndex="2" bg="bg.muted" borderBottomWidth="1px" borderColor="border" h="9" aria-hidden>
+        {/* Clipped: a tick near the end mustn't widen the chart with its label. */}
+        <Box position="sticky" top="0" zIndex="2" bg="bg.muted" borderBottomWidth="1px" borderColor="border" h="9" overflow="hidden" aria-hidden>
           {ticks.map((t) => (
             <Text key={t.day} position="absolute" insetStart={`${t.day * dayWidth}px`} top="0" h="full" ps="1.5" textStyle="caption" color="fg.muted"
               borderInlineStartWidth="1px" borderColor="border" display="flex" alignItems="center" whiteSpace="nowrap">
