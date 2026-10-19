@@ -46,6 +46,8 @@ export interface TimelineChartProps<T extends TimelineItem> {
   describe: (item: T) => string;
   /** Header ticks: the label for a day that starts a period (a month, or a week at finer zoom). */
   tick: (day: string) => string | null;
+  /** A second header row under the ticks: a label centred on each day that has one (its number, at the finest zoom). */
+  subTick?: (day: string) => string | null;
   /** A move: dragging the bar moves both ends, its right edge moves the end. Arrow keys move a focused bar a day; Shift+arrows its end. */
   onMove: (item: T, start: string, end: string) => void;
   labelWidth?: number;
@@ -80,6 +82,7 @@ export function TimelineChart<T extends TimelineItem>({
   renderBar,
   describe,
   tick,
+  subTick,
   onMove,
   labelWidth = 260,
   rowHeight = 36,
@@ -185,10 +188,14 @@ export function TimelineChart<T extends TimelineItem>({
     }
   });
   const ticks: { day: number; label: string }[] = [];
+  const subTicks: { day: number; label: string }[] = [];
   for (let n = 0; n < days; n++) {
     const label = tick(fromDay(origin + n));
     if (label) ticks.push({ day: n, label });
+    const sub = subTick?.(fromDay(origin + n));
+    if (sub) subTicks.push({ day: n, label: sub });
   }
+  const headerHeight = subTick ? 52 : 36;
   const todayAt = today ? toDay(today) - origin : -1;
 
   return (
@@ -196,12 +203,24 @@ export function TimelineChart<T extends TimelineItem>({
       {instructions && <Text srOnly>{instructions}</Text>}
       <Box display="grid" gridTemplateColumns={fill ? `${labelWidth}px minmax(${width}px, 1fr)` : `${labelWidth}px ${width}px`} minW="fit-content">
         {/* header */}
-        <Box position="sticky" top="0" insetStart="0" zIndex="3" bg="bg.muted" borderBottomWidth="1px" borderInlineEndWidth="1px" borderColor="border" h="9" />
-        {/* Clipped: a tick near the end mustn't widen the chart with its label. */}
-        <Box position="sticky" top="0" zIndex="2" bg="bg.muted" borderBottomWidth="1px" borderColor="border" h="9" overflow="hidden" aria-hidden>
-          {ticks.map((t) => (
-            <Text key={t.day} position="absolute" insetStart={`${t.day * dayWidth}px`} top="0" h="full" ps="1.5" textStyle="caption" color="fg.muted"
-              borderInlineStartWidth="1px" borderColor="border" display="flex" alignItems="center" whiteSpace="nowrap">
+        <Box position="sticky" top="0" insetStart="0" zIndex="3" bg="bg.muted" borderBottomWidth="1px" borderInlineEndWidth="1px" borderColor="border" h={`${headerHeight}px`} />
+        {/* Clipped, so a tick near the end can't widen the chart with its label; clip rather than hidden, which would
+            make the header its own scroll container and stop the labels below sticking. */}
+        <Box position="sticky" top="0" zIndex="2" bg="bg.muted" borderBottomWidth="1px" borderColor="border" h={`${headerHeight}px`} overflow="clip" aria-hidden>
+          {/* Each tick's label stays beside the labels column while its period is in view, so a scrolled chart still
+              says which month it shows. */}
+          {ticks.map((t, i) => (
+            <Box key={t.day} position="absolute" insetStart={`${t.day * dayWidth}px`} w={`${((ticks[i + 1]?.day ?? days) - t.day) * dayWidth}px`} top="0" h="full"
+              borderInlineStartWidth="1px" borderColor="border">
+              <Text position="sticky" insetStart={`${labelWidth}px`} display="inline-flex" h={subTick ? undefined : 'full'} ps="1.5" pt={subTick ? '1' : undefined}
+                textStyle="caption" color="fg.muted" alignItems="center" whiteSpace="nowrap">
+                {t.label}
+              </Text>
+            </Box>
+          ))}
+          {subTicks.map((t) => (
+            <Text key={t.day} position="absolute" insetStart={`${t.day * dayWidth}px`} w={`${dayWidth}px`} bottom="1" textStyle="caption" color="fg.subtle"
+              textAlign="center" whiteSpace="nowrap" fontVariantNumeric="tabular-nums">
               {t.label}
             </Text>
           ))}
