@@ -21,6 +21,8 @@ export interface TimelineItem {
   linkable?: boolean;
   /** Its colour: a colour palette's name (`blue`, `inProgress`, …); the accent when not given. */
   palette?: string;
+  /** Picked out (ringed, as on a critical path) or set back (faded) while something else is picked out. */
+  emphasis?: 'strong' | 'faint';
 }
 
 export interface TimelineRow<T extends TimelineItem> {
@@ -40,8 +42,8 @@ export interface TimelineChartProps<T extends TimelineItem> {
   /** Fills the width it's given: when the window is narrower than the chart, the days go on past `to`. */
   fill?: boolean;
   rows: TimelineRow<T>[];
-  /** Dependencies: <c>from</c> must end before <c>to</c> starts (drawn red when it doesn't). */
-  links?: { from: string; to: string }[];
+  /** Dependencies: <c>from</c> must end before <c>to</c> starts (drawn red when it doesn't). `strong` ones are picked out and the rest fade. */
+  links?: { from: string; to: string; strong?: boolean }[];
   today?: string;
   /** Periods shown as labelled bands in a strip under the header (sprints); the `current` one is also shaded down the chart. */
   bands?: { id: string; start: string; end: string; label: string; detail?: ReactNode; current?: boolean }[];
@@ -419,7 +421,8 @@ export function TimelineChart<T extends TimelineItem>({
                 color={hollow ? 'colorPalette.fg' : 'colorPalette.contrast'}
                 borderWidth={hollow ? '2px' : 0} borderStyle="dashed" borderColor="colorPalette.solid" cursor={item.movable === false ? 'default' : 'grab'}
                 display="flex" alignItems="center" px="1.5" overflow="hidden" whiteSpace="nowrap" textStyle="caption" userSelect="none" touchAction="none"
-                opacity={drag?.id === item.id ? 0.85 : 1} _focusVisible={{ outline: '2px solid', outlineColor: 'colorPalette.focusRing', outlineOffset: '2px' }}
+                opacity={drag?.id === item.id ? 0.85 : item.emphasis === 'faint' ? 0.3 : 1}
+                boxShadow={item.emphasis === 'strong' ? '0 0 0 2px var(--toda-colors-danger-solid)' : undefined} _focusVisible={{ outline: '2px solid', outlineColor: 'colorPalette.focusRing', outlineOffset: '2px' }}
                 outline={linking?.target === item.id ? '2px solid' : undefined} outlineColor="accent.solid" outlineOffset="2px"
                 onPointerDown={(e) => { cardOff(); down(item, 'move', e); }} onPointerMove={move} onPointerUp={() => up(item)} onPointerCancel={() => setDrag(null)}
                 onPointerEnter={(e) => { setHot(item.id); cardSoon(item, e); }} onPointerLeave={() => { setHot((h) => (h === item.id ? null : h)); cardOff(); }}
@@ -469,11 +472,13 @@ export function TimelineChart<T extends TimelineItem>({
                 ? `M ${x1} ${f.y} H ${x1 + 8} V ${t.y} H ${x2}`
                 : `M ${x1} ${f.y} H ${x1 + 8} V ${gap} H ${x2 - 8} V ${t.y} H ${x2}`;
               const picked = menu?.from === l.from && menu.to === l.to;
+              const faint = !l.strong && links.some((x) => x.strong);
               const open = (x: number, y: number) => setMenu({ from: l.from, to: l.to, x, y });
               return (
                 <g key={`${l.from}>${l.to}`}>
-                  <path d={d} fill="none" strokeWidth={picked ? 2.5 : 1.5} strokeDasharray={late ? '4 3' : undefined}
-                    stroke={late ? 'var(--toda-colors-fg-error)' : picked ? 'var(--toda-colors-accent-solid)' : 'var(--toda-colors-fg-muted)'} markerEnd="url(#toda-arrow)" />
+                  <path d={d} fill="none" strokeWidth={picked || l.strong ? 2.5 : 1.5} strokeDasharray={late ? '4 3' : undefined} opacity={faint ? 0.25 : 1}
+                    stroke={late || l.strong ? 'var(--toda-colors-fg-error)' : picked ? 'var(--toda-colors-accent-solid)' : 'var(--toda-colors-fg-muted)'}
+                    markerEnd="url(#toda-arrow)" />
                   {/* A wider, invisible line over the arrow, easier to click; Enter opens the same menu from the keyboard. */}
                   {onUnlink && (
                     <path d={d} fill="none" stroke="transparent" strokeWidth={10} style={{ pointerEvents: 'stroke', cursor: 'pointer' }} tabIndex={0} role="button"
