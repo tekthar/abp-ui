@@ -7,7 +7,7 @@ import { EmptyState } from './EmptyState';
 import { InlineAlert } from './InlineAlert';
 import { RecordKey } from './RecordKey';
 import { StatusPill } from './StatusPill';
-import { useLoading } from '../skeleton/loading';
+import { Loading, useLoading } from '../skeleton/loading';
 import { boneWidth, TextBone } from '../skeleton/bones';
 
 export type SortDirection = 'asc' | 'desc';
@@ -100,7 +100,8 @@ export interface DataTableSelection<T> {
 /** A column's cell while the table loads, as its `skeleton` says. */
 function placeholder<T>(column: DataTableColumn<T>, row: number, at: number): ReactNode {
   const kind = column.skeleton ?? (column.numeric ? 'number' : 'text');
-  if (typeof kind === 'function') return kind(row);
+  // The column's own drawing, in a scope of its own: its buttons and pills draw as their ghosts, wherever the table is.
+  if (typeof kind === 'function') return <Loading when>{kind(row)}</Loading>;
   switch (kind) {
     case 'none':
       return null;
