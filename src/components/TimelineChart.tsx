@@ -48,6 +48,8 @@ export interface TimelineChartProps<T extends TimelineItem> {
   renderLabel: (item: T) => ReactNode;
   /** Text inside a bar. */
   renderBar?: (item: T) => ReactNode;
+  /** A card about a bar, shown while the pointer rests on it or it has keyboard focus (hidden while dragging). */
+  renderCard?: (item: T) => ReactNode;
   /** What a bar says to screen readers: "PAY-3 Checkout, 1 to 14 June". */
   describe: (item: T) => string;
   /** Header ticks: the label for a day that starts a period (a month, or a week at finer zoom). */
@@ -92,6 +94,7 @@ export function TimelineChart<T extends TimelineItem>({
   reveal,
   renderLabel,
   renderBar,
+  renderCard,
   describe,
   tick,
   subTick,
@@ -135,6 +138,20 @@ export function TimelineChart<T extends TimelineItem>({
     window.addEventListener('keydown', cancel);
     return () => window.removeEventListener('keydown', cancel);
   }, [linking]);
+  // The card about a bar: one for the chart, placed by the bar it's about (where the pointer met it, or its start).
+  const [card, setCard] = useState<{ id: string; x: number; top: number; bottom: number } | null>(null);
+  const cardTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const cardOff = () => {
+    clearTimeout(cardTimer.current);
+    setCard(null);
+  };
+  useEffect(() => () => clearTimeout(cardTimer.current), []);
+  useEffect(() => {
+    if (!card) return;
+    // It's placed on the screen, so any scroll (the page's or the chart's) takes it away.
+    window.addEventListener('scroll', cardOff, true);
+    return () => window.removeEventListener('scroll', cardOff, true);
+  }, [card]);
   useEffect(() => {
     const el = root.current;
     if (!reveal || !el) return;
@@ -191,7 +208,21 @@ export function TimelineChart<T extends TimelineItem>({
     setDrag(null);
   }
 
+  function cardSoon(item: T, e: ReactPointerEvent) {
+    if (!renderCard || drag || linking) return;
+    clearTimeout(cardTimer.current);
+    const r = (e.currentTarget as Element).getBoundingClientRect(), x = e.clientX;
+    cardTimer.current = setTimeout(() => setCard({ id: item.id, x, top: r.top, bottom: r.bottom }), 450);
+  }
+
+  function cardNow(item: T, el: Element) {
+    if (!renderCard || !el.matches(':focus-visible')) return;
+    const r = el.getBoundingClientRect();
+    setCard({ id: item.id, x: r.left + Math.min(r.width / 2, 24), top: r.top, bottom: r.bottom });
+  }
+
   function key(item: T, e: KeyboardEvent) {
+    if (e.key === 'Escape') cardOff();
     if (item.movable === false) return;
     const rtl = getComputedStyle(e.currentTarget as Element).direction === 'rtl';
     const step = { ArrowLeft: rtl ? 1 : -1, ArrowRight: rtl ? -1 : 1 }[e.key];
@@ -337,8 +368,9 @@ export function TimelineChart<T extends TimelineItem>({
                 display="flex" alignItems="center" px="1.5" overflow="hidden" whiteSpace="nowrap" textStyle="caption" userSelect="none" touchAction="none"
                 opacity={drag?.id === item.id ? 0.85 : 1} _focusVisible={{ outline: '2px solid', outlineColor: 'colorPalette.focusRing', outlineOffset: '2px' }}
                 outline={linking?.target === item.id ? '2px solid' : undefined} outlineColor="accent.solid" outlineOffset="2px"
-                onPointerDown={(e) => down(item, 'move', e)} onPointerMove={move} onPointerUp={() => up(item)} onPointerCancel={() => setDrag(null)}
-                onPointerEnter={() => setHot(item.id)} onPointerLeave={() => setHot((h) => (h === item.id ? null : h))}
+                onPointerDown={(e) => { cardOff(); down(item, 'move', e); }} onPointerMove={move} onPointerUp={() => up(item)} onPointerCancel={() => setDrag(null)}
+                onPointerEnter={(e) => { setHot(item.id); cardSoon(item, e); }} onPointerLeave={() => { setHot((h) => (h === item.id ? null : h)); cardOff(); }}
+                onFocus={(e) => cardNow(item, e.currentTarget)} onBlur={cardOff} aria-describedby={card?.id === item.id ? 'toda-timeline-card' : undefined}
                 onKeyDown={(e) => key(item, e)} data-bar={item.id}>
                 {!single && !thin && renderBar?.(item)}
                 {item.progress != null && !single && (
@@ -414,6 +446,20 @@ export function TimelineChart<T extends TimelineItem>({
           )}
         </Box>
       </Box>
+      {card && renderCard && items.has(card.id) && (
+        <Portal>
+          {/* Above the bar, or below it near the top of the screen; kept inside the window. */}
+          <Box id="toda-timeline-card" role="tooltip" position="fixed" zIndex="popover" pointerEvents="none" w="80" maxW="calc(100vw - 16px)" bg="bg.panel"
+            borderWidth="1px" borderColor="border" rounded="l3" shadow="lg" p="3"
+            style={{
+              left: Math.max(8, Math.min(card.x - 24, window.innerWidth - 328)),
+              top: card.top > 280 ? card.top - 8 : card.bottom + 8,
+              transform: card.top > 280 ? 'translateY(-100%)' : undefined,
+            }}>
+            {renderCard(items.get(card.id)!)}
+          </Box>
+        </Portal>
+      )}
       {onUnlink && (
         <Popover.Root open={!!menu} onOpenChange={(e) => !e.open && setMenu(null)} lazyMount unmountOnExit autoFocus
           positioning={{ placement: 'bottom', getAnchorRect: () => (menu ? { x: menu.x, y: menu.y, width: 1, height: 1 } : null) }}>
