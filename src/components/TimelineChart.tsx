@@ -18,6 +18,8 @@ export interface TimelineItem {
   progress?: number | null;
   /** Whether a dependency can be drawn from this bar (with `onLink`): the person may change the record. */
   linkable?: boolean;
+  /** Its colour: a colour palette's name (`blue`, `inProgress`, …); the accent when not given. */
+  palette?: string;
 }
 
 export interface TimelineRow<T extends TimelineItem> {
@@ -328,9 +330,10 @@ export function TimelineChart<T extends TimelineItem>({
               <Fragment key={item.id}>
               <Box role="button" tabIndex={0} aria-label={describe(item)} position="absolute" insetStart={`${left}px`} w={`${Math.max(right - left, 6)}px`}
                 top={thin ? `${i * rowHeight + rowHeight / 2 - 5}px` : `${i * rowHeight + 6}px`} h={thin ? '10px' : `${rowHeight - 12}px`} rounded={thin ? 'l1' : 'l2'}
-                bg={thin ? 'fg.muted' : hollow ? (tone === 'inferred' && !single ? 'accent.subtle' : 'transparent') : 'accent.solid'}
-                color={hollow ? 'accent.fg' : 'accent.contrast'}
-                borderWidth={hollow ? '2px' : 0} borderStyle="dashed" borderColor="accent.solid" cursor={item.movable === false ? 'default' : 'grab'}
+                colorPalette={item.palette ?? 'accent'}
+                bg={thin ? (item.palette ? 'colorPalette.solid' : 'fg.muted') : hollow ? (tone === 'inferred' && !single ? 'colorPalette.subtle' : 'transparent') : 'colorPalette.solid'}
+                color={hollow ? 'colorPalette.fg' : 'colorPalette.contrast'}
+                borderWidth={hollow ? '2px' : 0} borderStyle="dashed" borderColor="colorPalette.solid" cursor={item.movable === false ? 'default' : 'grab'}
                 display="flex" alignItems="center" px="1.5" overflow="hidden" whiteSpace="nowrap" textStyle="caption" userSelect="none" touchAction="none"
                 opacity={drag?.id === item.id ? 0.85 : 1} _focusVisible={{ outline: '2px solid', outlineColor: 'colorPalette.focusRing', outlineOffset: '2px' }}
                 outline={linking?.target === item.id ? '2px solid' : undefined} outlineColor="accent.solid" outlineOffset="2px"
