@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
-import { Box, HStack, Text } from '@chakra-ui/react';
+import { Fragment, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { Box, HStack, Popover, Portal, Stack, Text } from '@chakra-ui/react';
+import { Trash2 } from 'lucide-react';
 import { useMotionSetting } from '../motion/setting';
 import { useLoading } from '../skeleton/loading';
 import { Bone, boneWidth, TextBone } from '../skeleton/bones';
+import { Button } from './Button';
 
 /** A bar: its first and last day (yyyy-mm-dd); with only one of them, it's that one day. */
 export interface TimelineItem {
@@ -14,6 +16,8 @@ export interface TimelineItem {
   tone?: 'own' | 'inferred' | 'rollup';
   /** Done, 0 to 1: a strip along the bottom of the bar. */
   progress?: number | null;
+  /** Whether a dependency can be drawn from this bar (with `onLink`): the person may change the record. */
+  linkable?: boolean;
 }
 
 export interface TimelineRow<T extends TimelineItem> {
@@ -50,6 +54,12 @@ export interface TimelineChartProps<T extends TimelineItem> {
   subTick?: (day: string) => string | null;
   /** A move: dragging the bar moves both ends, its right edge moves the end. Arrow keys move a focused bar a day; Shift+arrows its end. */
   onMove: (item: T, start: string, end: string) => void;
+  /** A new dependency, drawn by dragging the dot at a bar's end onto another bar: `to` depends on `from`. */
+  onLink?: (from: T, to: T) => void;
+  /** Removing a dependency, from the menu its arrow opens. */
+  onUnlink?: (link: { from: string; to: string }) => void;
+  /** The words for drawing and removing dependencies: the dot's name, an arrow's ("PAY-2 depends on PAY-1"), the remove button. */
+  linkTexts?: { handle: string; arrow: (from: string, to: string) => string; remove: string };
   labelWidth?: number;
   rowHeight?: number;
   instructions?: string;
@@ -84,6 +94,9 @@ export function TimelineChart<T extends TimelineItem>({
   tick,
   subTick,
   onMove,
+  onLink,
+  onUnlink,
+  linkTexts,
   labelWidth = 260,
   rowHeight = 36,
   instructions,
@@ -108,6 +121,18 @@ export function TimelineChart<T extends TimelineItem>({
   const [drag, setDrag] = useState<{ id: string; mode: 'move' | 'end'; x: number; delta: number } | null>(null);
   const moved = useRef(false);
   const { reduce } = useMotionSetting();
+  // Drawing a dependency: where the line starts and where the pointer is, in the bars layer's own pixels (left to right
+  // on screen, whatever the direction), and the bar it would land on.
+  const layer = useRef<HTMLDivElement>(null);
+  const [linking, setLinking] = useState<{ from: T; x0: number; y0: number; x: number; y: number; target: string | null } | null>(null);
+  const [hot, setHot] = useState<string | null>(null);
+  const [menu, setMenu] = useState<{ from: string; to: string; x: number; y: number } | null>(null);
+  useEffect(() => {
+    if (!linking) return;
+    const cancel = (e: globalThis.KeyboardEvent) => e.key === 'Escape' && setLinking(null);
+    window.addEventListener('keydown', cancel);
+    return () => window.removeEventListener('keydown', cancel);
+  }, [linking]);
   useEffect(() => {
     const el = root.current;
     if (!reveal || !el) return;
@@ -179,6 +204,40 @@ export function TimelineChart<T extends TimelineItem>({
     }
   }
 
+  const items = new Map(rows.flatMap((r) => (r.item ? [[r.item.id, r.item] as const] : [])));
+  const barAt = (x: number, y: number) =>
+    document.elementsFromPoint(x, y).map((el) => el.closest<HTMLElement>('[data-bar]')?.dataset.bar).find((id): id is string => !!id) ?? null;
+
+  function linkDown(item: T, e: ReactPointerEvent) {
+    if (e.button !== 0 || !layer.current) return;
+    e.stopPropagation();
+    e.preventDefault();
+    (e.currentTarget as Element).setPointerCapture(e.pointerId);
+    const box = layer.current.getBoundingClientRect(), dot = (e.currentTarget as Element).getBoundingClientRect();
+    const x0 = dot.left + dot.width / 2 - box.left, y0 = dot.top + dot.height / 2 - box.top;
+    setLinking({ from: item, x0, y0, x: x0, y: y0, target: null });
+  }
+
+  function linkMove(e: ReactPointerEvent) {
+    if (!linking || !layer.current || !root.current) return;
+    // Near an edge of the chart, it scrolls on, so a bar out of view can be reached.
+    const view = root.current.getBoundingClientRect(), edge = 40, step = 16;
+    const dx = e.clientX < view.left + edge ? -step : e.clientX > view.right - edge ? step : 0;
+    const dy = e.clientY < view.top + edge ? -step : e.clientY > view.bottom - edge ? step : 0;
+    if (dx || dy) root.current.scrollBy({ left: dx, top: dy });
+    const box = layer.current.getBoundingClientRect();
+    const target = barAt(e.clientX, e.clientY);
+    setLinking({ ...linking, x: e.clientX - box.left, y: e.clientY - box.top, target: target && target !== linking.from.id ? target : null });
+  }
+
+  function linkUp(e: ReactPointerEvent) {
+    if (!linking) return;
+    const target = barAt(e.clientX, e.clientY);
+    const to = target && target !== linking.from.id ? items.get(target) : undefined;
+    setLinking(null);
+    if (to) onLink?.(linking.from, to);
+  }
+
   // Bar positions by record, for the dependency arrows.
   const ys = new Map<string, { y: number; a: number; b: number }>();
   rows.forEach((r, i) => {
@@ -236,7 +295,7 @@ export function TimelineChart<T extends TimelineItem>({
         </Box>
 
         {/* bars */}
-        <Box position="relative" h={`${shown.length * rowHeight}px`}>
+        <Box ref={layer} position="relative" h={`${shown.length * rowHeight}px`}>
           {ticks.map((t) => (
             <Box key={t.day} position="absolute" insetStart={`${t.day * dayWidth}px`} top="0" bottom="0" borderInlineStartWidth="1px" borderColor="border.muted" aria-hidden />
           ))}
@@ -264,15 +323,19 @@ export function TimelineChart<T extends TimelineItem>({
             const tone = item.tone ?? 'own';
             const hollow = single || tone === 'inferred';
             const thin = tone === 'rollup' && !single;
+            const canLink = !!onLink && item.linkable !== false && !drag;
             return (
-              <Box key={item.id} role="button" tabIndex={0} aria-label={describe(item)} position="absolute" insetStart={`${left}px`} w={`${Math.max(right - left, 6)}px`}
+              <Fragment key={item.id}>
+              <Box role="button" tabIndex={0} aria-label={describe(item)} position="absolute" insetStart={`${left}px`} w={`${Math.max(right - left, 6)}px`}
                 top={thin ? `${i * rowHeight + rowHeight / 2 - 5}px` : `${i * rowHeight + 6}px`} h={thin ? '10px' : `${rowHeight - 12}px`} rounded={thin ? 'l1' : 'l2'}
                 bg={thin ? 'fg.muted' : hollow ? (tone === 'inferred' && !single ? 'accent.subtle' : 'transparent') : 'accent.solid'}
                 color={hollow ? 'accent.fg' : 'accent.contrast'}
                 borderWidth={hollow ? '2px' : 0} borderStyle="dashed" borderColor="accent.solid" cursor={item.movable === false ? 'default' : 'grab'}
                 display="flex" alignItems="center" px="1.5" overflow="hidden" whiteSpace="nowrap" textStyle="caption" userSelect="none" touchAction="none"
                 opacity={drag?.id === item.id ? 0.85 : 1} _focusVisible={{ outline: '2px solid', outlineColor: 'colorPalette.focusRing', outlineOffset: '2px' }}
+                outline={linking?.target === item.id ? '2px solid' : undefined} outlineColor="accent.solid" outlineOffset="2px"
                 onPointerDown={(e) => down(item, 'move', e)} onPointerMove={move} onPointerUp={() => up(item)} onPointerCancel={() => setDrag(null)}
+                onPointerEnter={() => setHot(item.id)} onPointerLeave={() => setHot((h) => (h === item.id ? null : h))}
                 onKeyDown={(e) => key(item, e)} data-bar={item.id}>
                 {!single && !thin && renderBar?.(item)}
                 {item.progress != null && !single && (
@@ -284,10 +347,21 @@ export function TimelineChart<T extends TimelineItem>({
                     onPointerMove={move} onPointerUp={() => up(item)} aria-hidden />
                 )}
               </Box>
+              {/* The dot to draw a dependency from, just past the bar's end, while the pointer is on the bar or the dot. */}
+              {canLink && (hot === item.id || linking?.from.id === item.id) && (
+                <Box position="absolute" insetStart={`${Math.max(right, left + 6)}px`} top={`${i * rowHeight}px`} w="4" h={`${rowHeight}px`} zIndex="2"
+                  display="flex" alignItems="center" justifyContent="center" cursor="crosshair" touchAction="none" title={linkTexts?.handle}
+                  onPointerEnter={() => setHot(item.id)} onPointerLeave={() => setHot((h) => (h === item.id ? null : h))}
+                  onPointerDown={(e) => linkDown(item, e)} onPointerMove={linkMove} onPointerUp={linkUp} onPointerCancel={() => setLinking(null)} aria-hidden>
+                  <Box w="2.5" h="2.5" rounded="full" bg="bg.panel" borderWidth="2px" borderColor="accent.solid" />
+                </Box>
+              )}
+              </Fragment>
             );
           })}
           {/* Arrows are drawn left to right; in right-to-left the layer is mirrored, like the bars. */}
-          <Box position="absolute" insetInlineStart="0" top="0" w={`${width}px`} h={`${rows.length * rowHeight}px`} pointerEvents="none" zIndex="1" _rtl={{ transform: 'scaleX(-1)' }} aria-hidden>
+          <Box position="absolute" insetInlineStart="0" top="0" w={`${width}px`} h={`${rows.length * rowHeight}px`} pointerEvents="none" zIndex="1" _rtl={{ transform: 'scaleX(-1)' }}
+            aria-hidden={!onUnlink}>
           <svg width={width} height={rows.length * rowHeight} style={{ position: 'absolute', left: 0, top: 0 }}>
             <defs>
               <marker id="toda-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -304,15 +378,59 @@ export function TimelineChart<T extends TimelineItem>({
               const d = x2 - x1 >= 16
                 ? `M ${x1} ${f.y} H ${x1 + 8} V ${t.y} H ${x2}`
                 : `M ${x1} ${f.y} H ${x1 + 8} V ${gap} H ${x2 - 8} V ${t.y} H ${x2}`;
+              const picked = menu?.from === l.from && menu.to === l.to;
+              const open = (x: number, y: number) => setMenu({ from: l.from, to: l.to, x, y });
               return (
-                <path key={`${l.from}>${l.to}`} d={d} fill="none" strokeWidth={1.5} strokeDasharray={late ? '4 3' : undefined}
-                  stroke={late ? 'var(--toda-colors-fg-error)' : 'var(--toda-colors-fg-muted)'} markerEnd="url(#toda-arrow)" />
+                <g key={`${l.from}>${l.to}`}>
+                  <path d={d} fill="none" strokeWidth={picked ? 2.5 : 1.5} strokeDasharray={late ? '4 3' : undefined}
+                    stroke={late ? 'var(--toda-colors-fg-error)' : picked ? 'var(--toda-colors-accent-solid)' : 'var(--toda-colors-fg-muted)'} markerEnd="url(#toda-arrow)" />
+                  {/* A wider, invisible line over the arrow, easier to click; Enter opens the same menu from the keyboard. */}
+                  {onUnlink && (
+                    <path d={d} fill="none" stroke="transparent" strokeWidth={10} style={{ pointerEvents: 'stroke', cursor: 'pointer' }} tabIndex={0} role="button"
+                      aria-label={linkTexts?.arrow(l.from, l.to)} onClick={(e) => open(e.clientX, e.clientY)}
+                      onKeyDown={(e) => {
+                        if (e.key !== 'Enter' && e.key !== ' ') return;
+                        e.preventDefault();
+                        const r = (e.currentTarget as SVGPathElement).getBoundingClientRect();
+                        open(r.left + r.width / 2, r.top + r.height / 2);
+                      }} />
+                  )}
+                </g>
               );
             })}
           </svg>
           </Box>
+          {/* The dependency being drawn: from the dot to the pointer, on screen as it is (not mirrored). */}
+          {linking && (
+            <svg width="100%" height={shown.length * rowHeight} style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'none', zIndex: 3 }} aria-hidden>
+              <line x1={linking.x0} y1={linking.y0} x2={linking.x} y2={linking.y} stroke="var(--toda-colors-accent-solid)" strokeWidth={2} strokeDasharray="5 4" />
+              <circle cx={linking.x} cy={linking.y} r={4} fill="var(--toda-colors-accent-solid)" />
+            </svg>
+          )}
         </Box>
       </Box>
+      {onUnlink && (
+        <Popover.Root open={!!menu} onOpenChange={(e) => !e.open && setMenu(null)} lazyMount unmountOnExit autoFocus
+          positioning={{ placement: 'bottom', getAnchorRect: () => (menu ? { x: menu.x, y: menu.y, width: 1, height: 1 } : null) }}>
+          <Portal>
+            <Popover.Positioner>
+              <Popover.Content w="auto" maxW="calc(100vw - 32px)">
+                <Popover.Body>
+                  {menu && (
+                    <Stack gap="2">
+                      <Text textStyle="label">{linkTexts?.arrow(menu.from, menu.to)}</Text>
+                      <Button size="sm" variant="secondary" onClick={() => { onUnlink(menu); setMenu(null); }}>
+                        <Trash2 />
+                        {linkTexts?.remove}
+                      </Button>
+                    </Stack>
+                  )}
+                </Popover.Body>
+              </Popover.Content>
+            </Popover.Positioner>
+          </Portal>
+        </Popover.Root>
+      )}
     </Box>
   );
 }
