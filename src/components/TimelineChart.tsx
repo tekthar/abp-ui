@@ -1,10 +1,11 @@
 import { Fragment, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { Box, HStack, Popover, Portal, Stack, Text } from '@chakra-ui/react';
-import { Trash2 } from 'lucide-react';
+import { Flag, Trash2 } from 'lucide-react';
 import { useMotionSetting } from '../motion/setting';
 import { useLoading } from '../skeleton/loading';
 import { Bone, boneWidth, TextBone } from '../skeleton/bones';
 import { Button } from './Button';
+import { Tooltip } from './Tooltip';
 
 /** A bar: its first and last day (yyyy-mm-dd); with only one of them, it's that one day. */
 export interface TimelineItem {
@@ -42,6 +43,10 @@ export interface TimelineChartProps<T extends TimelineItem> {
   /** Dependencies: <c>from</c> must end before <c>to</c> starts (drawn red when it doesn't). */
   links?: { from: string; to: string }[];
   today?: string;
+  /** Periods shown as labelled bands in a strip under the header (sprints); the `current` one is also shaded down the chart. */
+  bands?: { id: string; start: string; end: string; label: string; detail?: ReactNode; current?: boolean }[];
+  /** Days marked with a flag in a strip under the header and a line down the chart (releases' due dates). */
+  markers?: { id: string; day: string; label: string; detail?: ReactNode; palette?: string }[];
   /** Scrolls this day to the middle of the timeline, each time a new object is given (a Today button). */
   reveal?: { day: string } | null;
   /** The label column for a record row. */
@@ -91,6 +96,8 @@ export function TimelineChart<T extends TimelineItem>({
   rows,
   links = [],
   today,
+  bands = [],
+  markers = [],
   reveal,
   renderLabel,
   renderBar,
@@ -287,7 +294,19 @@ export function TimelineChart<T extends TimelineItem>({
     const sub = subTick?.(fromDay(origin + n));
     if (sub) subTicks.push({ day: n, label: sub });
   }
-  const headerHeight = subTick ? 52 : 36;
+  const tickHeight = subTick ? 52 : 36;
+  const STRIP = 24;
+  // Bands and markers inside the window (a band cut to it), as day offsets from its first day.
+  const shownBands = bands.flatMap((b) => {
+    const a = Math.max(toDay(b.start) - origin, 0), z = Math.min(toDay(b.end) - origin, days - 1);
+    return z >= a ? [{ ...b, a, z }] : [];
+  });
+  const shownMarkers = markers.flatMap((m) => {
+    const at = toDay(m.day) - origin;
+    return at >= 0 && at < days ? [{ ...m, at }] : [];
+  });
+  const bandsTop = tickHeight, markersTop = tickHeight + (shownBands.length ? STRIP : 0);
+  const headerHeight = markersTop + (shownMarkers.length ? STRIP : 0);
   const todayAt = today ? toDay(today) - origin : -1;
 
   return (
@@ -298,12 +317,12 @@ export function TimelineChart<T extends TimelineItem>({
         <Box position="sticky" top="0" insetStart="0" zIndex="3" bg="bg.muted" borderBottomWidth="1px" borderInlineEndWidth="1px" borderColor="border" h={`${headerHeight}px`} />
         {/* Clipped, so a tick near the end can't widen the chart with its label; clip rather than hidden, which would
             make the header its own scroll container and stop the labels below sticking. */}
-        <Box position="sticky" top="0" zIndex="2" bg="bg.muted" borderBottomWidth="1px" borderColor="border" h={`${headerHeight}px`} overflow="clip" aria-hidden>
+        <Box position="sticky" top="0" zIndex="2" bg="bg.muted" borderBottomWidth="1px" borderColor="border" h={`${headerHeight}px`} overflow="clip">
           {/* Each tick's label stays beside the labels column while its period is in view, so a scrolled chart still
               says which month it shows. */}
           {ticks.map((t, i) => (
-            <Box key={t.day} position="absolute" insetStart={`${t.day * dayWidth}px`} w={`${((ticks[i + 1]?.day ?? days) - t.day) * dayWidth}px`} top="0" h="full"
-              borderInlineStartWidth="1px" borderColor="border">
+            <Box key={t.day} position="absolute" insetStart={`${t.day * dayWidth}px`} w={`${((ticks[i + 1]?.day ?? days) - t.day) * dayWidth}px`} top="0"
+              h={`${tickHeight}px`} borderInlineStartWidth="1px" borderColor="border" aria-hidden>
               <Text position="sticky" insetStart={`${labelWidth}px`} display="inline-flex" h={subTick ? undefined : 'full'} ps="1.5" pt={subTick ? '1' : undefined}
                 textStyle="caption" color="fg.muted" alignItems="center" whiteSpace="nowrap">
                 {t.label}
@@ -311,10 +330,35 @@ export function TimelineChart<T extends TimelineItem>({
             </Box>
           ))}
           {subTicks.map((t) => (
-            <Text key={t.day} position="absolute" insetStart={`${t.day * dayWidth}px`} w={`${dayWidth}px`} bottom="1" textStyle="caption" color="fg.subtle"
-              textAlign="center" whiteSpace="nowrap" fontVariantNumeric="tabular-nums">
+            <Text key={t.day} position="absolute" insetStart={`${t.day * dayWidth}px`} w={`${dayWidth}px`} top={`${tickHeight - 20}px`} textStyle="caption"
+              color="fg.subtle" textAlign="center" whiteSpace="nowrap" fontVariantNumeric="tabular-nums" aria-hidden>
               {t.label}
             </Text>
+          ))}
+          {/* Sprints: a band each, its name kept in view like the ticks', what it is on hover or focus. */}
+          {shownBands.map((b) => (
+            <Tooltip key={b.id} content={b.detail ?? b.label}>
+              <Box position="absolute" insetStart={`${b.a * dayWidth + 1}px`} w={`${(b.z - b.a + 1) * dayWidth - 2}px`} top={`${bandsTop + 3}px`} h={`${STRIP - 6}px`}
+                rounded="l1" borderWidth="1px" colorPalette={b.current ? 'accent' : 'neutral'} bg={b.current ? 'colorPalette.subtle' : 'bg.subtle'}
+                borderColor={b.current ? 'colorPalette.border' : 'border'} tabIndex={0} focusVisibleRing="inside" overflow="clip" aria-label={b.label}>
+                <Text position="sticky" insetStart={`${labelWidth}px`} display="inline-block" maxW="full" px="1.5" textStyle="caption" lineHeight={`${STRIP - 8}px`}
+                  color={b.current ? 'colorPalette.fg' : 'fg.muted'} fontWeight={b.current ? 'medium' : undefined} truncate>
+                  <bdi>{b.label}</bdi>
+                </Text>
+              </Box>
+            </Tooltip>
+          ))}
+          {/* Releases: a flag at the day, pointing down the line drawn through the chart. */}
+          {shownMarkers.map((m) => (
+            <Tooltip key={m.id} content={m.detail ?? m.label}>
+              <Box position="absolute" insetStart={`${m.at * dayWidth + dayWidth / 2 - 1}px`} top={`${markersTop + 3}px`} h={`${STRIP - 6}px`} display="flex" alignItems="center"
+                gap="1" ps="1.5" pe="1.5" roundedEnd="l1" colorPalette={m.palette ?? 'accent'} bg="colorPalette.solid" color="colorPalette.contrast" textStyle="caption"
+                fontWeight="medium" whiteSpace="nowrap" borderInlineStartWidth="2px" borderColor="colorPalette.solid" tabIndex={0} focusVisibleRing="outside" aria-label={m.label}>
+                <Flag size={11} aria-hidden />
+                {/* Titles are people's own text, in their own direction ("1.0 Web beta" stays so in Arabic). */}
+                <bdi>{m.label}</bdi>
+              </Box>
+            </Tooltip>
           ))}
         </Box>
 
@@ -331,6 +375,15 @@ export function TimelineChart<T extends TimelineItem>({
         <Box ref={layer} position="relative" h={`${shown.length * rowHeight}px`}>
           {ticks.map((t) => (
             <Box key={t.day} position="absolute" insetStart={`${t.day * dayWidth}px`} top="0" bottom="0" borderInlineStartWidth="1px" borderColor="border.muted" aria-hidden />
+          ))}
+          {/* The current sprint, shaded down the chart; the release days, as dashed lines. */}
+          {shownBands.filter((b) => b.current).map((b) => (
+            <Box key={b.id} position="absolute" insetStart={`${b.a * dayWidth}px`} w={`${(b.z - b.a + 1) * dayWidth}px`} top="0" bottom="0" bg="accent.subtle" opacity={0.45}
+              pointerEvents="none" aria-hidden />
+          ))}
+          {shownMarkers.map((m) => (
+            <Box key={m.id} position="absolute" insetStart={`${m.at * dayWidth + dayWidth / 2 - 1}px`} top="0" bottom="0" borderInlineStartWidth="2px" borderStyle="dashed"
+              colorPalette={m.palette ?? 'accent'} borderColor="colorPalette.solid" opacity={0.7} pointerEvents="none" aria-hidden />
           ))}
           {todayAt >= 0 && todayAt < days && (
             <Box position="absolute" insetStart={`${todayAt * dayWidth + dayWidth / 2}px`} top="0" bottom="0" borderInlineStartWidth="2px" borderColor="accent.solid" opacity={0.5}
