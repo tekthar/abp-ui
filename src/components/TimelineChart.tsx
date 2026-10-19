@@ -23,6 +23,8 @@ export interface TimelineItem {
   palette?: string;
   /** Picked out (ringed, as on a critical path) or set back (faded) while something else is picked out. */
   emphasis?: 'strong' | 'faint';
+  /** A point in time, drawn as a diamond on its day; by default, a bar with only one of its dates is one. */
+  milestone?: boolean;
 }
 
 export interface TimelineRow<T extends TimelineItem> {
@@ -283,12 +285,25 @@ export function TimelineChart<T extends TimelineItem>({
     if (to) onLink?.(linking.from, to);
   }
 
+  // A milestone's diamond: its side, and where it sits (centred on its day).
+  const DIAMOND = 16;
+  const isMilestone = (item: T) => item.milestone ?? (!item.start || !item.end);
+  // Where a bar starts and ends on screen, from the window's first day: a diamond from point to point.
+  const extent = (item: T) => {
+    const { a, b } = span(item);
+    if (isMilestone(item)) {
+      const mid = (b - origin) * dayWidth + dayWidth / 2;
+      return { x1: mid - DIAMOND / 2, x2: mid + DIAMOND / 2 };
+    }
+    return { x1: (Math.max(a, origin) - origin) * dayWidth, x2: (Math.min(b, origin + days - 1) - origin + 1) * dayWidth };
+  };
+
   // Bar positions by record, for the dependency arrows.
-  const ys = new Map<string, { y: number; a: number; b: number }>();
+  const ys = new Map<string, { y: number; a: number; b: number; x1: number; x2: number }>();
   rows.forEach((r, i) => {
     if (r.item && (r.item.start || r.item.end)) {
       const { a, b } = span(r.item);
-      ys.set(r.item.id, { y: i * rowHeight + rowHeight / 2, a, b });
+      ys.set(r.item.id, { y: i * rowHeight + rowHeight / 2, a, b, ...extent(r.item) });
     }
   });
   const ticks: { day: number; label: string }[] = [];
@@ -431,19 +446,20 @@ export function TimelineChart<T extends TimelineItem>({
             if (!item || (!item.start && !item.end)) return null;
             const { a, b } = span(item);
             if (b < origin || a > origin + days - 1) return null;
-            const left = (Math.max(a, origin) - origin) * dayWidth;
-            const right = (Math.min(b, origin + days - 1) - origin + 1) * dayWidth;
-            const single = !item.start || !item.end;
+            const { x1: left, x2: right } = extent(item);
+            const single = isMilestone(item);
             const tone = item.tone ?? 'own';
-            const hollow = single || tone === 'inferred';
+            const hollow = tone === 'inferred';
             const thin = tone === 'rollup' && !single;
+            // A diamond: a square turned on its point, solid on its own date, dashed on one it takes from elsewhere.
+            const diamond = single ? { w: `${DIAMOND}px`, h: `${DIAMOND}px`, top: `${i * rowHeight + rowHeight / 2 - DIAMOND / 2}px`, transform: 'rotate(45deg)', rounded: 'l1' } : null;
             const canLink = !!onLink && item.linkable !== false && !drag;
             return (
               <Fragment key={item.id}>
-              <Box role="button" tabIndex={0} aria-label={describe(item)} position="absolute" insetStart={`${left}px`} w={`${Math.max(right - left, 6)}px`}
-                top={thin ? `${i * rowHeight + rowHeight / 2 - 5}px` : `${i * rowHeight + 6}px`} h={thin ? '10px' : `${rowHeight - 12}px`} rounded={thin ? 'l1' : 'l2'}
-                colorPalette={item.palette ?? 'accent'}
-                bg={thin ? (item.palette ? 'colorPalette.solid' : 'fg.muted') : hollow ? (tone === 'inferred' && !single ? 'colorPalette.subtle' : 'transparent') : 'colorPalette.solid'}
+              <Box role="button" tabIndex={0} aria-label={describe(item)} position="absolute" insetStart={`${left}px`} w={diamond?.w ?? `${Math.max(right - left, 6)}px`}
+                top={diamond?.top ?? (thin ? `${i * rowHeight + rowHeight / 2 - 5}px` : `${i * rowHeight + 6}px`)} h={diamond?.h ?? (thin ? '10px' : `${rowHeight - 12}px`)}
+                rounded={diamond?.rounded ?? (thin ? 'l1' : 'l2')} transform={diamond?.transform} colorPalette={item.palette ?? 'accent'}
+                bg={thin ? (item.palette ? 'colorPalette.solid' : 'fg.muted') : hollow ? 'colorPalette.subtle' : 'colorPalette.solid'}
                 color={hollow ? 'colorPalette.fg' : 'colorPalette.contrast'}
                 borderWidth={hollow ? '2px' : 0} borderStyle="dashed" borderColor="colorPalette.solid" cursor={item.movable === false ? 'default' : 'grab'}
                 display="flex" alignItems="center" px="1.5" overflow="hidden" whiteSpace="nowrap" textStyle="caption" userSelect="none" touchAction="none"
@@ -468,7 +484,7 @@ export function TimelineChart<T extends TimelineItem>({
               </Box>
               {/* The dot to draw a dependency from, just past the bar's end, while the pointer is on the bar or the dot. */}
               {canLink && (hot === item.id || linking?.from.id === item.id) && (
-                <Box position="absolute" insetStart={`${Math.max(right, left + 6)}px`} top={`${i * rowHeight}px`} w="4" h={`${rowHeight}px`} zIndex="2"
+                <Box position="absolute" insetStart={`${single ? right + 3 : Math.max(right, left + 6)}px`} top={`${i * rowHeight}px`} w="4" h={`${rowHeight}px`} zIndex="2"
                   display="flex" alignItems="center" justifyContent="center" cursor="crosshair" touchAction="none" title={linkTexts?.handle}
                   onPointerEnter={() => setHot(item.id)} onPointerLeave={() => setHot((h) => (h === item.id ? null : h))}
                   onPointerDown={(e) => linkDown(item, e)} onPointerMove={linkMove} onPointerUp={linkUp} onPointerCancel={() => setLinking(null)} aria-hidden>
@@ -490,7 +506,7 @@ export function TimelineChart<T extends TimelineItem>({
             {links.map((l) => {
               const f = ys.get(l.from), t = ys.get(l.to);
               if (!f || !t) return null;
-              const x1 = (f.b - origin + 1) * dayWidth, x2 = (t.a - origin) * dayWidth;
+              const x1 = f.x2, x2 = t.x1;
               const late = t.a <= f.b;
               // Room to go straight: across, down, across. Otherwise around: down to the gap between rows, back, down.
               const gap = f.y + (t.y > f.y ? rowHeight / 2 : -rowHeight / 2);
