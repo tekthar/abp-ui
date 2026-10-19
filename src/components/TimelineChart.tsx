@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { Box, HStack, Text } from '@chakra-ui/react';
+import { useMotionSetting } from '../motion/setting';
 import { useLoading } from '../skeleton/loading';
 import { Bone, boneWidth, TextBone } from '../skeleton/bones';
 
@@ -35,6 +36,8 @@ export interface TimelineChartProps<T extends TimelineItem> {
   /** Dependencies: <c>from</c> must end before <c>to</c> starts (drawn red when it doesn't). */
   links?: { from: string; to: string }[];
   today?: string;
+  /** Scrolls this day to the middle of the timeline, each time a new object is given (a Today button). */
+  reveal?: { day: string } | null;
   /** The label column for a record row. */
   renderLabel: (item: T) => ReactNode;
   /** Text inside a bar. */
@@ -72,6 +75,7 @@ export function TimelineChart<T extends TimelineItem>({
   rows,
   links = [],
   today,
+  reveal,
   renderLabel,
   renderBar,
   describe,
@@ -100,6 +104,18 @@ export function TimelineChart<T extends TimelineItem>({
   const width = days * dayWidth;
   const [drag, setDrag] = useState<{ id: string; mode: 'move' | 'end'; x: number; delta: number } | null>(null);
   const moved = useRef(false);
+  const { reduce } = useMotionSetting();
+  useEffect(() => {
+    const el = root.current;
+    if (!reveal || !el) return;
+    const at = toDay(reveal.day) - origin;
+    if (at < 0 || at >= days) return;
+    // The labels stay in place, so the middle is the middle of what's beside them. Right to left scrolls the other way.
+    const x = Math.max(0, at * dayWidth + dayWidth / 2 - (el.clientWidth - labelWidth) / 2);
+    el.scrollTo({ left: getComputedStyle(el).direction === 'rtl' ? -x : x, behavior: reduce ? 'auto' : 'smooth' });
+    // Only a new request scrolls; a zoom or a resize leaves the chart where the person put it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reveal]);
   // After a keyboard move the bars redraw: focus stays on the one that moved, so arrows can keep moving it.
   const refocus = useRef<string | null>(null);
   useEffect(() => {
