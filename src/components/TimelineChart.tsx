@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { Box, HStack, Popover, Portal, Stack, Text } from '@chakra-ui/react';
 import { Flag, Trash2 } from 'lucide-react';
 import { useMotionSetting } from '../motion/setting';
@@ -53,8 +53,15 @@ export interface TimelineChartProps<T extends TimelineItem> {
   markers?: { id: string; day: string; label: string; detail?: ReactNode; palette?: string }[];
   /** Days off (a calendar's weekend and holidays), shaded at the finer zooms (12px a day or more); a holiday is named. */
   offDays?: (day: string) => { kind: 'weekend' } | { kind: 'holiday'; label: string } | null;
+  /**
+   * Zooming, asked for with Ctrl or ⌘ and the wheel (or a trackpad pinch) over the chart, or + and − while it has focus:
+   * 1 in, −1 out. The host changes `dayWidth`; the chart keeps the day under the pointer (or in the middle) where it was.
+   */
+  onZoom?: (step: 1 | -1) => void;
   /** Scrolls this day to the middle of the timeline, each time a new object is given (a Today button). */
   reveal?: { day: string } | null;
+  /** What goes in the header's corner, above the labels column (zoom buttons, say). */
+  corner?: ReactNode;
   /** The label column for a record row. */
   renderLabel: (item: T) => ReactNode;
   /** Text inside a bar. */
@@ -105,7 +112,9 @@ export function TimelineChart<T extends TimelineItem>({
   bands = [],
   markers = [],
   offDays,
+  onZoom,
   reveal,
+  corner,
   renderLabel,
   renderBar,
   renderCard,
@@ -139,6 +148,53 @@ export function TimelineChart<T extends TimelineItem>({
   const width = days * dayWidth;
   const [drag, setDrag] = useState<{ id: string; mode: 'move' | 'end'; x: number; delta: number } | null>(null);
   const moved = useRef(false);
+
+  // Zooming keeps a day in place: the one under the pointer, or in the middle of the timeline. The scroll position is
+  // kept as it was before the change, since the browser may already have cut it short for narrower content.
+  const scrolled = useRef(0);
+  const lastWidth = useRef(dayWidth);
+  const anchor = useRef<{ day: number; at: number } | null>(null);
+  const rtlOf = (el: Element) => getComputedStyle(el).direction === 'rtl';
+  const along = (el: HTMLElement) => (rtlOf(el) ? -el.scrollLeft : el.scrollLeft);
+  useLayoutEffect(() => {
+    const el = root.current, before = lastWidth.current;
+    lastWidth.current = dayWidth;
+    if (!el || before === dayWidth) return;
+    const at = anchor.current?.at ?? (el.clientWidth - labelWidth) / 2;
+    const day = anchor.current?.day ?? (scrolled.current + at) / before;
+    anchor.current = null;
+    const x = Math.max(0, day * dayWidth - at);
+    el.scrollLeft = rtlOf(el) ? -x : x;
+    scrolled.current = x;
+  }, [dayWidth, labelWidth]);
+  const zoomRef = useRef({ onZoom, dayWidth });
+  zoomRef.current = { onZoom, dayWidth };
+  useEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    let sum = 0;
+    const wheel = (e: WheelEvent) => {
+      const { onZoom: zoom, dayWidth: w } = zoomRef.current;
+      if (!zoom || !(e.ctrlKey || e.metaKey)) return;
+      e.preventDefault();
+      sum += e.deltaY;
+      if (Math.abs(sum) < 40) return;
+      const box = el.getBoundingClientRect();
+      const at = (rtlOf(el) ? box.right - e.clientX : e.clientX - box.left) - labelWidth;
+      if (at > 0) anchor.current = { day: (along(el) + at) / w, at };
+      zoom(sum < 0 ? 1 : -1);
+      sum = 0;
+    };
+    el.addEventListener('wheel', wheel, { passive: false });
+    return () => el.removeEventListener('wheel', wheel);
+  }, [labelWidth]);
+  function zoomKey(e: KeyboardEvent) {
+    if (!onZoom || e.ctrlKey || e.metaKey || e.altKey || (e.target as HTMLElement).closest('input, textarea, select, [contenteditable]')) return;
+    const step = e.key === '+' || e.key === '=' ? 1 : e.key === '-' || e.key === '−' ? -1 : 0;
+    if (!step) return;
+    e.preventDefault();
+    onZoom(step);
+  }
   const { reduce } = useMotionSetting();
   // Drawing a dependency: where the line starts and where the pointer is, in the bars layer's own pixels (left to right
   // on screen, whatever the direction), and the bar it would land on.
@@ -342,11 +398,15 @@ export function TimelineChart<T extends TimelineItem>({
   const todayAt = today ? toDay(today) - origin : -1;
 
   return (
-    <Box ref={root} role="region" aria-label={ariaLabel} borderWidth="1px" borderColor="border" rounded="l3" overflow="auto" maxH="70vh" position="relative" bg="bg.panel">
+    <Box ref={root} role="region" aria-label={ariaLabel} borderWidth="1px" borderColor="border" rounded="l3" overflow="auto" maxH="70vh" position="relative" bg="bg.panel"
+      onScroll={(e) => { scrolled.current = along(e.currentTarget); }} onKeyDown={zoomKey}>
       {instructions && <Text srOnly>{instructions}</Text>}
       <Box display="grid" gridTemplateColumns={fill ? `${labelWidth}px minmax(${width}px, 1fr)` : `${labelWidth}px ${width}px`} minW="fit-content">
         {/* header */}
-        <Box position="sticky" top="0" insetStart="0" zIndex="3" bg="bg.muted" borderBottomWidth="1px" borderInlineEndWidth="1px" borderColor="border" h={`${headerHeight}px`} />
+        <Box position="sticky" top="0" insetStart="0" zIndex="3" bg="bg.muted" borderBottomWidth="1px" borderInlineEndWidth="1px" borderColor="border" h={`${headerHeight}px`}
+          display="flex" alignItems="flex-start" px="2" pt="1">
+          {corner}
+        </Box>
         {/* Clipped, so a tick near the end can't widen the chart with its label; clip rather than hidden, which would
             make the header its own scroll container and stop the labels below sticking. */}
         <Box position="sticky" top="0" zIndex="2" bg="bg.muted" borderBottomWidth="1px" borderColor="border" h={`${headerHeight}px`} overflow="clip">
@@ -362,8 +422,9 @@ export function TimelineChart<T extends TimelineItem>({
             </Box>
           ))}
           {subTicks.map((t) => (
-            <Text key={t.day} position="absolute" insetStart={`${t.day * dayWidth}px`} w={`${dayWidth}px`} top={`${tickHeight - 20}px`} textStyle="caption"
-              color="fg.subtle" textAlign="center" whiteSpace="nowrap" fontVariantNumeric="tabular-nums" aria-hidden>
+            <Text key={t.day} position="absolute" insetStart={`${t.day * dayWidth}px`} w={dayWidth >= 20 ? `${dayWidth}px` : undefined} ps={dayWidth >= 20 ? undefined : '1'}
+              top={`${tickHeight - 20}px`} textStyle="caption" color="fg.subtle" textAlign={dayWidth >= 20 ? 'center' : 'start'} whiteSpace="nowrap" fontVariantNumeric="tabular-nums"
+              borderInlineStartWidth={dayWidth >= 20 ? undefined : '1px'} borderColor="border.muted" aria-hidden>
               {t.label}
             </Text>
           ))}
