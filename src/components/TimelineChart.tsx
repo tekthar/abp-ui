@@ -25,6 +25,8 @@ export interface TimelineItem {
   emphasis?: 'strong' | 'faint';
   /** A point in time, drawn as a diamond on its day; by default, a bar with only one of its dates is one. */
   milestone?: boolean;
+  /** Its dates in a baseline it's compared with: a thin strip along the foot of its row, under the bar. */
+  baseline?: { start?: string | null; end?: string | null } | null;
 }
 
 export interface TimelineRow<T extends TimelineItem> {
@@ -508,6 +510,17 @@ export function TimelineChart<T extends TimelineItem>({
               <Bone key={`bar-${r.id}`} position="absolute" insetStart={`${Math.round(width * (((i * 13) % 40) / 100))}px`} w={`${Math.round(width * (0.15 + ((i * 7) % 25) / 100))}px`}
                 top={`${i * rowHeight + 6}px`} height={`${rowHeight - 12}px`} borderRadius="l2" />
             ))}
+          {/* Baselines: where each bar was, as a strip along the foot of its row (a bar ending right of its strip slipped). */}
+          {rows.map((r, i) => {
+            const bl = r.item?.baseline;
+            if (!bl || (!bl.start && !bl.end)) return null;
+            const a = Math.max(toDay(bl.start ?? bl.end!) - origin, 0), z = Math.min(toDay(bl.end ?? bl.start!) - origin, days - 1);
+            if (z < a) return null;
+            return (
+              <Box key={`bl:${r.id}`} position="absolute" insetStart={`${a * dayWidth}px`} w={`${Math.max((z - a + 1) * dayWidth, 4)}px`} top={`${i * rowHeight + rowHeight - 6}px`}
+                h="4px" rounded="full" bg="fg.subtle" opacity={0.7} pointerEvents="none" aria-hidden />
+            );
+          })}
           {/* Lanes: each cell over its span, toned by how full it is, saying in words what its number means. */}
           {rows.map((r, i) => r.lane?.map((c) => {
             const a = Math.max(toDay(c.start) - origin, 0), z = Math.min(toDay(c.end) - origin, days - 1);
