@@ -32,6 +32,11 @@ export interface TimelineRow<T extends TimelineItem> {
   /** A group heading row (no bar), or a record row. */
   heading?: ReactNode;
   item?: T;
+  /**
+   * A lane instead of a bar (someone's workload, say): cells along the timeline, each a span with a short text, a tone
+   * (low, at capacity, over) and what it says in words. The row's `heading` is its label, without a heading's shading.
+   */
+  lane?: { start: string; end: string; text: string; tone: 'low' | 'full' | 'over'; label: string }[];
 }
 
 export interface TimelineChartProps<T extends TimelineItem> {
@@ -465,7 +470,7 @@ export function TimelineChart<T extends TimelineItem>({
         {/* labels */}
         <Box position="sticky" insetStart="0" zIndex="1" bg="bg.panel" borderInlineEndWidth="1px" borderColor="border">
           {shown.map((r, i) => (
-            <HStack key={r.id} h={`${rowHeight}px`} px="3" gap="2" borderBottomWidth="1px" borderColor="border.muted" bg={r.heading ? 'bg.subtle' : undefined} minW="0">
+            <HStack key={r.id} h={`${rowHeight}px`} px="3" gap="2" borderBottomWidth="1px" borderColor="border.muted" bg={r.heading && !r.lane ? 'bg.subtle' : undefined} minW="0">
               {placeholders ? <TextBone width={boneWidth(i, 12, 26)} /> : (r.heading ?? (r.item && renderLabel(r.item)))}
             </HStack>
           ))}
@@ -496,13 +501,28 @@ export function TimelineChart<T extends TimelineItem>({
           )}
           {shown.map((r, i) => (
             <Box key={r.id} position="absolute" insetStart="0" insetEnd="0" top={`${i * rowHeight}px`} h={`${rowHeight}px`} borderBottomWidth="1px"
-              borderColor="border.muted" bg={r.heading ? 'bg.subtle' : undefined} aria-hidden={!r.item} />
+              borderColor="border.muted" bg={r.heading && !r.lane ? 'bg.subtle' : undefined} aria-hidden={!r.item} />
           ))}
           {placeholders &&
             shown.map((r, i) => (
               <Bone key={`bar-${r.id}`} position="absolute" insetStart={`${Math.round(width * (((i * 13) % 40) / 100))}px`} w={`${Math.round(width * (0.15 + ((i * 7) % 25) / 100))}px`}
                 top={`${i * rowHeight + 6}px`} height={`${rowHeight - 12}px`} borderRadius="l2" />
             ))}
+          {/* Lanes: each cell over its span, toned by how full it is, saying in words what its number means. */}
+          {rows.map((r, i) => r.lane?.map((c) => {
+            const a = Math.max(toDay(c.start) - origin, 0), z = Math.min(toDay(c.end) - origin, days - 1);
+            if (z < a) return null;
+            const w = (z - a + 1) * dayWidth - 2;
+            const palette = c.tone === 'over' ? 'danger' : c.tone === 'full' ? 'warning' : 'accent';
+            return (
+              <Box key={`${r.id}:${c.start}`} position="absolute" insetStart={`${a * dayWidth + 1}px`} w={`${w}px`} top={`${i * rowHeight + 5}px`} h={`${rowHeight - 10}px`}
+                rounded="l1" colorPalette={palette} bg="colorPalette.subtle" color="colorPalette.fg" borderWidth={c.tone === 'over' ? '1px' : 0} borderColor="colorPalette.solid"
+                display="flex" alignItems="center" justifyContent="center" textStyle="caption" fontWeight={c.tone === 'low' ? undefined : 'semibold'}
+                fontVariantNumeric="tabular-nums" overflow="hidden" role="img" aria-label={c.label} title={c.label}>
+                {w >= 14 && c.text}
+              </Box>
+            );
+          }))}
           {rows.map((r, i) => {
             const item = r.item;
             if (!item || (!item.start && !item.end)) return null;
