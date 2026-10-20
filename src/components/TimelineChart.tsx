@@ -471,8 +471,9 @@ export function TimelineChart<T extends TimelineItem>({
           ))}
         </Box>
 
-        {/* bars */}
-        <Box ref={layer} position="relative" h={`${shown.length * rowHeight}px`}>
+        {/* bars: their own stacking layer, so nothing in it (arrows, the dependency dot, the line being drawn) can paint
+            over the sticky labels or header when its bar is scrolled under them. */}
+        <Box ref={layer} position="relative" zIndex="0" h={`${shown.length * rowHeight}px`}>
           {offRuns.map((o) => (
             <Box key={`o${o.a}`} position="absolute" insetStart={`${o.a * dayWidth}px`} w={`${(o.z - o.a + 1) * dayWidth}px`} top="0" bottom="0" pointerEvents="none"
               bg={o.kind === 'holiday' ? 'warning.subtle' : 'bg.muted'} opacity={o.kind === 'holiday' ? 0.7 : 0.8} aria-hidden />
