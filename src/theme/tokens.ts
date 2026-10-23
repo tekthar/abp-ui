@@ -1,101 +1,11 @@
 import { defineTokens } from '@chakra-ui/react';
+import { accent, amber, blue, green, neutral, red } from '@todahq/tokens';
 
 /**
- * Raw scales. Components never use these directly: they use the semantic tokens in
- * semantic-tokens.ts (bg, fg, border, accent, success, statusCategory ...), which pick a step
+ * Raw scales, from @todahq/tokens (the phone app uses the same). Components never use these directly: they use the
+ * semantic tokens in semantic-tokens.ts (bg, fg, border, accent, success, statusCategory ...), which pick a step
  * per colour mode. The raw scales exist so the semantic layer has one place to point at.
  */
-
-// Neutrals with a slight cool (blue-grey, ~220deg) bias. 25..950, light to dark.
-const neutral = {
-  0: '#FFFFFF',
-  25: '#FBFCFD',
-  50: '#F6F7F9',
-  100: '#EEF0F3',
-  200: '#E2E5EA',
-  300: '#CED3DA',
-  400: '#A7AEB9',
-  500: '#7D8593',
-  600: '#5E6673',
-  700: '#454C57',
-  800: '#2F343C',
-  850: '#262A31',
-  900: '#1D2025',
-  925: '#17191D',
-  950: '#111316',
-} as const;
-
-// The one accent: a calm petrol blue-green. Distinct from info (blue) and success (green).
-const accent = {
-  50: '#ECF6F8',
-  100: '#D2EBF0',
-  200: '#A6D6E0',
-  300: '#6FBACB',
-  400: '#3B9AB0',
-  500: '#15798F',
-  600: '#0F6478',
-  700: '#0E5162',
-  800: '#0E414E',
-  900: '#0C323C',
-  950: '#082128',
-} as const;
-
-// Status ramps. Separate from the accent so "success" never reads as "brand".
-const green = {
-  50: '#EDF8F1',
-  100: '#D3EFDD',
-  200: '#A8DDBC',
-  300: '#74C595',
-  400: '#45A872',
-  500: '#2A8C58',
-  600: '#1F7247',
-  700: '#1A5B3A',
-  800: '#164830',
-  900: '#123826',
-  950: '#0A2217',
-} as const;
-
-const amber = {
-  50: '#FDF6E7',
-  100: '#FAE9C2',
-  200: '#F4D286',
-  300: '#EBB548',
-  400: '#DB971F',
-  500: '#BD7A0E',
-  600: '#9A600B',
-  700: '#7A4B0D',
-  800: '#613D10',
-  900: '#4D3110',
-  950: '#2E1C07',
-} as const;
-
-const red = {
-  50: '#FDF0EF',
-  100: '#FADAD7',
-  200: '#F4B4AE',
-  300: '#EA857C',
-  400: '#DD5A50',
-  500: '#C93D33',
-  600: '#A92F27',
-  700: '#8A2721',
-  800: '#6E221D',
-  900: '#571D19',
-  950: '#34100D',
-} as const;
-
-const blue = {
-  50: '#EEF4FD',
-  100: '#D8E5FA',
-  200: '#B1CBF4',
-  300: '#82AAEB',
-  400: '#5587DF',
-  500: '#3769CC',
-  600: '#2A54AD',
-  700: '#24458C',
-  800: '#213A70',
-  900: '#1D3159',
-  950: '#121E37',
-} as const;
 
 function ramp<T extends Record<string | number, string>>(scale: T) {
   return Object.fromEntries(Object.entries(scale).map(([k, v]) => [k, { value: v }])) as {
