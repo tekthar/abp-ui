@@ -96,6 +96,13 @@ export interface QueryableListError {
   end?: number;
 }
 
+/**
+ * A field's own control for a filter's value in the basic search (a field type's filter component, ADR 0077): it gets the
+ * field, the operator and the value so far, and gives the value the condition takes (a list for in, has any…). Null
+ * keeps the text box with its suggestions.
+ */
+export type QueryValueEditor = (props: { field: QueryField; op: string; value: unknown; onChange: (value: unknown) => void }) => ReactNode | null;
+
 export interface QueryableListProps {
   'aria-label': string;
   /** undefined while loading. */
@@ -114,6 +121,8 @@ export interface QueryableListProps {
   selection?: DataTableSelection<QueryRow>;
   /** RQL autocomplete at the caret; without it the RQL box is a plain input. */
   suggest?: (rql: string, caret: number) => Promise<QuerySuggestions>;
+  /** A field's own value control in the basic search; without it, or when it gives null, the text box. */
+  renderValueEditor?: QueryValueEditor;
   skip: number;
   take: number;
   onSkipChange: (skip: number) => void;
@@ -190,6 +199,7 @@ export function QueryableList({
   renderRow,
   selection,
   suggest,
+  renderValueEditor,
   skip,
   take,
   onSkipChange,
@@ -361,6 +371,7 @@ export function QueryableList({
               <AddFilter
                 fields={fields ?? []}
                 suggest={suggest}
+                renderValueEditor={renderValueEditor}
                 onCancel={() => setAdding(false)}
                 onAdd={(c) => {
                   setAdding(false);
@@ -548,11 +559,13 @@ function ColumnChooser({ fields, columns, onChange }: { fields: QueryField[]; co
 function AddFilter({
   fields,
   suggest,
+  renderValueEditor,
   onAdd,
   onCancel,
 }: {
   fields: QueryField[];
   suggest?: (rql: string, caret: number) => Promise<QuerySuggestions>;
+  renderValueEditor?: QueryValueEditor;
   onAdd: (c: QueryConditionJson) => void;
   onCancel: () => void;
 }) {
@@ -561,13 +574,17 @@ function AddFilter({
   const field = fields.find((f) => f.id === fieldId);
   const [op, setOp] = useState(field?.operators[0] ?? 'eq');
   const [text, setText] = useState('');
+  const [chosen, setChosen] = useState<unknown>(undefined);
   const [options, setOptions] = useState<QuerySuggestion[]>([]);
   const listId = useId();
 
   useEffect(() => {
     setOp(field?.operators[0] ?? 'eq');
     setText('');
+    setChosen(undefined);
   }, [field]);
+  // The field's own control, when it brings one; its value is the condition's.
+  const own = field && renderValueEditor && !NO_VALUE_OPS.has(op) ? renderValueEditor({ field, op, value: chosen, onChange: setChosen }) : null;
 
   // Values come from the same autocomplete the RQL box uses, as if typing "field = …".
   useEffect(() => {
@@ -590,6 +607,11 @@ function AddFilter({
     if (!field) return;
     if (NO_VALUE_OPS.has(op)) {
       onAdd({ field: field.id, op });
+      return;
+    }
+    if (own != null) {
+      if (chosen == null || (Array.isArray(chosen) && chosen.length === 0)) return;
+      onAdd({ field: field.id, op, value: chosen });
       return;
     }
     if (!text.trim()) return;
@@ -616,7 +638,8 @@ function AddFilter({
         onChange={(e) => setOp(e.target.value)}
         options={(field?.operators ?? []).map((o) => ({ value: o, label: (field?.kind === 'number' ? labels.numberOperators[o] : undefined) ?? labels.operators[o] ?? o }))}
       />
-      {!NO_VALUE_OPS.has(op) && (
+      {own}
+      {!NO_VALUE_OPS.has(op) && own == null && (
         <>
           <Input
             size="sm"
