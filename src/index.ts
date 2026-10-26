@@ -127,6 +127,7 @@ export {
   type QueryRow,
   type QuerySuggestion,
   type QuerySuggestions,
+  type QueryValueEditor,
 } from './components/QueryableList';
 export { RecordKey, type RecordKeyProps } from './components/RecordKey';
 export { DropHint, FileDropArea, type DropHintProps, type FileDropAreaProps } from './components/FileDrop';
