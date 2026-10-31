@@ -58,6 +58,7 @@ export const appShellSlotRecipe = defineSlotRecipe({
     'navItemIndicator',
     'navItemIcon',
     'navItemLabel',
+    'navChildren',
     'sidebarFooter',
     'sidebarFooterText',
     'drawerHeader',
@@ -253,11 +254,15 @@ export const appShellSlotRecipe = defineSlotRecipe({
       focusVisibleRing: 'inside',
       _hover: { bg: 'bg.muted', color: 'fg' },
       '&[aria-current=page]': { color: 'fg.accent', fontWeight: 'medium' },
+      // A page under another (a favourite view under Views): shorter and smaller, its icon at the line's side.
+      '&[data-nested]': { h: 'control.sm', px: '2', gap: '2', textStyle: 'sm' },
     },
     // The current page's pill, behind its icon and name; it slides when the page changes.
     navItemIndicator: { position: 'absolute', inset: '0', borderRadius: 'l2', bg: 'bg.selected' },
     navItemIcon: { position: 'relative', display: 'inline-flex', flexShrink: '0', _icon: { boxSize: '4' } },
     navItemLabel: { position: 'relative', truncate: true, minW: '0', transition: WORDS_IN, ...still },
+    // The pages under a page, indented behind a line from its icon; they fold away in the rail.
+    navChildren: { display: 'flex', flexDirection: 'column', gap: '0.5', ms: '5', ps: '1.5', mt: '0.5', borderStartWidth: '1px', borderColor: 'border.muted' },
     // The toggle first, 12px from the edge (centred in the rail), its words after it.
     sidebarFooter: {
       flexShrink: '0',
