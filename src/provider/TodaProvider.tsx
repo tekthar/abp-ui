@@ -23,6 +23,8 @@ export interface TodaProviderProps {
   defaultColorMode?: 'light' | 'dark' | 'system';
   /** Each plugin's texts in the current language, from the site (see usePluginTexts). */
   pluginTexts?: Record<string, Record<string, unknown>>;
+  /** The product's name in the current language, which plugins' texts say for `{product}`; Toda when not given. */
+  productName?: string;
   /** The person's time zone (IANA); times show in the browser's when it's not given. */
   timeZone?: string;
   /** How much the interface moves for the person (ADR 0058); as their system says when it's not given. */
@@ -36,7 +38,7 @@ export interface TodaProviderProps {
  *
  * The host must also set `<html lang dir>` and `suppressHydrationWarning` on <html>.
  */
-export function TodaProvider({ children, locale = 'en', labels, linkComponent, defaultColorMode = 'system', pluginTexts, timeZone, motion }: TodaProviderProps) {
+export function TodaProvider({ children, locale = 'en', labels, linkComponent, defaultColorMode = 'system', pluginTexts, productName, timeZone, motion }: TodaProviderProps) {
   return (
     <ChakraProvider value={system}>
       <ColorModeProvider defaultTheme={defaultColorMode}>
@@ -44,7 +46,7 @@ export function TodaProvider({ children, locale = 'en', labels, linkComponent, d
           <TimeZoneProvider value={timeZone}>
           <LabelsProvider value={labels}>
             <LinkComponentProvider value={linkComponent}>
-              <PluginTextsProvider value={pluginTexts as never}>
+              <PluginTextsProvider value={pluginTexts as never} product={productName}>
                 <MotionProvider setting={motion}>
                   <ConfirmProvider>
                     {children}
