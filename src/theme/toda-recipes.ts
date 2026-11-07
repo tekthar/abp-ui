@@ -309,7 +309,8 @@ export const pageHeaderSlotRecipe = defineSlotRecipe({
   base: {
     root: { display: 'flex', flexDirection: 'column', gap: '2', mb: 'section' },
     row: { display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: '3' },
-    titleGroup: { display: 'flex', flexDirection: 'column', gap: '1', minW: '0', flex: '1' },
+    // The title keeps room for itself (16rem): on a narrow screen the actions wrap under it rather than squeezing it.
+    titleGroup: { display: 'flex', flexDirection: 'column', gap: '1', minW: '0', flex: '1 1 16rem' },
     title: { textStyle: 'heading.page', color: 'fg', display: 'flex', alignItems: 'center', gap: '2', flexWrap: 'wrap' },
     description: { textStyle: 'body', color: 'fg.muted', maxW: 'prose' },
     meta: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '2', textStyle: 'sm', color: 'fg.muted' },
