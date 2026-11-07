@@ -88,6 +88,14 @@ export { compactLayout, DashboardGrid, placeItem, type DashboardGridProps, type 
 export { CategoryProgress, type CategoryProgressProps } from './components/CategoryProgress';
 export { DirectionalIcon } from './components/DirectionalIcon';
 export { EmptyState, type EmptyStateProps } from './components/EmptyState';
+export { AttentionChip, type AttentionChipProps } from './components/AttentionChip';
+export { CountBadge, type CountBadgeProps } from './components/CountBadge';
+export { IconTile, type IconTileProps } from './components/IconTile';
+export { PersonChip, type PersonChipProps } from './components/PersonChip';
+export { PriorityMark, type PriorityMarkProps } from './components/PriorityMark';
+export { priorityLevel } from './components/priority-level';
+export { groupKey } from './components/query/grouping';
+export { SegmentedControl, type SegmentedControlProps, type SegmentedItem } from './components/SegmentedControl';
 export {
   CheckboxField,
   Field,

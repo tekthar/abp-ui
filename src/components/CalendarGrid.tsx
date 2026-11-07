@@ -154,8 +154,10 @@ function DayCell({ day, name, dim, today, tall, last, label, dragging, children 
     <Stack ref={setNodeRef} role="gridcell" aria-label={name} gap="1" p="1" minH={tall ? '72' : '28'} minW="0"
       borderInlineEndWidth={last ? 0 : '1px'} borderColor="border" bg={isOver ? 'bg.emphasized' : dim ? 'bg.subtle' : 'bg.panel'}
       outline={dragging ? '1px dashed' : undefined} outlineColor="border.muted" outlineOffset="-3px" data-day={day}>
-      <Text textStyle="caption" fontWeight={today ? 'semibold' : 'normal'} color={today ? 'accent.fg' : dim ? 'fg.subtle' : 'fg.muted'} px="1"
-        aria-current={today ? 'date' : undefined}>
+      {/* Today's number sits in a filled circle; the period's days read stronger than the days around it. */}
+      <Text textStyle="caption" fontWeight="semibold" color={today ? 'accent.contrast' : dim ? 'fg.subtle' : 'fg'} aria-current={today ? 'date' : undefined}
+        alignSelf="flex-start" px={today ? '1.5' : '1'} minW={today ? '6' : undefined} h="6" display="inline-flex" alignItems="center" justifyContent="center"
+        rounded="full" bg={today ? 'accent.solid' : undefined}>
         {label}
       </Text>
       {children}

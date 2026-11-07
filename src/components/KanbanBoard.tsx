@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { Box, chakra, HStack, Stack, Text } from '@chakra-ui/react';
-import { Check } from 'lucide-react';
+import { Check, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import {
   DndContext,
   DragOverlay,
@@ -22,6 +22,8 @@ import { useSlideItems } from '../motion/flip';
 import { useMotionSetting } from '../motion/setting';
 import { curves } from '../motion/tokens';
 import { between, withMoves } from './kanban-place';
+import { CountBadge } from './CountBadge';
+import { DirectionalIcon } from './DirectionalIcon';
 import { RecordKey } from './RecordKey';
 import { StatusPill } from './StatusPill';
 import { Loading, useLoading } from '../skeleton/loading';
@@ -30,6 +32,10 @@ import { boneWidth, TextBone } from '../skeleton/bones';
 export interface KanbanColumn {
   id: string;
   title: ReactNode;
+  /** How many cards it holds, in a badge beside its title (and on its folded lane). */
+  count?: number;
+  /** Its name as text, for the fold button's name and the folded lane's title; the title when that is text. */
+  name?: string;
   /** Shown under the title: a count, a WIP limit. */
   meta?: ReactNode;
   /** A column over its limit is marked. */
@@ -97,6 +103,15 @@ export interface KanbanBoardProps<T extends KanbanItem> {
    */
   loading?: boolean;
   skeletonCard?: (index: number) => ReactNode;
+  /**
+   * Columns fold into a narrow lane (their title upright, their count) to make room: a fold button on each header. Kept
+   * per board in this browser under this key; without it they fold until the page is left.
+   */
+  foldKey?: string;
+  /** The fold button's name: "Fold Draft", "Unfold Draft". */
+  foldLabel?: (name: string, folded: boolean) => string;
+  /** What goes under a column's cards (a "Create record" button); null for none. */
+  columnFooter?: (column: string) => ReactNode | null;
   skeletonColumns?: number;
 }
 
@@ -157,8 +172,12 @@ export function KanbanBoard<T extends KanbanItem>({
   loading: own,
   skeletonCard,
   skeletonColumns = 4,
+  foldKey,
+  foldLabel = (name, isFolded) => `${isFolded ? 'Unfold' : 'Fold'} ${name}`,
+  columnFooter,
 }: KanbanBoardProps<T>) {
   const loading = useLoading(own);
+  const [folded, fold] = useFolded(foldKey);
   // Columns not known yet: placeholder ones, their names coming.
   const shownColumns: KanbanColumn[] =
     loading && columns.length === 0
@@ -316,23 +335,63 @@ export function KanbanBoard<T extends KanbanItem>({
         }}
       >
         <Loading when={loading}>
-          <Box display="grid" gridTemplateColumns={`repeat(${shownColumns.length}, minmax(240px, 1fr))`} gap="3" minW="fit-content">
-            {shownColumns.map((c) => (
-              <Box key={c.id} position="sticky" top="0" zIndex="1" bg="bg" pb="1" data-column-header={c.id}>
-                <HStack justify="space-between" px="2" py="1.5" rounded="l2" bg={c.over ? 'red.subtle' : 'bg.muted'}>
-                  <Text textStyle="label" truncate>{c.title}</Text>
-                  {c.meta && <Text textStyle="caption" color={c.over ? 'fg.error' : 'fg.muted'} flexShrink={0}>{c.meta}</Text>}
-                </HStack>
-              </Box>
-            ))}
+          <Box
+            display="grid"
+            gridTemplateColumns={shownColumns.map((c) => (folded.has(c.id) ? '3.5rem' : 'minmax(260px, 1fr)')).join(' ')}
+            columnGap="3"
+            minW="fit-content"
+          >
+            {shownColumns.map((c) => {
+              const isFolded = folded.has(c.id);
+              const name = c.name ?? (typeof c.title === 'string' ? c.title : c.id);
+              return (
+                <Box key={c.id} position="sticky" top="0" zIndex="1" bg="bg" data-column-header={c.id} data-folded={isFolded ? '' : undefined}>
+                  {isFolded ? (
+                    <Stack align="center" gap="2" pt="2.5" pb="1" borderWidth="1px" borderBottomWidth="0" borderColor="border.muted"
+                      roundedTop="l3" bg={c.over ? 'red.subtle' : 'bg.subtle'} h="full">
+                      <FoldButton folded label={foldLabel(name, true)} onClick={() => fold(c.id)} />
+                    </Stack>
+                  ) : (
+                    <HStack justify="space-between" gap="2" ps="3" pe="1.5" pt="2.5" pb="2" borderWidth="1px" borderBottomWidth="0" borderColor="border.muted"
+                      roundedTop="l3" bg={c.over ? 'red.subtle' : 'bg.subtle'} h="full" align="start">
+                      <HStack gap="2" minW="0">
+                        <Text as="span" textStyle="label" truncate display="inline-flex" minW="0">{c.title}</Text>
+                        {c.count != null && <CountBadge value={c.count} />}
+                        {c.meta && <Text textStyle="caption" color={c.over ? 'fg.error' : 'fg.muted'} flexShrink={0}>{c.meta}</Text>}
+                      </HStack>
+                      {!loading && <FoldButton folded={false} label={foldLabel(name, false)} onClick={() => fold(c.id)} />}
+                    </HStack>
+                  )}
+                </Box>
+              );
+            })}
             {rows.map((lane) => (
               <LaneRow key={lane.id} lane={lane} showTitle={!!lanes && lanes.length > 0} columns={shownColumns} span={shownColumns.length}>
                 {shownColumns.map((c, ci) => {
                   const id = cellId(lane.id, c.id);
                   const list = byCell.get(id) ?? [];
                   const allowed = active ? canDrop?.(active, c.id, lane.id) !== false : true;
+                  const last = lane.id === rows[rows.length - 1].id;
+                  if (folded.has(c.id)) {
+                    // A folded column still takes a drop: the card goes to its end.
+                    return (
+                      <Cell key={id} id={id} allowed={allowed} dragging={!!active} items={[]} column={c.id} lane={lane.id} folded last={last}>
+                        {lane.id === rows[0].id && c.count != null && (
+                          <Box alignSelf="center">
+                            <CountBadge value={c.count} />
+                          </Box>
+                        )}
+                        {lane.id === rows[0].id && (
+                          <Box css={{ writingMode: 'vertical-rl' }} alignSelf="center" maxH="56" overflow="hidden" textStyle="sm" title={c.name}>
+                            {c.title}
+                          </Box>
+                        )}
+                      </Cell>
+                    );
+                  }
+                  const footer = last && !loading ? columnFooter?.(c.id) : null;
                   return (
-                    <Cell key={id} id={id} allowed={allowed} dragging={!!active} items={list.map((i) => i.id)} column={c.id} lane={lane.id}>
+                    <Cell key={id} id={id} allowed={allowed} dragging={!!active} items={list.map((i) => i.id)} column={c.id} lane={lane.id} last={last}>
                       {list.map((item) => (
                         <SortableCard
                           key={item.id}
@@ -355,6 +414,7 @@ export function KanbanBoard<T extends KanbanItem>({
                       {!loading && list.length === 0 && empty && (
                         <Text textStyle="caption" color="fg.subtle" textAlign="center" py="4">{empty}</Text>
                       )}
+                      {footer}
                     </Cell>
                   );
                 })}
@@ -388,8 +448,8 @@ function LaneRow({ lane, showTitle, span, children }: { lane: KanbanLane; showTi
   );
 }
 
-function Cell({ id, items, allowed, dragging, column, lane, children }: {
-  id: string; items: string[]; allowed: boolean; dragging: boolean; column: string; lane: string; children: ReactNode;
+function Cell({ id, items, allowed, dragging, column, lane, folded = false, last = true, children }: {
+  id: string; items: string[]; allowed: boolean; dragging: boolean; column: string; lane: string; folded?: boolean; last?: boolean; children?: ReactNode;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id, disabled: !allowed });
   return (
@@ -397,14 +457,16 @@ function Cell({ id, items, allowed, dragging, column, lane, children }: {
       <Stack
         ref={setNodeRef}
         gap="2"
-        minH="16"
-        p="1.5"
-        rounded="l2"
+        minH={folded ? '24' : '16'}
+        p="2"
+        roundedBottom={last ? 'l3' : undefined}
         bg={isOver && allowed ? 'bg.emphasized' : 'bg.subtle'}
         opacity={dragging && !allowed ? 0.45 : 1}
         borderWidth="1px"
+        borderTopWidth="0"
+        borderBottomWidth={last ? '1px' : '0'}
         borderStyle={dragging && allowed ? 'dashed' : 'solid'}
-        borderColor={dragging && allowed ? 'border.emphasized' : 'transparent'}
+        borderColor={dragging && allowed ? 'border.emphasized' : 'border.muted'}
         data-cell={`${lane}::${column}`}
         data-allowed={dragging ? String(allowed) : undefined}
       >
@@ -573,4 +635,45 @@ function Count({ children }: { children: ReactNode }) {
       {children}
     </chakra.span>
   );
+}
+
+/** A column's fold button: a double chevron pointing the way the column goes (mirrored right to left). */
+function FoldButton({ folded, label, onClick }: { folded: boolean; label: string; onClick: () => void }) {
+  return (
+    <chakra.button type="button" display="inline-flex" alignItems="center" justifyContent="center" boxSize="7" flexShrink={0} borderRadius="l2"
+      borderWidth={folded ? '1px' : '0'} borderColor="border" bg={folded ? 'bg.panel' : undefined} color="fg.muted" cursor="pointer"
+      _hover={{ bg: 'bg.emphasized', color: 'fg' }} focusVisibleRing="outside" aria-label={label} title={label} aria-expanded={!folded} onClick={onClick}>
+      <DirectionalIcon>{folded ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}</DirectionalIcon>
+    </chakra.button>
+  );
+}
+
+/** Which columns are folded: kept in this browser under the board's key (when it has one), else for the page's life. */
+function useFolded(key: string | undefined): [ReadonlySet<string>, (column: string) => void] {
+  const storage = key ? `toda.board.folded.${key}` : null;
+  const [folded, setFolded] = useState<ReadonlySet<string>>(() => new Set());
+  useEffect(() => {
+    if (!storage) return;
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(storage) ?? '[]');
+      if (Array.isArray(saved)) setFolded(new Set(saved.map(String)));
+    } catch {
+      // Storage off or unreadable: nothing folded.
+    }
+  }, [storage]);
+  const fold = (column: string) =>
+    setFolded((current) => {
+      const next = new Set(current);
+      if (next.has(column)) next.delete(column);
+      else next.add(column);
+      if (storage) {
+        try {
+          window.localStorage.setItem(storage, JSON.stringify([...next]));
+        } catch {
+          // Storage off: folded for now only.
+        }
+      }
+      return next;
+    });
+  return [folded, fold];
 }

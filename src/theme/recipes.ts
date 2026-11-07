@@ -261,8 +261,19 @@ export const tableSlotRecipe = defineSlotRecipe({
   base: {
     root: { color: 'fg' },
     header: { bg: 'bg.subtle' },
-    columnHeader: { textStyle: 'label', color: 'fg.muted', whiteSpace: 'nowrap', verticalAlign: 'middle' },
-    cell: { verticalAlign: 'top' },
+    // Headers read as quiet labels over their columns: small capitals in scripts that have them (letter spacing only in
+    // left-to-right scripts: Arabic letters join, and spacing them breaks the words).
+    columnHeader: {
+      textStyle: 'xs',
+      fontWeight: 'semibold',
+      textTransform: 'uppercase',
+      letterSpacing: '0.04em',
+      '[dir=rtl] &': { letterSpacing: 'normal' },
+      color: 'fg.muted',
+      whiteSpace: 'nowrap',
+      verticalAlign: 'middle',
+    },
+    cell: { verticalAlign: 'middle' },
     row: { _selected: { bg: 'bg.selected' } },
   },
   variants: {
@@ -282,7 +293,7 @@ export const tableSlotRecipe = defineSlotRecipe({
     },
     size: {
       sm: { root: { textStyle: 'sm' }, columnHeader: { px: '2.5', py: '1.5', textStyle: 'caption', fontWeight: 'medium' }, cell: { px: '2.5', py: '1.5' } },
-      md: { root: { textStyle: 'md' }, columnHeader: { px: '3', py: '2' }, cell: { px: '3', py: '2' } },
+      md: { root: { textStyle: 'md' }, columnHeader: { px: '3', py: '2.5' }, cell: { px: '3', py: '2.5' } },
       lg: { root: { textStyle: 'md' }, columnHeader: { px: '4', py: '2.5' }, cell: { px: '4', py: '3' } },
     },
   },
