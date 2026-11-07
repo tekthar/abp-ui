@@ -23,6 +23,7 @@ import { useMotionSetting } from '../motion/setting';
 import { curves } from '../motion/tokens';
 import { between, withMoves } from './kanban-place';
 import { CountBadge } from './CountBadge';
+import { EmptyState } from './EmptyState';
 import { DirectionalIcon } from './DirectionalIcon';
 import { RecordKey } from './RecordKey';
 import { StatusPill } from './StatusPill';
@@ -411,9 +412,7 @@ export function KanbanBoard<T extends KanbanItem>({
                             {skeletonCard ? skeletonCard(ci * 5 + n) : <PlaceholderCard index={ci * 5 + n} />}
                           </Box>
                         ))}
-                      {!loading && list.length === 0 && empty && (
-                        <Text textStyle="caption" color="fg.subtle" textAlign="center" py="4">{empty}</Text>
-                      )}
+                      {!loading && list.length === 0 && empty && <EmptyState size="xs" title={empty} />}
                       {footer}
                     </Cell>
                   );
