@@ -89,7 +89,9 @@ export const appShellSlotRecipe = defineSlotRecipe({
       borderBottomWidth: '1px',
       borderColor: 'border',
     },
-    mobileToggle: { display: { base: 'inline-flex', lg: 'none' }, alignItems: 'center' },
+    // The site's pages fit the top bar from 1280px; below that they're in the menu (the top bar's ten or so pages ran
+    // under its icons just over 1024px).
+    mobileToggle: { display: { base: 'inline-flex', xl: 'none' }, alignItems: 'center' },
     brand: {
       display: 'flex',
       alignItems: 'center',
@@ -115,7 +117,7 @@ export const appShellSlotRecipe = defineSlotRecipe({
     brandText: { display: { base: 'none', sm: 'flex' }, flexDirection: 'column', minW: '0' },
     brandName: { textStyle: 'heading.section', truncate: true },
     topbarStart: { display: 'flex', alignItems: 'center', gap: '2', ms: '2', minW: '0' },
-    topNav: { display: { base: 'none', lg: 'flex' }, alignItems: 'stretch', gap: '0.5', ms: '4', flex: '1', minW: '0' },
+    topNav: { display: { base: 'none', xl: 'flex' }, alignItems: 'stretch', gap: '0.5', ms: '4', flex: '1', minW: '0' },
     topNavItem: {
       position: 'relative',
       display: 'inline-flex',
@@ -143,7 +145,9 @@ export const appShellSlotRecipe = defineSlotRecipe({
       flexDirection: 'column',
       flexShrink: '0',
       position: 'sticky',
-      top: 'topbar',
+      // `top` reads spacing tokens, not sizes: the top bar's height comes as its variable, or it computes to auto and
+      // the sidebar scrolls away under the top bar.
+      top: 'var(--toda-sizes-topbar)',
       h: 'calc(100dvh - var(--toda-sizes-topbar))',
       w: 'sidebar',
       bg: 'bg.chrome',

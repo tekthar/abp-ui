@@ -93,7 +93,7 @@ const MAIN_ID = 'toda-main';
 /**
  * Application frame (ADR 0058): the site's pages in the top bar, with a mark that slides to the current one; a place's
  * own menu (a project's, Administration's) in a sidebar on the inline start, collapsible to a rail; none elsewhere.
- * Below the lg breakpoint the site's pages, and below md the place's menu too, move into a drawer. Logical properties
+ * Below the xl breakpoint the site's pages, and below md the place's menu too, move into a drawer. Logical properties
  * only, so the whole frame mirrors in right-to-left locales.
  */
 export function AppShell({
