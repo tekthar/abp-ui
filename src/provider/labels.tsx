@@ -28,6 +28,25 @@ export interface TodaLabels {
 
 /** Strings of QueryableList. {name} placeholders are filled in by the component. */
 export interface QueryListLabels {
+  savedView: string;
+  group: string;
+  sortBy: string;
+  sortField: string;
+  defaultOrder: string;
+  sortAscending: string;
+  sortDescending: string;
+  search: string;
+  searchPlaceholder: string;
+  visibleColumns: string;
+  hiddenColumns: string;
+  showAllColumns: string;
+  columnsHint: string;
+  dragColumn: string;
+  expandAll: string;
+  collapseAll: string;
+  foldGroup: string;
+  unfoldGroup: string;
+  noGroupValue: string;
   views: string;
   unsavedView: string;
   saveView: string;
@@ -79,6 +98,25 @@ export interface QueryListLabels {
 }
 
 export const defaultQueryListLabels: QueryListLabels = {
+  savedView: 'Saved view',
+  group: 'Group:',
+  sortBy: 'Sort',
+  sortField: 'Sort: {field}',
+  defaultOrder: 'Default order',
+  sortAscending: 'Ascending: reverse the order',
+  sortDescending: 'Descending: reverse the order',
+  search: 'Search',
+  searchPlaceholder: 'Search titles',
+  visibleColumns: 'Visible columns',
+  hiddenColumns: 'Other fields',
+  showAllColumns: 'Show all',
+  columnsHint: 'Drag to reorder. One column always stays.',
+  dragColumn: 'Move {field}',
+  expandAll: 'Expand all',
+  collapseAll: 'Collapse all',
+  foldGroup: 'Fold {group}',
+  unfoldGroup: 'Unfold {group}',
+  noGroupValue: 'None',
   views: 'Saved views',
   unsavedView: 'Unsaved view',
   saveView: 'Save view',

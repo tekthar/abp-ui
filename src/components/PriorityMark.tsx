@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { chakra } from '@chakra-ui/react';
 import { useLoading } from '../skeleton/loading';
 import { TextBone } from '../skeleton/bones';
+import { priorityLevel } from './priority-level';
 
 export interface PriorityMarkProps {
   /**
@@ -16,16 +17,6 @@ export interface PriorityMarkProps {
   title?: string;
   /** The priority is coming (ADR 0061): its name's ghost. The nearest `Loading` scope's when not given. */
   loading?: boolean;
-}
-
-/** How many of the four bars a priority fills, and its colour: the highest red, then orange, amber, and blue for low. */
-export function priorityLevel(rank: number, of: number): { bars: number; palette: 'red' | 'orange' | 'yellow' | 'blue' | 'gray' } {
-  if (of <= 0 || rank < 0 || rank >= of) return { bars: 0, palette: 'gray' };
-  // The share of the list at or below this priority: 1 for the highest, 1/of for the lowest.
-  const share = (of - rank) / of;
-  const bars = Math.max(1, Math.min(4, Math.round(share * 4)));
-  const palette = bars === 4 ? 'red' : bars === 3 ? 'orange' : bars === 2 ? 'yellow' : 'blue';
-  return { bars, palette };
 }
 
 /**

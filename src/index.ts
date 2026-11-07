@@ -92,7 +92,9 @@ export { AttentionChip, type AttentionChipProps } from './components/AttentionCh
 export { CountBadge, type CountBadgeProps } from './components/CountBadge';
 export { IconTile, type IconTileProps } from './components/IconTile';
 export { PersonChip, type PersonChipProps } from './components/PersonChip';
-export { PriorityMark, priorityLevel, type PriorityMarkProps } from './components/PriorityMark';
+export { PriorityMark, type PriorityMarkProps } from './components/PriorityMark';
+export { priorityLevel } from './components/priority-level';
+export { groupKey } from './components/query/grouping';
 export { SegmentedControl, type SegmentedControlProps, type SegmentedItem } from './components/SegmentedControl';
 export {
   CheckboxField,

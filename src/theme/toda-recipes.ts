@@ -471,7 +471,7 @@ export const pathChipsSlotRecipe = defineSlotRecipe({
 // ---- DataTable -----------------------------------------------------------------------------
 export const dataTableSlotRecipe = defineSlotRecipe({
   className: 'toda-data-table',
-  slots: ['root', 'scrollArea', 'sortTrigger', 'sortIcon', 'state', 'navigableRow'],
+  slots: ['root', 'scrollArea', 'sortTrigger', 'sortIcon', 'state', 'navigableRow', 'groupRow', 'groupCell', 'groupHeader', 'groupToggle', 'groupFooterRow', 'groupFooterCell'],
   base: {
     root: { position: 'relative', w: 'full', minW: '0' },
     scrollArea: { overflow: 'auto', w: 'full' },
@@ -481,6 +481,8 @@ export const dataTableSlotRecipe = defineSlotRecipe({
       gap: '1',
       color: 'inherit',
       font: 'inherit',
+      textTransform: 'inherit',
+      letterSpacing: 'inherit',
       cursor: 'pointer',
       borderRadius: 'l1',
       focusVisibleRing: 'outside',
@@ -491,6 +493,27 @@ export const dataTableSlotRecipe = defineSlotRecipe({
     state: { px: 'panel', py: '3' },
     // A row moved to with the keyboard (DataTable's selection): selected rows use the table's bg.selected.
     navigableRow: { cursor: 'default', outline: 'none', focusVisibleRing: 'inside' },
+    // A grouped table (DataTable's grouping): a group's header row on the subtle surface, its fold button turning.
+    groupRow: { bg: 'bg.subtle', _hover: { bg: 'bg.subtle' } },
+    groupCell: { py: '2', borderBottomWidth: '1px', borderColor: 'border.muted' },
+    groupHeader: { display: 'flex', alignItems: 'center', gap: '2.5', minH: '7' },
+    groupToggle: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      boxSize: '6',
+      borderRadius: 'l1',
+      color: 'fg.muted',
+      cursor: 'pointer',
+      flexShrink: 0,
+      focusVisibleRing: 'outside',
+      _hover: { bg: 'bg.emphasized', color: 'fg' },
+      _icon: { boxSize: '4', transition: 'transform 0.2s {easings.out}' },
+      '[data-folded] &': { _icon: { transform: 'rotate(-90deg)' } },
+      '[dir=rtl] [data-folded] &': { _icon: { transform: 'rotate(90deg)' } },
+    },
+    groupFooterRow: { _hover: { bg: 'transparent' } },
+    groupFooterCell: { py: '1.5' },
   },
 });
 

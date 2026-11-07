@@ -1,9 +1,15 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { Box, chakra, HStack, Input, Menu, Portal, Stack, Text } from '@chakra-ui/react';
-import { ChevronLeft, ChevronRight, Columns3, Download, Plus, Save, Trash2, X } from 'lucide-react';
+import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronDown, ChevronLeft, ChevronRight, Download, Filter, Plus, Rows3, Save, Trash2, X } from 'lucide-react';
 import { useTodaLabels } from '../provider/labels';
 import { useFormatters } from '../utils/format';
 import { Button, IconButton } from './Button';
+import { CountBadge } from './CountBadge';
+import { ColumnsPopover } from './query/ColumnsPopover';
+import { groupKey } from './query/grouping';
+import { SearchInput } from './SearchInput';
+import { SegmentedControl } from './SegmentedControl';
 import { DataTable, type DataTableColumn, type DataTableSelection, type DataTableSort } from './DataTable';
 import { DirectionalIcon } from './DirectionalIcon';
 import { SelectField } from './Field';
@@ -139,6 +145,21 @@ export interface QueryableListProps {
   /** Extra buttons on the toolbar (e.g. "Create record"). */
   actions?: ReactNode;
   empty?: ReactNode;
+  /** At the toolbar's start, before the saved views: the host's layout switch (List, Board, Timeline). */
+  leading?: ReactNode;
+  /** At the end of the filter row: what needs attention, as chips that filter ("1 Overdue", "2 Due in 7 days"). */
+  attention?: ReactNode;
+  /**
+   * A quick search box in the basic filters: what's typed becomes a "contains" condition on this field (a record's
+   * title), shown in the box rather than as a chip. Without it there's no box.
+   */
+  search?: { field: string; placeholder?: string };
+  /** Where the Export menu goes when not on the toolbar: the page header's actions (an element the host holds). */
+  exportTarget?: HTMLElement | null;
+  /** A column's header other than its field's name (the records list's "Record" over its titles). */
+  columnLabels?: Record<string, ReactNode>;
+  /** A row after each group's rows in a grouped list ("Create record" in that group); null for none. */
+  renderGroupFooter?: (group: { field: string; value: string | null; label: string }) => ReactNode | null;
 }
 
 const NO_VALUE_OPS = new Set(['isEmpty', 'isNotEmpty']);
@@ -211,6 +232,12 @@ export function QueryableList({
   onExport,
   actions,
   empty,
+  leading,
+  attention,
+  search,
+  renderGroupFooter,
+  columnLabels,
+  exportTarget,
 }: QueryableListProps) {
   const labels = useTodaLabels().queryList;
   const fmt = useFormatters();
@@ -242,7 +269,7 @@ export function QueryableList({
   const loading = useLoading(own);
   const columns: DataTableColumn<QueryRow>[] = state.columns.map((id) => ({
     id,
-    header: label(id),
+    header: columnLabels?.[id] ?? label(id),
     cell: (row) => renderCell(id, row.values[id], row),
     // Manual sort: the column reports the change and the server orders the rows.
     sortValue: byId.get(id)?.sortable ? () => null : undefined,
@@ -275,126 +302,206 @@ export function QueryableList({
     }
   }
 
+  const groupField = query.groupBy?.field ?? null;
+  const [folded, setFolded] = useState<Set<string>>(() => new Set());
+  useEffect(() => setFolded(new Set()), [groupField]);
+  const grouped = Boolean(groupField && result?.groups && result.groups.length > 0);
+  const groupOf = (row: QueryRow) => groupKey(groupField ? row.values[groupField] : null);
+  const groupInfo = (key: string) => result?.groups?.find((g) => groupKey(g.value) === key);
+  const groupKeys = useMemo(() => [...new Set((result?.items ?? []).map((r) => groupKey(groupField ? r.values[groupField] : null)))], [result, groupField]);
+
+  // The quick search: a "contains" condition on its field, shown in the box rather than as a chip.
+  const searching = search && conditions ? conditions.findIndex((c) => c.field === search.field && c.op === 'contains') : -1;
+  const searchText = searching >= 0 && conditions ? valueText(conditions[searching].value) : '';
+  const chips = (conditions ?? []).map((c, i) => ({ c, i })).filter(({ i }) => i !== searching);
+  function runSearch(text: string) {
+    if (!search || !conditions) return;
+    const rest = conditions.filter((_, i) => i !== searching);
+    setConditions(text.trim() ? [...rest, { field: search.field, op: 'contains', value: text.trim() }] : rest);
+  }
+
+  const sortable = (fields ?? []).filter((f) => f.sortable);
+  const groupLabel = groupField ? label(groupField) : null;
+
   return (
     <Stack gap="3">
-      <HStack gap="2" wrap="wrap" justify="space-between">
-        <HStack gap="2" wrap="wrap">
-          {views && onSelectView && (
-            <SelectField
-              width="auto"
-              size="sm"
-              aria-label={labels.views}
-              value={activeViewId ?? ''}
-              onChange={(e) => onSelectView(e.target.value || null)}
-              options={[{ value: '', label: labels.unsavedView }, ...views.map((v) => ({ value: v.id, label: v.name }))]}
-            />
-          )}
-          {onSaveView &&
-            (naming === null ? (
-              <Button size="sm" variant="ghost" onClick={() => setNaming(activeView?.isOwner ? activeView.name : '')}>
-                <Save />
-                {labels.saveView}
-              </Button>
-            ) : (
-              <HStack gap="1" as="form" onSubmit={(e) => {
-                e.preventDefault();
-                if (naming.trim()) onSaveView(naming.trim(), activeView?.isOwner && naming.trim() === activeView.name ? activeView.id : null);
-                setNaming(null);
-              }}>
-                <Input size="sm" autoFocus aria-label={labels.viewName} placeholder={labels.viewName} value={naming} onChange={(e) => setNaming(e.target.value)} maxW="56" />
-                <Button size="sm" type="submit" variant="primary" disabled={!naming.trim()}>
-                  {labels.save}
-                </Button>
-                <IconButton size="sm" variant="ghost" aria-label={labels.cancel} onClick={() => setNaming(null)}>
-                  <X />
-                </IconButton>
+      <chakra.div layerStyle="panel" borderRadius="l3" data-query-toolbar="">
+        <HStack gap="2" wrap="wrap" justify="space-between" px="2.5" py="2" borderBottomWidth="1px" borderColor="border.muted">
+          <HStack gap="2" wrap="wrap" minW="0">
+            {leading}
+            {leading != null && views && onSelectView && <chakra.span w="1px" h="6" bg="border" mx="1" aria-hidden />}
+            {views && onSelectView && (
+              <HStack gap="2">
+                <Text as="span" textStyle="xs" fontWeight="semibold" color="fg.muted" whiteSpace="nowrap" hideBelow="2xl">{labels.savedView}</Text>
+                <SelectField
+                  width="auto"
+                  size="sm"
+                  aria-label={labels.views}
+                  value={activeViewId ?? ''}
+                  onChange={(e) => onSelectView(e.target.value || null)}
+                  options={[{ value: '', label: labels.unsavedView }, ...views.map((v) => ({ value: v.id, label: v.name }))]}
+                />
               </HStack>
-            ))}
-          {activeView?.isOwner && onDeleteView && naming === null && (
-            <IconButton size="sm" variant="ghost" aria-label={labels.deleteView} onClick={() => onDeleteView(activeView.id)}>
-              <Trash2 />
-            </IconButton>
-          )}
-        </HStack>
-        <HStack gap="2" wrap="wrap">
-          <SelectField
-            width="auto"
-            size="sm"
-            aria-label={labels.groupBy}
-            value={query.groupBy?.field ?? ''}
-            onChange={(e) => change({ ...query, groupBy: e.target.value ? { field: e.target.value, aggregates: [] } : null })}
-            options={[{ value: '', label: labels.noGrouping }, ...groupable.map((f) => ({ value: f.id, label: fill(labels.groupByField, { field: f.label }) }))]}
-          />
-          <ColumnChooser fields={fields ?? []} columns={state.columns} onChange={(next) => onStateChange({ ...state, rql: result?.rql ?? state.rql, query: undefined, columns: next })} />
-          {onExport && <ExportMenu busy={exporting} disabled={!result || Boolean(loading)} onExport={runExport} />}
-          {actions}
-        </HStack>
-      </HStack>
-
-      <HStack gap="2" align="start" wrap="wrap">
-        <SelectField
-          width="auto"
-          size="sm"
-          aria-label={labels.filterMode}
-          value={mode}
-          onChange={(e) => setMode(e.target.value as 'basic' | 'rql')}
-          options={[
-            { value: 'basic', label: labels.basic, disabled: conditions === null },
-            { value: 'rql', label: labels.rql },
-          ]}
-        />
-        {mode === 'basic' && conditions !== null ? (
-          <HStack gap="2" wrap="wrap" flex="1">
-            {conditions.map((c, i) => (
-              <chakra.span
-                key={`${c.field}-${i}`}
-                display="inline-flex"
-                alignItems="center"
-                gap="1"
-                ps="2.5"
-                pe="1"
-                py="0.5"
-                borderWidth="1px"
-                borderRadius="full"
-                bg="bg.subtle"
-                textStyle="sm"
-              >
-                <Text as="span" fontWeight="medium">{label(c.field)}</Text>
-                <Text as="span" color="fg.muted">{opLabel(c.op, c.field)}</Text>
-                {!NO_VALUE_OPS.has(c.op) && <Text as="span">{valueText(c.value)}</Text>}
-                <IconButton size="xs" variant="ghost" aria-label={fill(labels.removeFilter, { field: label(c.field) })} onClick={() => setConditions(conditions.filter((_, j) => j !== i))}>
-                  <X />
-                </IconButton>
-              </chakra.span>
-            ))}
-            {adding ? (
-              <AddFilter
-                fields={fields ?? []}
-                suggest={suggest}
-                renderValueEditor={renderValueEditor}
-                onCancel={() => setAdding(false)}
-                onAdd={(c) => {
-                  setAdding(false);
-                  setConditions([...conditions, c]);
-                }}
-              />
-            ) : (
-              <Button size="sm" variant="secondary" onClick={() => setAdding(true)} disabled={!fields}>
-                <Plus />
-                {labels.addFilter}
-              </Button>
+            )}
+            {onSaveView &&
+              (naming === null ? (
+                <Button size="sm" variant="ghost" color="fg.accent" onClick={() => setNaming(activeView?.isOwner ? activeView.name : '')}>
+                  <Save />
+                  {labels.saveView}
+                </Button>
+              ) : (
+                <HStack gap="1" as="form" onSubmit={(e) => {
+                  e.preventDefault();
+                  if (naming.trim()) onSaveView(naming.trim(), activeView?.isOwner && naming.trim() === activeView.name ? activeView.id : null);
+                  setNaming(null);
+                }}>
+                  <Input size="sm" autoFocus aria-label={labels.viewName} placeholder={labels.viewName} value={naming} onChange={(e) => setNaming(e.target.value)} maxW="56" />
+                  <Button size="sm" type="submit" variant="primary" disabled={!naming.trim()}>
+                    {labels.save}
+                  </Button>
+                  <IconButton size="sm" variant="ghost" aria-label={labels.cancel} onClick={() => setNaming(null)}>
+                    <X />
+                  </IconButton>
+                </HStack>
+              ))}
+            {activeView?.isOwner && onDeleteView && naming === null && (
+              <IconButton size="sm" variant="ghost" aria-label={labels.deleteView} onClick={() => onDeleteView(activeView.id)}>
+                <Trash2 />
+              </IconButton>
             )}
           </HStack>
-        ) : (
-          <RqlBox
-            key={state.rql ?? result?.rql ?? ''}
-            initial={state.rql ?? result?.rql ?? ''}
-            suggest={suggest}
-            error={error}
-            onRun={(rql) => onStateChange({ rql, columns: state.columns })}
-          />
-        )}
-      </HStack>
+          <HStack gap="2" wrap="wrap">
+            <Menu.Root positioning={{ placement: 'bottom-end' }}>
+              <Menu.Trigger asChild>
+                <Button size="sm" variant="secondary" aria-label={labels.groupBy} disabled={groupable.length === 0}>
+                  <Rows3 />
+                  <Text as="span" color="fg.muted" fontWeight="normal">{labels.group}</Text>
+                  {groupLabel ?? labels.noGrouping}
+                  <ChevronDown />
+                </Button>
+              </Menu.Trigger>
+              <Portal>
+                <Menu.Positioner>
+                  <Menu.Content minW="48">
+                    <Menu.RadioItemGroup value={groupField ?? ''}
+                      onValueChange={(d) => change({ ...query, groupBy: d.value ? { field: d.value, aggregates: [] } : null })}>
+                      <Menu.RadioItem value="">
+                        {labels.noGrouping}
+                        <Menu.ItemIndicator />
+                      </Menu.RadioItem>
+                      {groupable.map((f) => (
+                        <Menu.RadioItem key={f.id} value={f.id}>
+                          {f.label}
+                          <Menu.ItemIndicator />
+                        </Menu.RadioItem>
+                      ))}
+                    </Menu.RadioItemGroup>
+                  </Menu.Content>
+                </Menu.Positioner>
+              </Portal>
+            </Menu.Root>
+            <ColumnsPopover fields={fields ?? []} columns={state.columns} onChange={(next) => onStateChange({ ...state, rql: result?.rql ?? state.rql, query: undefined, columns: next })} />
+            {onExport && !exportTarget && <ExportMenu busy={exporting} disabled={!result || Boolean(loading)} onExport={runExport} />}
+            {onExport && exportTarget && createPortal(<ExportMenu busy={exporting} disabled={!result || Boolean(loading)} onExport={runExport} />, exportTarget)}
+            {actions}
+          </HStack>
+        </HStack>
+
+        <HStack gap="2" align="start" wrap="wrap" justify="space-between" px="2.5" py="2">
+          <HStack gap="2" align="start" wrap="wrap" flex="1" minW="0">
+            <SegmentedControl
+              size="sm"
+              aria-label={labels.filterMode}
+              value={mode}
+              onValueChange={(v) => setMode(v)}
+              items={[
+                { value: 'basic', label: labels.basic, disabled: conditions === null },
+                { value: 'rql', label: labels.rql },
+              ]}
+            />
+            {mode === 'basic' && conditions !== null ? (
+              <HStack gap="2" wrap="wrap" flex="1" minW="0">
+                {search && <QuickSearch key={searchText} initial={searchText} placeholder={search.placeholder ?? labels.searchPlaceholder} onRun={runSearch} />}
+                {chips.map(({ c, i }) => (
+                  <chakra.span
+                    key={`${c.field}-${i}`}
+                    display="inline-flex"
+                    alignItems="center"
+                    gap="1"
+                    h="8"
+                    ps="2.5"
+                    pe="1"
+                    borderWidth="1px"
+                    borderColor="border.accent"
+                    borderRadius="l2"
+                    bg="bg.selected"
+                    textStyle="sm"
+                  >
+                    <Text as="span" fontWeight="medium">{label(c.field)}</Text>
+                    <Text as="span" color="fg.muted">{opLabel(c.op, c.field)}</Text>
+                    {!NO_VALUE_OPS.has(c.op) && <Text as="span">{valueText(c.value)}</Text>}
+                    <IconButton size="xs" variant="ghost" aria-label={fill(labels.removeFilter, { field: label(c.field) })} onClick={() => setConditions(conditions.filter((_, j) => j !== i))}>
+                      <X />
+                    </IconButton>
+                  </chakra.span>
+                ))}
+                {adding ? (
+                  <AddFilter
+                    fields={fields ?? []}
+                    suggest={suggest}
+                    renderValueEditor={renderValueEditor}
+                    onCancel={() => setAdding(false)}
+                    onAdd={(c) => {
+                      setAdding(false);
+                      setConditions([...conditions, c]);
+                    }}
+                  />
+                ) : (
+                  <Button size="sm" variant="secondary" onClick={() => setAdding(true)} disabled={!fields}>
+                    <Plus />
+                    {labels.addFilter}
+                  </Button>
+                )}
+                {sortable.length > 0 && (
+                  <HStack gap="1">
+                    <SelectField
+                      width="auto"
+                      size="sm"
+                      aria-label={labels.sortBy}
+                      value={sort?.columnId ?? ''}
+                      onChange={(e) => change({ ...query, orderBy: e.target.value ? [{ field: e.target.value, desc: sort?.direction === 'desc' }] : [] })}
+                      options={[
+                        { value: '', label: fill(labels.sortField, { field: labels.defaultOrder }) },
+                        ...sortable.map((f) => ({ value: f.id, label: fill(labels.sortField, { field: f.label }) })),
+                      ]}
+                    />
+                    {sort && (
+                      <IconButton size="sm" variant="ghost" aria-label={sort.direction === 'desc' ? labels.sortDescending : labels.sortAscending}
+                        title={sort.direction === 'desc' ? labels.sortDescending : labels.sortAscending}
+                        onClick={() => change({ ...query, orderBy: [{ field: sort.columnId, desc: sort.direction !== 'desc' }] })}>
+                        {sort.direction === 'desc' ? <ArrowDownWideNarrow /> : <ArrowUpNarrowWide />}
+                      </IconButton>
+                    )}
+                  </HStack>
+                )}
+              </HStack>
+            ) : (
+              <RqlBox
+                key={state.rql ?? result?.rql ?? ''}
+                initial={state.rql ?? result?.rql ?? ''}
+                suggest={suggest}
+                error={error}
+                onRun={(rql) => onStateChange({ rql, columns: state.columns })}
+              />
+            )}
+          </HStack>
+          {attention != null && (
+            <HStack gap="2" wrap="wrap" flexShrink={0}>
+              {attention}
+            </HStack>
+          )}
+        </HStack>
+      </chakra.div>
 
       {mode === 'basic' && error && <InlineAlert tone="danger">{error.message}</InlineAlert>}
 
@@ -409,51 +516,32 @@ export function QueryableList({
         </InlineAlert>
       )}
 
-      {result?.groups && result.groups.length > 0 && (
-        <HStack gap="2" wrap="wrap" aria-label={labels.groups} role="list">
-          {result.groups.map((g) => (
-            <chakra.button
-              key={g.value ?? '∅'}
-              role="listitem"
-              type="button"
-              display="inline-flex"
-              gap="1.5"
-              alignItems="center"
-              px="2.5"
-              py="0.5"
-              borderWidth="1px"
-              borderRadius="md"
-              textStyle="sm"
-              _hover={{ bg: 'bg.subtle' }}
-              disabled={conditions === null}
-              title={labels.filterToGroup}
-              onClick={() => {
-                if (!conditions || !query.groupBy) return;
-                const field = query.groupBy.field;
-                setConditions([...conditions, g.value == null ? { field, op: 'isEmpty' } : { field, op: 'eq', value: g.value }]);
-              }}
-            >
-              <Text as="span">{g.label}</Text>
-              <Text as="span" color="fg.muted" fontVariantNumeric="tabular-nums">{fmt.number(g.count)}</Text>
-            </chakra.button>
-          ))}
-        </HStack>
-      )}
-
       <Panel
         flush
         footer={
           <HStack justify="space-between" gap="3" wrap="wrap">
-            <Text textStyle="caption" color="fg.muted">
-              {result ? fill(labels.range, { from: fmt.number(from), to: fmt.number(to), total: fmt.number(total) }) : ' '}
-            </Text>
-            <HStack gap="1">
-              <IconButton size="sm" variant="ghost" aria-label={labels.previous} disabled={skip === 0 || loading} onClick={() => onSkipChange(Math.max(0, skip - take))}>
+            <HStack gap="3">
+              {grouped && (
+                <>
+                  <Button size="xs" variant="ghost" color="fg.accent" disabled={folded.size === 0} onClick={() => setFolded(new Set())}>
+                    {labels.expandAll}
+                  </Button>
+                  <Button size="xs" variant="ghost" color="fg.accent" disabled={groupKeys.every((k) => folded.has(k))} onClick={() => setFolded(new Set(groupKeys))}>
+                    {labels.collapseAll}
+                  </Button>
+                </>
+              )}
+            </HStack>
+            <HStack gap="2">
+              <Text textStyle="caption" color="fg.muted">
+                {result ? fill(labels.range, { from: fmt.number(from), to: fmt.number(to), total: fmt.number(total) }) : ' '}
+              </Text>
+              <IconButton size="sm" variant="secondary" aria-label={labels.previous} disabled={skip === 0 || loading} onClick={() => onSkipChange(Math.max(0, skip - take))}>
                 <DirectionalIcon>
                   <ChevronLeft />
                 </DirectionalIcon>
               </IconButton>
-              <IconButton size="sm" variant="ghost" aria-label={labels.next} disabled={skip + take >= total || loading} onClick={() => onSkipChange(skip + take)}>
+              <IconButton size="sm" variant="secondary" aria-label={labels.next} disabled={skip + take >= total || loading} onClick={() => onSkipChange(skip + take)}>
                 <DirectionalIcon>
                   <ChevronRight />
                 </DirectionalIcon>
@@ -475,9 +563,94 @@ export function QueryableList({
           onSortChange={(next) => change({ ...query, orderBy: next ? [{ field: next.columnId, desc: next.direction === 'desc' }] : [] })}
           renderRow={renderRow ? (row) => renderRow(row) : undefined}
           selection={selection}
+          grouping={
+            grouped && groupField
+              ? {
+                  of: groupOf,
+                  folded,
+                  onFold: (key) =>
+                    setFolded((s) => {
+                      const next = new Set(s);
+                      if (next.has(key)) next.delete(key);
+                      else next.add(key);
+                      return next;
+                    }),
+                  foldLabel: (key, isFolded) => {
+                    const name = groupInfo(key)?.label ?? labels.noGroupValue;
+                    return fill(isFolded ? labels.unfoldGroup : labels.foldGroup, { group: name });
+                  },
+                  header: (key, rows) => {
+                    const info = groupInfo(key);
+                    const first = rows[0];
+                    const raw = first?.values[groupField];
+                    return (
+                      <HStack gap="2.5" flex="1" minW="0">
+                        <chakra.span display="inline-flex" alignItems="center" fontWeight="medium" textStyle="sm" minW="0">
+                          {raw == null ? (info?.label ?? labels.noGroupValue) : renderCell(groupField, raw, first)}
+                        </chakra.span>
+                        <CountBadge value={info?.count ?? rows.length} />
+                        {conditions !== null && (
+                          <Button size="xs" variant="ghost" color="fg.muted" ms="auto" title={labels.filterToGroup} opacity="0"
+                            transition="opacity 0.15s" _focusVisible={{ opacity: 1 }} css={{ '[data-group]:hover &': { opacity: 1 } }}
+                            onClick={() => setConditions([...conditions, info?.value == null ? { field: groupField, op: 'isEmpty' } : { field: groupField, op: 'eq', value: info.value }])}>
+                            <Filter />
+                            <chakra.span hideBelow="md">{labels.filterToGroup}</chakra.span>
+                          </Button>
+                        )}
+                      </HStack>
+                    );
+                  },
+                  footer: renderGroupFooter ? (key) => renderGroupFooter({ field: groupField, value: groupInfo(key)?.value ?? null, label: groupInfo(key)?.label ?? '' }) : undefined,
+                }
+              : undefined
+          }
         />
       </Panel>
     </Stack>
+  );
+}
+
+/** The quick search box: runs as you stop typing (and on Enter), cleared with its button or Escape. */
+function QuickSearch({ initial, placeholder, onRun }: { initial: string; placeholder: string; onRun: (text: string) => void }) {
+  const labels = useTodaLabels().queryList;
+  const [text, setText] = useState(initial);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  function later(next: string) {
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => next.trim() !== initial.trim() && onRun(next), 400);
+  }
+  return (
+    <chakra.form
+      role="search"
+      flex="1"
+      minW="48"
+      maxW="72"
+      onSubmit={(e) => {
+        e.preventDefault();
+        clearTimeout(timer.current);
+        if (text.trim() !== initial.trim()) onRun(text);
+      }}
+    >
+      <SearchInput
+        size="sm"
+        aria-label={labels.search}
+        placeholder={placeholder}
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value);
+          later(e.target.value);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape' && text) {
+            e.preventDefault();
+            setText('');
+            clearTimeout(timer.current);
+            onRun('');
+          }
+        }}
+      />
+    </chakra.form>
   );
 }
 
@@ -515,40 +688,6 @@ function ExportMenu({ busy, disabled, onExport }: { busy: boolean; disabled: boo
           <Menu.Content minW="48">
             <Menu.Item value="csv">{labels.exportCsv}</Menu.Item>
             <Menu.Item value="xlsx">{labels.exportExcel}</Menu.Item>
-          </Menu.Content>
-        </Menu.Positioner>
-      </Portal>
-    </Menu.Root>
-  );
-}
-
-function ColumnChooser({ fields, columns, onChange }: { fields: QueryField[]; columns: string[]; onChange: (next: string[]) => void }) {
-  const labels = useTodaLabels().queryList;
-  return (
-    <Menu.Root closeOnSelect={false} positioning={{ placement: 'bottom-end' }}>
-      <Menu.Trigger asChild>
-        <Button size="sm" variant="secondary" disabled={fields.length === 0}>
-          <Columns3 />
-          {labels.columns}
-        </Button>
-      </Menu.Trigger>
-      <Portal>
-        <Menu.Positioner>
-          <Menu.Content maxH="80" overflowY="auto" minW="56">
-            {fields.map((f) => (
-              <Menu.CheckboxItem
-                key={f.id}
-                value={f.id}
-                checked={columns.includes(f.id)}
-                onCheckedChange={(checked) => {
-                  const next = checked ? [...columns, f.id] : columns.filter((c) => c !== f.id);
-                  if (next.length > 0) onChange(next);
-                }}
-              >
-                {f.label}
-                <Menu.ItemIndicator />
-              </Menu.CheckboxItem>
-            ))}
           </Menu.Content>
         </Menu.Positioner>
       </Portal>

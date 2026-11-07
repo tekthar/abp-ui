@@ -1,12 +1,13 @@
 import { Fragment, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { chakra, Table, useSlotRecipe, type TableRowProps } from '@chakra-ui/react';
-import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
+import { ArrowDown, ArrowUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { useTodaLabels } from '../provider/labels';
 import { useTodaLocale } from '../provider/locale';
 import { EmptyState } from './EmptyState';
 import { InlineAlert } from './InlineAlert';
 import { RecordKey } from './RecordKey';
 import { StatusPill } from './StatusPill';
+import { inGroups } from './query/grouping';
 import { Loading, useLoading } from '../skeleton/loading';
 import { boneWidth, TextBone } from '../skeleton/bones';
 
@@ -87,6 +88,24 @@ export interface DataTableProps<T> {
    * selected row, a click selects. The selected row is marked (aria-selected) and is the one Tab reaches.
    */
   selection?: DataTableSelection<T>;
+  /**
+   * Rows under headers of their group (a grouped query's rows, which come in group order): a group's header row starts
+   * it, and it folds. Rows of a folded group are skipped, by the eye and by the keyboard.
+   */
+  grouping?: DataTableGrouping<T>;
+}
+
+export interface DataTableGrouping<T> {
+  /** The row's group; rows of one group are next to each other. */
+  of: (row: T) => string;
+  /** What the group's header shows after its fold button: its name, its count. */
+  header: (group: string, rows: T[]) => ReactNode;
+  /** A row after the group's rows (a "Create record" row); null for none. Not drawn while the group is folded. */
+  footer?: (group: string, rows: T[]) => ReactNode | null;
+  folded: ReadonlySet<string>;
+  onFold: (group: string) => void;
+  /** The fold button's name: "Fold Draft", "Unfold Draft". */
+  foldLabel: (group: string, folded: boolean) => string;
 }
 
 export interface DataTableSelection<T> {
@@ -159,6 +178,7 @@ export function DataTable<T>({
   renderSubRow,
   renderRow,
   selection,
+  grouping,
   'aria-label': ariaLabel,
 }: DataTableProps<T>) {
   const labels = useTodaLabels();
@@ -229,7 +249,9 @@ export function DataTable<T>({
       </Table.Row>
     );
   } else {
-    const ids = sorted.map(getRowId);
+    // A folded group's rows aren't drawn: the keyboard moves through the rows that are.
+    const visible = grouping ? sorted.filter((r) => !grouping.folded.has(grouping.of(r))) : sorted;
+    const ids = visible.map(getRowId);
     const tabStop = selection?.selectedId != null && ids.includes(selection.selectedId) ? selection.selectedId : ids[0];
     const onKeyDown = (e: KeyboardEvent<HTMLTableRowElement>, row: T, index: number) => {
       if (!selection || typing(e.target as HTMLElement)) return;
@@ -237,7 +259,7 @@ export function DataTable<T>({
       let next: number;
       switch (e.key) {
         case 'ArrowDown':
-          next = Math.min(index + 1, sorted.length - 1);
+          next = Math.min(index + 1, visible.length - 1);
           break;
         case 'ArrowUp':
           next = Math.max(index - 1, 0);
@@ -246,7 +268,7 @@ export function DataTable<T>({
           next = 0;
           break;
         case 'End':
-          next = sorted.length - 1;
+          next = visible.length - 1;
           break;
         case 'Enter':
           // On a link or button inside the row, Enter is theirs.
@@ -265,10 +287,10 @@ export function DataTable<T>({
           return;
       }
       e.preventDefault();
-      selection.onSelect(sorted[next]);
+      selection.onSelect(visible[next]);
       rowRefs.current.get(ids[next])?.focus();
     };
-    body = sorted.map((row, index) => {
+    const drawRow = (row: T, index: number) => {
       const id = ids[index];
       const sub = renderSubRow?.(row);
       const own = renderRow?.(row, index);
@@ -314,7 +336,43 @@ export function DataTable<T>({
           )}
         </Fragment>
       );
-    });
+    };
+    if (!grouping) {
+      body = visible.map(drawRow);
+    } else {
+      // Each group: its header, then (unless folded) its rows and its footer.
+      const groups = inGroups(sorted, grouping.of);
+      let at = 0;
+      body = groups.map((g) => {
+        const folded = grouping.folded.has(g.key);
+        const footer = folded ? null : grouping.footer?.(g.key, g.rows);
+        const start = at;
+        if (!folded) at += g.rows.length;
+        return (
+          <Fragment key={`group-${g.key}`}>
+            <Table.Row css={styles.groupRow} data-group={g.key} data-folded={folded ? '' : undefined}>
+              <Table.Cell colSpan={colCount} css={styles.groupCell}>
+                <chakra.div css={styles.groupHeader}>
+                  <chakra.button type="button" css={styles.groupToggle} aria-expanded={!folded} aria-label={grouping.foldLabel(g.key, folded)}
+                    onClick={() => grouping.onFold(g.key)}>
+                    <ChevronDown />
+                  </chakra.button>
+                  {grouping.header(g.key, g.rows)}
+                </chakra.div>
+              </Table.Cell>
+            </Table.Row>
+            {!folded && g.rows.map((row, i) => drawRow(row, start + i))}
+            {footer != null && (
+              <Table.Row css={styles.groupFooterRow}>
+                <Table.Cell colSpan={colCount} css={styles.groupFooterCell}>
+                  {footer}
+                </Table.Cell>
+              </Table.Row>
+            )}
+          </Fragment>
+        );
+      });
+    }
   }
 
   return (
