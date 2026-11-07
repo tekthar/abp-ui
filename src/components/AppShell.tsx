@@ -18,6 +18,8 @@ export interface AppShellNavItem {
   icon?: ReactNode;
   /** Marks the item as the current page (aria-current). */
   current?: boolean;
+  /** Pages under this one (a person's favourite views under Views), indented below it; hidden in the rail. */
+  children?: AppShellNavItem[];
 }
 
 export interface AppShellNavSection {
@@ -362,7 +364,7 @@ function SidebarContents({
 }
 
 function NavSection({ section, styles, collapsed, group }: { section: AppShellNavSection; styles: ShellStyles; collapsed: boolean; group: string }) {
-  const holdsCurrent = section.items.some((i) => i.current);
+  const holdsCurrent = section.items.some((i) => i.current || i.children?.some((c) => c.current));
   const [open, setOpen] = useState(holdsCurrent || !section.collapsible);
   const shown = !section.collapsible || collapsed || open || holdsCurrent;
   const items = section.items.map((item) => <NavItem key={item.id} item={item} styles={styles} collapsed={collapsed} group={group} />);
@@ -399,12 +401,12 @@ function NavSection({ section, styles, collapsed, group }: { section: AppShellNa
   );
 }
 
-function NavItem({ item, styles, collapsed, group }: { item: AppShellNavItem; styles: ShellStyles; collapsed: boolean; group: string }) {
+function NavItem({ item, styles, collapsed, group, nested }: { item: AppShellNavItem; styles: ShellStyles; collapsed: boolean; group: string; nested?: boolean }) {
   const Link = useLinkComponent();
   const { isRtl } = useTodaLocale();
   const link = (
     <chakra.a asChild css={styles.navItem}>
-      <Link href={item.href} aria-current={item.current ? 'page' : undefined}>
+      <Link href={item.href} aria-current={item.current ? 'page' : undefined} data-nested={nested || undefined}>
         {item.current && <Indicator group={`toda-side-${group}`} css={styles.navItemIndicator} />}
         <chakra.span css={styles.navItemIcon} aria-hidden="true">
           {item.icon ?? <chakra.span textStyle="label">{item.label.slice(0, 1)}</chakra.span>}
@@ -414,9 +416,25 @@ function NavItem({ item, styles, collapsed, group }: { item: AppShellNavItem; st
     </chakra.a>
   );
   // Its name beside it in the rail; the tooltip stays in place either way, so the link isn't remounted (its name fades).
-  return (
+  const own = (
     <Tooltip content={item.label} inactive={!collapsed} positioning={{ placement: isRtl ? 'left' : 'right' }}>
       {link}
     </Tooltip>
+  );
+  if (!item.children?.length) return own;
+  // The pages under it fold away in the rail, as section titles do: there's no room to tell them apart from it there.
+  return (
+    <>
+      {own}
+      <chakra.div css={styles.fold} inert={collapsed || undefined}>
+        <chakra.div css={styles.foldInner}>
+          <chakra.div css={styles.navChildren} role="group" aria-label={item.label}>
+            {item.children.map((child) => (
+              <NavItem key={child.id} item={child} styles={styles} collapsed={collapsed} group={group} nested />
+            ))}
+          </chakra.div>
+        </chakra.div>
+      </chakra.div>
+    </>
   );
 }
