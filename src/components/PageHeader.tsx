@@ -5,6 +5,7 @@ import { useTodaLabels } from '../provider/labels';
 import { useLinkComponent } from '../provider/link';
 import { useLoading } from '../skeleton/loading';
 import { TextBone } from '../skeleton/bones';
+import { CountBadge } from './CountBadge';
 
 export interface BreadcrumbItem {
   /** Its label; while the page loads, one not given yet is drawn as text that's coming. */
@@ -20,6 +21,10 @@ export interface PageHeaderProps {
   breadcrumbs?: BreadcrumbItem[];
   /** Status pills, counts, owners: shown next to the title. */
   meta?: ReactNode;
+  /** How many things the page holds, in a badge right after the title ("Records 130"). */
+  count?: number | null;
+  /** Small things that belong to the title itself, right after it (and its count): a favourite star, who sees it. */
+  adornments?: ReactNode;
   actions?: ReactNode;
   /** The page is waiting for its data (ADR 0061). The nearest `Loading` scope's when not given. */
   loading?: boolean;
@@ -28,7 +33,7 @@ export interface PageHeaderProps {
 }
 
 /** Title block at the top of every page: breadcrumbs, title, description, meta and actions. */
-export function PageHeader({ title, description, breadcrumbs, meta, actions, loading: own, titleWidth = 24 }: PageHeaderProps) {
+export function PageHeader({ title, description, breadcrumbs, meta, count, adornments, actions, loading: own, titleWidth = 24 }: PageHeaderProps) {
   const recipe = useSlotRecipe({ key: 'todaPageHeader' });
   const styles = recipe({});
   const loading = useLoading(own);
@@ -37,7 +42,15 @@ export function PageHeader({ title, description, breadcrumbs, meta, actions, loa
       {breadcrumbs && breadcrumbs.length > 0 && <Breadcrumbs items={breadcrumbs} />}
       <chakra.div css={styles.row}>
         <chakra.div css={styles.titleGroup}>
-          <chakra.h1 css={styles.title}>{loading && title == null ? <TextBone width={titleWidth} /> : title}</chakra.h1>
+          {count != null || adornments != null ? (
+            <chakra.div display="flex" alignItems="center" gap="2.5" flexWrap="wrap" minW="0">
+              <chakra.h1 css={styles.title}>{loading && title == null ? <TextBone width={titleWidth} /> : title}</chakra.h1>
+              {count != null && <CountBadge value={count} size="md" />}
+              {adornments}
+            </chakra.div>
+          ) : (
+            <chakra.h1 css={styles.title}>{loading && title == null ? <TextBone width={titleWidth} /> : title}</chakra.h1>
+          )}
           {meta != null && <chakra.div css={styles.meta}>{meta}</chakra.div>}
           {description != null && <chakra.p css={styles.description}>{description}</chakra.p>}
         </chakra.div>

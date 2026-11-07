@@ -14,6 +14,7 @@ const WITHOUT = {
   'DirectionalIcon.tsx': 'an icon: drawn as it is wherever it sits',
   'EmptyState.tsx': 'shown when the data says there is nothing, so after it loads',
   'FileDrop.tsx': 'a frame around its children (an Upload button), which draw their own; its hint shows on a drag',
+  'IconTile.tsx': 'an icon on a tile: drawn as it is wherever it sits',
   'InlineAlert.tsx': 'shown for a result or an error, so after it',
   'LoadingState.tsx': 'a placeholder itself',
   'Toaster.tsx': 'toasts come after something happened',
