@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent, type ReactNode } from 'react';
 import { Box, chakra, HStack, Stack, Text } from '@chakra-ui/react';
-import { Check, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { Check, ChevronsLeft, ChevronsRight, GripVertical } from 'lucide-react';
 import {
   DndContext,
   DragOverlay,
@@ -113,6 +113,13 @@ export interface KanbanBoardProps<T extends KanbanItem> {
   foldLabel?: (name: string, folded: boolean) => string;
   /** What goes under a column's cards (a "Create record" button); null for none. */
   columnFooter?: (column: string) => ReactNode | null;
+  /**
+   * Columns reorder from their headers: a grip that drags onto another column's header, or moves with Left and Right
+   * (in reading order). Given the columns' ids in their new order; without it, columns stay where they are.
+   */
+  onReorderColumns?: (ids: string[]) => void;
+  /** The grip's name: "Reorder Draft, position 1 of 8. Drag, or use the Left and Right arrow keys." */
+  reorderLabel?: (name: string, position: number, of: number) => string;
   skeletonColumns?: number;
 }
 
@@ -174,11 +181,25 @@ export function KanbanBoard<T extends KanbanItem>({
   skeletonCard,
   skeletonColumns = 4,
   foldKey,
+  onReorderColumns,
+  reorderLabel = (name, position, of) => `Reorder ${name}, position ${position} of ${of}`,
   foldLabel = (name, isFolded) => `${isFolded ? 'Unfold' : 'Fold'} ${name}`,
   columnFooter,
 }: KanbanBoardProps<T>) {
   const loading = useLoading(own);
   const [folded, fold] = useFolded(foldKey);
+  // A column being dragged by its header's grip, and the header it's over.
+  const [movingColumn, setMovingColumn] = useState<string | null>(null);
+  const [overColumn, setOverColumn] = useState<string | null>(null);
+  const reorder = (id: string, to: number) => {
+    if (!onReorderColumns) return;
+    const ids = columns.map((c) => c.id);
+    const from = ids.indexOf(id);
+    if (from < 0 || to < 0 || to >= ids.length || to === from) return;
+    ids.splice(from, 1);
+    ids.splice(to, 0, id);
+    onReorderColumns(ids);
+  };
   // Columns not known yet: placeholder ones, their names coming.
   const shownColumns: KanbanColumn[] =
     loading && columns.length === 0
@@ -346,7 +367,25 @@ export function KanbanBoard<T extends KanbanItem>({
               const isFolded = folded.has(c.id);
               const name = c.name ?? (typeof c.title === 'string' ? c.title : c.id);
               return (
-                <Box key={c.id} position="sticky" top="0" zIndex="1" bg="bg" data-column-header={c.id} data-folded={isFolded ? '' : undefined}>
+                <Box key={c.id} position="sticky" top="0" zIndex="1" bg="bg" data-column-header={c.id} data-folded={isFolded ? '' : undefined}
+                  data-column-over={overColumn === c.id && movingColumn !== c.id ? '' : undefined}
+                  css={{ '&[data-column-over] > *': { boxShadow: 'inset 0 0 0 2px var(--toda-colors-border-accent)' } }}
+                  {...(onReorderColumns && movingColumn
+                    ? {
+                        onDragOver: (e: DragEvent) => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = 'move';
+                          if (overColumn !== c.id) setOverColumn(c.id);
+                        },
+                        onDrop: (e: DragEvent) => {
+                          e.preventDefault();
+                          const moving = movingColumn;
+                          setMovingColumn(null);
+                          setOverColumn(null);
+                          if (moving) reorder(moving, columns.findIndex((x) => x.id === c.id));
+                        },
+                      }
+                    : {})}>
                   {isFolded ? (
                     <Stack align="center" gap="2" pt="2.5" pb="1" borderWidth="1px" borderBottomWidth="0" borderColor="border.muted"
                       roundedTop="l3" bg={c.over ? 'red.subtle' : 'bg.subtle'} h="full">
@@ -356,6 +395,13 @@ export function KanbanBoard<T extends KanbanItem>({
                     <HStack justify="space-between" gap="2" ps="3" pe="1.5" pt="2.5" pb="2" borderWidth="1px" borderBottomWidth="0" borderColor="border.muted"
                       roundedTop="l3" bg={c.over ? 'red.subtle' : 'bg.subtle'} h="full" align="start">
                       <HStack gap="2" minW="0">
+                        {onReorderColumns && !loading && (
+                          <ColumnGrip label={reorderLabel(name, columns.findIndex((x) => x.id === c.id) + 1, columns.length)}
+                            moving={movingColumn === c.id}
+                            onDragStart={() => setMovingColumn(c.id)}
+                            onDragEnd={() => { setMovingColumn(null); setOverColumn(null); }}
+                            onStep={(by) => reorder(c.id, columns.findIndex((x) => x.id === c.id) + by)} />
+                        )}
                         <Text as="span" textStyle="label" truncate display="inline-flex" minW="0">{c.title}</Text>
                         {c.count != null && <CountBadge value={c.count} />}
                         {c.meta && <Text textStyle="caption" color={c.over ? 'fg.error' : 'fg.muted'} flexShrink={0}>{c.meta}</Text>}
@@ -675,4 +721,37 @@ function useFolded(key: string | undefined): [ReadonlySet<string>, (column: stri
       return next;
     });
   return [folded, fold];
+}
+
+/**
+ * A column header's grip: dragged onto another header, the column takes its place; Left and Right move it a place
+ * (in reading order, so in Arabic Left moves it toward the end). It shows on the header's hover and on focus.
+ */
+function ColumnGrip({ label, moving, onDragStart, onDragEnd, onStep }: {
+  label: string;
+  moving: boolean;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  onStep: (by: -1 | 1) => void;
+}) {
+  return (
+    <chakra.button type="button" draggable aria-label={label} title={label} display="inline-flex" alignItems="center" justifyContent="center"
+      w="4" h="5" ms="-1.5" flexShrink="0" rounded="l1" color="fg.subtle" cursor="grab" opacity={moving ? 1 : 0} transition="opacity 0.12s"
+      _hover={{ color: 'fg', bg: 'bg.muted' }} _focusVisible={{ opacity: 1, outline: '2px solid', outlineColor: 'colorPalette.focusRing' }}
+      css={{ '[data-column-header]:hover &': { opacity: 1 }, '& svg': { width: '3.5', height: '3.5' } }}
+      onKeyDown={(e) => {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        e.preventDefault();
+        const rtl = getComputedStyle(e.currentTarget).direction === 'rtl';
+        onStep((e.key === 'ArrowRight') !== rtl ? 1 : -1);
+      }}
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', label);
+        onDragStart();
+      }}
+      onDragEnd={onDragEnd}>
+      <GripVertical />
+    </chakra.button>
+  );
 }
