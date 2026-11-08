@@ -1,6 +1,6 @@
-import { Fragment, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { chakra, Table, useSlotRecipe, type TableRowProps } from '@chakra-ui/react';
-import { ArrowDown, ArrowUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { Fragment, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type ReactNode } from 'react';
+import { chakra, Menu, Portal, Table, useSlotRecipe, type TableRowProps } from '@chakra-ui/react';
+import { ArrowDown, ArrowUp, ChevronDown, ChevronsUpDown, GripVertical } from 'lucide-react';
 import { useTodaLabels } from '../provider/labels';
 import { useTodaLocale } from '../provider/locale';
 import { EmptyState } from './EmptyState';
@@ -106,6 +106,21 @@ export interface DataTableGrouping<T> {
   onFold: (group: string) => void;
   /** The fold button's name: "Fold Draft", "Unfold Draft". */
   foldLabel: (group: string, folded: boolean) => string;
+  /**
+   * Rows that move to another group (a record to another status): each row's grip drags onto a group's header, or
+   * opens a menu of the groups it may go to (the keyboard's way). What moving means is the host's.
+   */
+  move?: DataTableGroupMove<T>;
+}
+
+export interface DataTableGroupMove<T> {
+  /** The grip's name: "Move FIN-130 to another status". */
+  label: (row: T) => string;
+  /** The menu's title ("Move to"). */
+  menuTitle: string;
+  /** The groups this row may go to, by key, with their names; the row's own isn't one. */
+  targets: (row: T) => { group: string; label: string }[];
+  onMove: (row: T, group: string) => void;
 }
 
 export interface DataTableSelection<T> {
@@ -188,6 +203,9 @@ export function DataTable<T>({
   const styles = recipe({});
   const [sortState, setSortState] = useState<DataTableSort | null>(defaultSort);
   const sort = sortProp !== undefined ? sortProp : sortState;
+  // A row's grip being dragged, and the group header it's over (ADR 0058's list: drag a record onto a status).
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [over, setOver] = useState<string | null>(null);
   const rowRefs = useRef(new Map<string, HTMLTableRowElement>());
 
   const collator = useMemo(() => new Intl.Collator(locale, { numeric: true, sensitivity: 'base' }), [locale]);
@@ -315,14 +333,22 @@ export function DataTable<T>({
                 {own}
               </Table.Cell>
             ) : (
-              columns.map((c) => (
+              columns.map((c, ci) => (
                 <Table.Cell
                   key={c.id}
                   textAlign={align(c)}
                   whiteSpace={c.nowrap ? 'nowrap' : undefined}
                   textStyle={c.numeric ? 'numeric' : undefined}
                 >
-                  {c.cell(row, index)}
+                  {ci === 0 && grouping?.move ? (
+                    <chakra.div display="flex" alignItems="center" gap="1">
+                      <RowGrip move={grouping.move} row={row} dragging={dragging === id}
+                        onDragStart={() => setDragging(id)} onDragEnd={() => { setDragging(null); setOver(null); }} />
+                      {c.cell(row, index)}
+                    </chakra.div>
+                  ) : (
+                    c.cell(row, index)
+                  )}
                 </Table.Cell>
               ))
             )}
@@ -350,7 +376,27 @@ export function DataTable<T>({
         if (!folded) at += g.rows.length;
         return (
           <Fragment key={`group-${g.key}`}>
-            <Table.Row css={styles.groupRow} data-group={g.key} data-folded={folded ? '' : undefined}>
+            <Table.Row css={styles.groupRow} data-group={g.key} data-folded={folded ? '' : undefined}
+              data-drop-over={over === g.key ? '' : undefined}
+              {...(grouping.move && dragging != null
+                ? {
+                    onDragOver: (e: DragEvent<HTMLTableRowElement>) => {
+                      const row = sorted.find((r) => getRowId(r) === dragging);
+                      if (!row || !grouping.move!.targets(row).some((x) => x.group === g.key)) return;
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'move';
+                      if (over !== g.key) setOver(g.key);
+                    },
+                    onDragLeave: () => setOver((o) => (o === g.key ? null : o)),
+                    onDrop: (e: DragEvent<HTMLTableRowElement>) => {
+                      e.preventDefault();
+                      const row = sorted.find((r) => getRowId(r) === dragging);
+                      setDragging(null);
+                      setOver(null);
+                      if (row) grouping.move!.onMove(row, g.key);
+                    },
+                  }
+                : {})}>
               <Table.Cell colSpan={colCount} css={styles.groupCell}>
                 <chakra.div css={styles.groupHeader}>
                   <chakra.button type="button" css={styles.groupToggle} aria-expanded={!folded} aria-label={grouping.foldLabel(g.key, folded)}
@@ -423,5 +469,57 @@ export function DataTable<T>({
         </Table.Root>
       </chakra.div>
     </chakra.div>
+  );
+}
+
+/**
+ * A row's grip in a grouped list whose rows move between groups: dragged, it carries the row to a group's header;
+ * pressed (or Enter), it opens a menu of the groups the row may go to. It shows on the row's hover and focus.
+ */
+function RowGrip<T>({ move, row, dragging, onDragStart, onDragEnd }: {
+  move: DataTableGroupMove<T>;
+  row: T;
+  dragging: boolean;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+}) {
+  const targets = move.targets(row);
+  return (
+    <Menu.Root lazyMount unmountOnExit positioning={{ placement: 'bottom-start' }} onSelect={(e) => move.onMove(row, e.value)}>
+      <Menu.Trigger asChild>
+        <chakra.button type="button" draggable aria-label={move.label(row)} title={move.label(row)} disabled={targets.length === 0}
+          display="inline-flex" alignItems="center" justifyContent="center" w="5" h="6" flexShrink="0" rounded="l1" color="fg.subtle"
+          cursor="grab" opacity={dragging ? 1 : 0} transition="opacity 0.12s" _hover={{ color: 'fg', bg: 'bg.muted' }}
+          _focusVisible={{ opacity: 1, outline: '2px solid', outlineColor: 'colorPalette.focusRing' }} _disabled={{ display: 'none' }}
+          css={{ 'tr:hover &': { opacity: 1 }, '& svg': { width: '3.5', height: '3.5' } }}
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            // The row's own keys (↑ ↓ Enter) stay the row's; the grip opens its menu with Enter or Space.
+            if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
+          }}
+          onDragStart={(e) => {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', move.label(row));
+            onDragStart();
+          }}
+          onDragEnd={onDragEnd}>
+          <GripVertical />
+        </chakra.button>
+      </Menu.Trigger>
+      <Portal>
+        <Menu.Positioner>
+          <Menu.Content minW="44" onClick={(e) => e.stopPropagation()}>
+            <Menu.ItemGroup>
+              <Menu.ItemGroupLabel>{move.menuTitle}</Menu.ItemGroupLabel>
+              {targets.map((x) => (
+                <Menu.Item key={x.group} value={x.group}>
+                  {x.label}
+                </Menu.Item>
+              ))}
+            </Menu.ItemGroup>
+          </Menu.Content>
+        </Menu.Positioner>
+      </Portal>
+    </Menu.Root>
   );
 }

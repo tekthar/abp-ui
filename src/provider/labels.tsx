@@ -47,6 +47,8 @@ export interface QueryListLabels {
   foldGroup: string;
   unfoldGroup: string;
   noGroupValue: string;
+  /** A row's grip in a grouped list: its menu's title, the groups it can go to under it. */
+  moveToGroup?: string;
   views: string;
   unsavedView: string;
   saveView: string;
@@ -117,6 +119,7 @@ export const defaultQueryListLabels: QueryListLabels = {
   foldGroup: 'Fold {group}',
   unfoldGroup: 'Unfold {group}',
   noGroupValue: 'None',
+  moveToGroup: 'Move to',
   views: 'Saved views',
   unsavedView: 'Unsaved view',
   saveView: 'Save view',

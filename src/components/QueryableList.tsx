@@ -151,16 +151,32 @@ export interface QueryableListProps {
   attention?: ReactNode;
   /**
    * A quick search box in the basic filters: what's typed becomes a "contains" condition on this field (a record's
-   * title), shown in the box rather than as a chip. Without it there's no box.
+   * title), shown in the box rather than as a chip. With `keyField`, text shaped like a key ("FIN-12") looks for that
+   * key instead (an "equals" on that field). Without it there's no box.
    */
-  search?: { field: string; placeholder?: string };
+  search?: { field: string; placeholder?: string; keyField?: string };
   /** Where the Export menu goes when not on the toolbar: the page header's actions (an element the host holds). */
   exportTarget?: HTMLElement | null;
   /** A column's header other than its field's name (the records list's "Record" over its titles). */
   columnLabels?: Record<string, ReactNode>;
   /** A row after each group's rows in a grouped list ("Create record" in that group); null for none. */
   renderGroupFooter?: (group: { field: string; value: string | null; label: string }) => ReactNode | null;
+  /** After a group's name and count in its header: what else to say of the group ("1 overdue"); null for nothing. */
+  renderGroupAside?: (group: { field: string; value: string | null; label: string }) => ReactNode | null;
+  /**
+   * Rows that move to another group while the list is grouped by `field` (a record to another status): each row's grip
+   * drags onto a group's header, or opens a menu of the groups. `accepts` leaves out groups a row can't go to.
+   */
+  moveToGroup?: {
+    field: string;
+    label: (row: QueryRow) => string;
+    accepts?: (row: QueryRow, group: QueryGroup) => boolean;
+    onMove: (row: QueryRow, group: QueryGroup) => void;
+  };
 }
+
+/** Text shaped like a record's key: letters (and digits) before a dash and a number, "FIN-12". */
+const KEY_SHAPE = /^[A-Za-z][A-Za-z0-9_]*-\d+$/;
 
 const NO_VALUE_OPS = new Set(['isEmpty', 'isNotEmpty']);
 const LIST_OPS = new Set(['in', 'notIn', 'hasAny', 'hasAll', 'between']);
@@ -236,6 +252,8 @@ export function QueryableList({
   attention,
   search,
   renderGroupFooter,
+  renderGroupAside,
+  moveToGroup,
   columnLabels,
   exportTarget,
 }: QueryableListProps) {
@@ -311,13 +329,17 @@ export function QueryableList({
   const groupKeys = useMemo(() => [...new Set((result?.items ?? []).map((r) => groupKey(groupField ? r.values[groupField] : null)))], [result, groupField]);
 
   // The quick search: a "contains" condition on its field, shown in the box rather than as a chip.
-  const searching = search && conditions ? conditions.findIndex((c) => c.field === search.field && c.op === 'contains') : -1;
+  const searching = search && conditions
+    ? conditions.findIndex((c) => (c.field === search.field && c.op === 'contains') || (search.keyField != null && c.field === search.keyField && c.op === 'eq'))
+    : -1;
   const searchText = searching >= 0 && conditions ? valueText(conditions[searching].value) : '';
   const chips = (conditions ?? []).map((c, i) => ({ c, i })).filter(({ i }) => i !== searching);
   function runSearch(text: string) {
     if (!search || !conditions) return;
     const rest = conditions.filter((_, i) => i !== searching);
-    setConditions(text.trim() ? [...rest, { field: search.field, op: 'contains', value: text.trim() }] : rest);
+    const typed = text.trim();
+    const asKey = search.keyField != null && KEY_SHAPE.test(typed);
+    setConditions(typed ? [...rest, asKey ? { field: search.keyField!, op: 'eq', value: typed.toUpperCase() } : { field: search.field, op: 'contains', value: typed }] : rest);
   }
 
   const sortable = (fields ?? []).filter((f) => f.sortable);
@@ -589,6 +611,7 @@ export function QueryableList({
                           {raw == null ? (info?.label ?? labels.noGroupValue) : renderCell(groupField, raw, first)}
                         </chakra.span>
                         <CountBadge value={info?.count ?? rows.length} />
+                        {renderGroupAside?.({ field: groupField, value: info?.value ?? null, label: info?.label ?? '' })}
                         {conditions !== null && (
                           <Button size="xs" variant="ghost" color="fg.muted" ms="auto" title={labels.filterToGroup} opacity="0"
                             transition="opacity 0.15s" _focusVisible={{ opacity: 1 }} css={{ '[data-group]:hover &': { opacity: 1 } }}
@@ -600,6 +623,21 @@ export function QueryableList({
                       </HStack>
                     );
                   },
+                  move:
+                    moveToGroup && moveToGroup.field === groupField
+                      ? {
+                          label: moveToGroup.label,
+                          menuTitle: labels.moveToGroup ?? 'Move to',
+                          targets: (row) =>
+                            (result?.groups ?? [])
+                              .filter((g) => g.value != null && groupKey(g.value) !== groupOf(row) && (moveToGroup.accepts?.(row, g) ?? true))
+                              .map((g) => ({ group: groupKey(g.value), label: g.label })),
+                          onMove: (row, key) => {
+                            const info = groupInfo(key);
+                            if (info) moveToGroup.onMove(row, info);
+                          },
+                        }
+                      : undefined,
                   footer: renderGroupFooter ? (key) => renderGroupFooter({ field: groupField, value: groupInfo(key)?.value ?? null, label: groupInfo(key)?.label ?? '' }) : undefined,
                 }
               : undefined

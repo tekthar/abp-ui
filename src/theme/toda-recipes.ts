@@ -504,7 +504,12 @@ export const dataTableSlotRecipe = defineSlotRecipe({
     // A row moved to with the keyboard (DataTable's selection): selected rows use the table's bg.selected.
     navigableRow: { cursor: 'default', outline: 'none', focusVisibleRing: 'inside' },
     // A grouped table (DataTable's grouping): a group's header row on the subtle surface, its fold button turning.
-    groupRow: { bg: 'bg.subtle', _hover: { bg: 'bg.subtle' } },
+    groupRow: {
+      bg: 'bg.subtle',
+      _hover: { bg: 'bg.subtle' },
+      // A row dragged over a group it may go to.
+      '&[data-drop-over]': { bg: 'bg.selected', boxShadow: 'inset 0 0 0 2px var(--toda-colors-border-accent)' },
+    },
     groupCell: { py: '2', borderBottomWidth: '1px', borderColor: 'border.muted' },
     groupHeader: { display: 'flex', alignItems: 'center', gap: '2.5', minH: '7' },
     groupToggle: {
