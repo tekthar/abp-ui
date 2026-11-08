@@ -438,7 +438,8 @@ export function QueryableList({
         </HStack>
 
         <HStack gap="2" align="start" wrap="wrap" justify="space-between" px="2.5" py="2">
-          <HStack gap="2" align="start" wrap="wrap" flex="1" minW="0">
+          {/* On a narrow screen the filters take the row and what needs attention goes under them, never over the search. */}
+          <HStack gap="2" align="start" wrap="wrap" flex="1" minW={{ base: 'full', md: '0' }}>
             <SegmentedControl
               size="sm"
               aria-label={labels.filterMode}
@@ -493,9 +494,10 @@ export function QueryableList({
                   </Button>
                 )}
                 {sortable.length > 0 && (
-                  <HStack gap="1">
+                  <HStack gap="1" flexShrink={0}>
                     <SelectField
                       width="auto"
+                      minW="9rem"
                       size="sm"
                       aria-label={labels.sortBy}
                       value={sort?.columnId ?? ''}
