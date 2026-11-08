@@ -8,6 +8,8 @@ import { Tooltip } from './Tooltip';
 export interface AvatarPerson {
   id: string;
   name: string;
+  /** Their picture (ADR 0096), a path on the site; their initials when there's none or it fails. */
+  picture?: string | null;
   /** A line under the name, in the tooltip and the list: "4 records". */
   detail?: ReactNode;
 }
@@ -43,6 +45,7 @@ function PersonAvatar({ person, overlap, selected, inButton }: { person: AvatarP
       borderWidth="2px" borderColor="bg" ms={overlap ? '-2' : undefined} flexShrink={0} outline={selected ? '2px solid' : undefined}
       outlineColor="accent.solid" {...(inButton ? { 'aria-hidden': true } : { role: 'img', 'aria-label': person.name })}>
       <Avatar.Fallback name={person.name} aria-hidden />
+      {person.picture && <Avatar.Image src={person.picture} alt="" />}
     </Avatar.Root>
   );
 }

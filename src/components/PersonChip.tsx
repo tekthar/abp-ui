@@ -7,6 +7,11 @@ export interface PersonChipProps {
   /** The person's id: their colour, the same everywhere. */
   id: string;
   name: string;
+  /**
+   * The person's picture (ADR 0096): a path on the site, such as an agent's. Their initials show while it loads, when
+   * it fails, and when there's none.
+   */
+  picture?: string | null;
   /** The initials only, the name in a title and read out (a board card's corner). */
   compact?: boolean;
   size?: 'xs' | 'sm' | 'md';
@@ -17,7 +22,7 @@ export interface PersonChipProps {
 const SIZES = { xs: '5', sm: '6', md: '8' } as const;
 
 /** A person as their initials in their own colour, and their name beside them unless compact. */
-export function PersonChip({ id, name, compact = false, size = 'sm', loading: own }: PersonChipProps) {
+export function PersonChip({ id, name, picture, compact = false, size = 'sm', loading: own }: PersonChipProps) {
   if (useLoading(own)) {
     return (
       <chakra.span display="inline-flex" alignItems="center" gap="2" aria-hidden>
@@ -31,6 +36,8 @@ export function PersonChip({ id, name, compact = false, size = 'sm', loading: ow
       fontSize={size === 'md' ? 'xs' : '2xs'} fontWeight="semibold" flexShrink={0}
       {...(compact ? { role: 'img', 'aria-label': name, title: name } : { 'aria-hidden': true })}>
       <Avatar.Fallback name={name} />
+      {/* The name is beside it or in its label already, so the image says nothing more. */}
+      {picture && <Avatar.Image src={picture} alt="" />}
     </Avatar.Root>
   );
   if (compact) return avatar;
