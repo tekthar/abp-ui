@@ -373,8 +373,22 @@ export const panelSlotRecipe = defineSlotRecipe({
       true: { body: { p: '0', overflow: 'hidden', borderBottomRadius: 'l3' } },
       false: {},
     },
+    /**
+     * `card`: the bordered surface. `section`: no box, a heading over a rule and its content under it, for pages where
+     * blocks follow one another in one column (the record's page, UI round 8) and a stack of boxes reads heavy.
+     */
+    tone: {
+      card: {},
+      section: {
+        root: { bg: 'transparent', borderWidth: '0', boxShadow: 'none', borderRadius: '0' },
+        header: { px: '0', py: '1.5', minH: '9', borderColor: 'border' },
+        body: { px: '0', pt: '3', pb: '0' },
+        footer: { px: '0', bg: 'transparent', borderColor: 'border' },
+      },
+    },
   },
-  defaultVariants: { flush: false },
+  compoundVariants: [{ flush: true, tone: 'section', css: { body: { borderBottomRadius: '0', pt: '1' } } }],
+  defaultVariants: { flush: false, tone: 'card' },
 });
 
 // ---- StatusPill ----------------------------------------------------------------------------

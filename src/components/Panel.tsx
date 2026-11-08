@@ -1,4 +1,4 @@
-import { forwardRef, type ReactNode } from 'react';
+import { createContext, forwardRef, useContext, type ReactNode } from 'react';
 import { chakra, useSlotRecipe, type HTMLChakraProps } from '@chakra-ui/react';
 import { Loading } from '../skeleton/loading';
 
@@ -14,15 +14,25 @@ export interface PanelProps extends Omit<HTMLChakraProps<'section'>, 'title'> {
   headingAs?: 'h2' | 'h3' | 'h4';
   /** What it holds is waiting for its data (ADR 0061): a `Loading` scope for its body. Its title and actions stay. */
   loading?: boolean;
+  /** `card` (the bordered surface) or `section` (a heading over a rule, no box); the nearest `PanelTone`'s when not given. */
+  tone?: 'card' | 'section';
+}
+
+const ToneContext = createContext<'card' | 'section'>('card');
+
+/** The look of every Panel inside it that doesn't ask for its own (the record page's main column: `section`). */
+export function PanelTone({ tone, children }: { tone: 'card' | 'section'; children: ReactNode }) {
+  return <ToneContext.Provider value={tone}>{children}</ToneContext.Provider>;
 }
 
 /** The bordered surface every block of content sits in. */
 export const Panel = forwardRef<HTMLElement, PanelProps>(function Panel(
-  { title, description, actions, footer, flush = false, headingAs = 'h2', loading, children, css, ...rest },
+  { title, description, actions, footer, flush = false, headingAs = 'h2', loading, tone, children, css, ...rest },
   ref,
 ) {
   const recipe = useSlotRecipe({ key: 'todaPanel' });
-  const styles = recipe({ flush });
+  const inherited = useContext(ToneContext);
+  const styles = recipe({ flush, tone: tone ?? inherited });
   const hasHeader = title != null || actions != null || description != null;
   return (
     <chakra.section ref={ref as never} css={[styles.root, css]} {...rest}>

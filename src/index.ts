@@ -115,7 +115,7 @@ export { LoadingState } from './components/LoadingState';
 export { Loading, useArriving, useLoading, type LoadingProps } from './skeleton/loading';
 export { arriveCss, Bone, boneWidth, ghostCss, shineCss, TextBone, TextSlot, type BoneProps, type TextBoneProps, type TextSlotProps } from './skeleton/bones';
 export { Breadcrumbs, PageHeader, type BreadcrumbItem, type PageHeaderProps } from './components/PageHeader';
-export { Panel, type PanelProps } from './components/Panel';
+export { Panel, PanelTone, type PanelProps } from './components/Panel';
 export { PathChips, type PathChipsProps } from './components/PathChips';
 export { PropertyList, type PropertyItem, type PropertyListProps } from './components/PropertyList';
 export {
