@@ -167,6 +167,11 @@ export interface QueryableListProps {
    * Rows that move to another group while the list is grouped by `field` (a record to another status): each row's grip
    * drags onto a group's header, or opens a menu of the groups. `accepts` leaves out groups a row can't go to.
    */
+  /**
+   * Grouped by this field (parent), the list is a tree: each record under its parent, folding, at any depth. `context`
+   * are parents the search left out, shown dimmed so their children sit under them; `contextLabel` says so to screen readers.
+   */
+  tree?: { field: string; context?: QueryRow[]; contextLabel: string };
   moveToGroup?: {
     field: string;
     label: (row: QueryRow) => string;
@@ -254,6 +259,7 @@ export function QueryableList({
   renderGroupFooter,
   renderGroupAside,
   moveToGroup,
+  tree,
   columnLabels,
   exportTarget,
 }: QueryableListProps) {
@@ -324,6 +330,8 @@ export function QueryableList({
   const [folded, setFolded] = useState<Set<string>>(() => new Set());
   useEffect(() => setFolded(new Set()), [groupField]);
   const grouped = Boolean(groupField && result?.groups && result.groups.length > 0);
+  // Grouped by the tree's field (parent), the rows are a hierarchy rather than groups.
+  const asTree = Boolean(tree && groupField === tree.field);
   const groupOf = (row: QueryRow) => groupKey(groupField ? row.values[groupField] : null);
   const groupInfo = (key: string) => result?.groups?.find((g) => groupKey(g.value) === key);
   const groupKeys = useMemo(() => [...new Set((result?.items ?? []).map((r) => groupKey(groupField ? r.values[groupField] : null)))], [result, groupField]);
@@ -585,8 +593,22 @@ export function QueryableList({
           onSortChange={(next) => change({ ...query, orderBy: next ? [{ field: next.columnId, desc: next.direction === 'desc' }] : [] })}
           renderRow={renderRow ? (row) => renderRow(row) : undefined}
           selection={selection}
+          tree={
+            asTree && tree
+              ? {
+                  keyOf: (row) => row.key,
+                  parentOf: (row) => {
+                    const v = row.values[tree.field];
+                    return v == null ? null : typeof v === 'string' ? v : ((v as { key?: string }).key ?? null);
+                  },
+                  context: tree.context,
+                  contextLabel: tree.contextLabel,
+                  foldLabel: (row, isFolded) => fill(isFolded ? labels.unfoldGroup : labels.foldGroup, { group: row.key }),
+                }
+              : undefined
+          }
           grouping={
-            grouped && groupField
+            grouped && groupField && !asTree
               ? {
                   of: groupOf,
                   folded,

@@ -1,6 +1,7 @@
 import { Fragment, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { chakra, Menu, Portal, Table, useSlotRecipe, type TableRowProps } from '@chakra-ui/react';
-import { ArrowDown, ArrowUp, ChevronDown, ChevronsUpDown, GripVertical } from 'lucide-react';
+import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, ChevronsUpDown, GripVertical } from 'lucide-react';
+import { DirectionalIcon } from './DirectionalIcon';
 import { useTodaLabels } from '../provider/labels';
 import { useTodaLocale } from '../provider/locale';
 import { EmptyState } from './EmptyState';
@@ -8,6 +9,7 @@ import { InlineAlert } from './InlineAlert';
 import { RecordKey } from './RecordKey';
 import { StatusPill } from './StatusPill';
 import { inGroups } from './query/grouping';
+import { inTree, visibleInTree, type TreeRow } from './query/tree';
 import { Loading, useLoading } from '../skeleton/loading';
 import { boneWidth, TextBone } from '../skeleton/bones';
 
@@ -93,6 +95,22 @@ export interface DataTableProps<T> {
    * it, and it folds. Rows of a folded group are skipped, by the eye and by the keyboard.
    */
   grouping?: DataTableGrouping<T>;
+  /**
+   * Rows as a hierarchy (a list grouped by parent): each row under its parent, indented, folding at any depth; rows whose
+   * parent isn't here are roots. `context` rows are parents the search left out, drawn dimmed so their children have
+   * somewhere to sit. Takes the place of `grouping`.
+   */
+  tree?: DataTableTree<T>;
+}
+
+export interface DataTableTree<T> {
+  keyOf: (row: T) => string;
+  parentOf: (row: T) => string | null;
+  context?: readonly T[];
+  /** The fold button's name: "Fold PAY-98", "Unfold PAY-98". */
+  foldLabel: (row: T, folded: boolean) => string;
+  /** What a context row says it is, for screen readers ("Not in your search"). */
+  contextLabel: string;
 }
 
 export interface DataTableGrouping<T> {
@@ -194,6 +212,7 @@ export function DataTable<T>({
   renderRow,
   selection,
   grouping,
+  tree,
   'aria-label': ariaLabel,
 }: DataTableProps<T>) {
   const labels = useTodaLabels();
@@ -205,6 +224,8 @@ export function DataTable<T>({
   const sort = sortProp !== undefined ? sortProp : sortState;
   // A row's grip being dragged, and the group header it's over (ADR 0058's list: drag a record onto a status).
   const [dragging, setDragging] = useState<string | null>(null);
+  // A tree's folded rows, by key.
+  const [treeFolded, setTreeFolded] = useState<ReadonlySet<string>>(() => new Set());
   const [over, setOver] = useState<string | null>(null);
   const rowRefs = useRef(new Map<string, HTMLTableRowElement>());
 
@@ -268,7 +289,8 @@ export function DataTable<T>({
     );
   } else {
     // A folded group's rows aren't drawn: the keyboard moves through the rows that are.
-    const visible = grouping ? sorted.filter((r) => !grouping.folded.has(grouping.of(r))) : sorted;
+    const treeRows: TreeRow<T>[] | null = tree ? visibleInTree(inTree(sorted, tree.keyOf, tree.parentOf, tree.context ?? []), treeFolded) : null;
+    const visible = treeRows ? treeRows.map((t) => t.row) : grouping ? sorted.filter((r) => !grouping.folded.has(grouping.of(r))) : sorted;
     const ids = visible.map(getRowId);
     const tabStop = selection?.selectedId != null && ids.includes(selection.selectedId) ? selection.selectedId : ids[0];
     const onKeyDown = (e: KeyboardEvent<HTMLTableRowElement>, row: T, index: number) => {
@@ -340,7 +362,19 @@ export function DataTable<T>({
                   whiteSpace={c.nowrap ? 'nowrap' : undefined}
                   textStyle={c.numeric ? 'numeric' : undefined}
                 >
-                  {ci === 0 && grouping?.move ? (
+                  {ci === 0 && treeRows ? (
+                    <TreeCell node={treeRows[index]} folded={treeFolded.has(treeRows[index].key)} label={tree!.foldLabel(row, treeFolded.has(treeRows[index].key))}
+                      contextLabel={tree!.contextLabel}
+                      onFold={() => setTreeFolded((f) => {
+                        const next = new Set(f);
+                        const key = treeRows[index].key;
+                        if (next.has(key)) next.delete(key);
+                        else next.add(key);
+                        return next;
+                      })}>
+                      {c.cell(row, index)}
+                    </TreeCell>
+                  ) : ci === 0 && grouping?.move ? (
                     <chakra.div display="flex" alignItems="center" gap="1">
                       <RowGrip move={grouping.move} row={row} dragging={dragging === id}
                         onDragStart={() => setDragging(id)} onDragEnd={() => { setDragging(null); setOver(null); }} />
@@ -363,7 +397,7 @@ export function DataTable<T>({
         </Fragment>
       );
     };
-    if (!grouping) {
+    if (treeRows || !grouping) {
       body = visible.map(drawRow);
     } else {
       // Each group: its header, then (unless folded) its rows and its footer.
@@ -521,5 +555,36 @@ function RowGrip<T>({ move, row, dragging, onDragStart, onDragEnd }: {
         </Menu.Positioner>
       </Portal>
     </Menu.Root>
+  );
+}
+
+/**
+ * A tree row's first cell: indented by its depth, a fold button when it has children here (a spacer when not, so titles
+ * line up), and, for a parent the search left out, dimmed with a word for screen readers.
+ */
+function TreeCell<T>({ node, folded, label, contextLabel, onFold, children }: {
+  node: TreeRow<T>;
+  folded: boolean;
+  label: string;
+  contextLabel: string;
+  onFold: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <chakra.div display="flex" alignItems="center" gap="1" ps={`calc(${node.depth} * 1.5rem)`} opacity={node.context ? 0.6 : undefined}
+      data-tree-depth={node.depth} data-context={node.context ? '' : undefined}>
+      {node.hasChildren ? (
+        <chakra.button type="button" aria-expanded={!folded} aria-label={label} title={label} onClick={(e) => { e.stopPropagation(); onFold(); }}
+          display="inline-flex" alignItems="center" justifyContent="center" boxSize="6" flexShrink="0" rounded="l1" color="fg.muted"
+          _hover={{ bg: 'bg.muted', color: 'fg' }} _focusVisible={{ outline: '2px solid', outlineColor: 'colorPalette.focusRing' }}
+          css={{ '& svg': { width: '3.5', height: '3.5', transition: 'transform 0.15s' } }}>
+          {folded ? <DirectionalIcon><ChevronRight /></DirectionalIcon> : <ChevronDown />}
+        </chakra.button>
+      ) : (
+        <chakra.span boxSize="6" flexShrink="0" aria-hidden />
+      )}
+      {node.context && <chakra.span srOnly>{contextLabel}</chakra.span>}
+      {children}
+    </chakra.div>
   );
 }
