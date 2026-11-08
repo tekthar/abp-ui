@@ -294,7 +294,7 @@ export const appShellSlotRecipe = defineSlotRecipe({
     },
     main: { flex: '1', minW: '0', display: 'flex', flexDirection: 'column' },
     content: { flex: '1', px: { base: '3', md: 'page.x' }, py: 'page.y' },
-    contentInner: { mx: 'auto', w: 'full', maxW: 'content' },
+    contentInner: { w: 'full', minW: '0' },
   },
   variants: {
     collapsed: {

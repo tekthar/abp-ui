@@ -188,7 +188,7 @@ export const semanticRadii = defineSemanticTokens.radii({
 /** Layout rhythm. Use these names for page-level spacing instead of raw steps. */
 export const semanticSpacing = defineSemanticTokens.spacing({
   page: {
-    x: { value: '{spacing.6}' },
+    x: { value: '{spacing.4}' },
     y: { value: '{spacing.5}' },
   },
   section: { value: '{spacing.5}' },

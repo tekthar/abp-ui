@@ -88,6 +88,8 @@ export const sizes = defineTokens.sizes({
   sidebarRail: { value: '3.5rem' },
   topbar: { value: '3rem' },
   content: { value: '80rem' },
+  /** The widest a form's field grows: pages use the whole width, a single field never stretches across it. */
+  form: { value: '48rem' },
   sidePanel: { value: '20rem' },
   labelColumn: { value: '10rem' },
   control: {

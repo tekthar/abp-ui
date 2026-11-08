@@ -225,7 +225,7 @@ export const switchSlotRecipe = defineSlotRecipe({
 export const fieldSlotRecipe = defineSlotRecipe({
   slots: fieldAnatomy.keys(),
   base: {
-    root: { gap: '1' },
+    root: { gap: '1', maxW: 'form' },
     label: { textStyle: 'label', color: 'fg' },
     helperText: { textStyle: 'caption', color: 'fg.muted' },
     errorText: { textStyle: 'caption', color: 'fg.danger', fontWeight: 'medium' },
