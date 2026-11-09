@@ -2,6 +2,7 @@ import { Fragment, type ReactNode } from 'react';
 import { Breadcrumb, chakra, useSlotRecipe } from '@chakra-ui/react';
 import { ChevronRight } from 'lucide-react';
 import { useTodaLabels } from '../provider/labels';
+import { usePageTitle, type TitleParts } from '../provider/title';
 import { useLinkComponent } from '../provider/link';
 import { useLoading } from '../skeleton/loading';
 import { TextBone } from '../skeleton/bones';
@@ -30,11 +31,23 @@ export interface PageHeaderProps {
   loading?: boolean;
   /** How many characters wide the title's placeholder is (24). */
   titleWidth?: number;
+  /**
+   * What the browser's tab says for the page, most specific part first, without the site's name (PageTitleProvider).
+   * By default the title, when it's text, then the breadcrumb above the page, when that's text ("Groups · People").
+   * Give it for a title that's a node (a record's key and title); null claims nothing.
+   */
+  documentTitle?: TitleParts;
 }
 
+/** A label that can stand in the tab: text, not a node. */
+const textOf = (label: ReactNode): string | undefined => (typeof label === 'string' || typeof label === 'number' ? String(label) : undefined);
+
 /** Title block at the top of every page: breadcrumbs, title, description, meta and actions. */
-export function PageHeader({ title, description, breadcrumbs, meta, count, adornments, actions, loading: own, titleWidth = 24 }: PageHeaderProps) {
+export function PageHeader({ title, description, breadcrumbs, meta, count, adornments, actions, loading: own, titleWidth = 24, documentTitle }: PageHeaderProps) {
   const recipe = useSlotRecipe({ key: 'todaPageHeader' });
+  const text = textOf(title);
+  const where = breadcrumbs?.filter((b) => b.href).map((b) => textOf(b.label)).filter((l) => l && l !== text).pop();
+  usePageTitle(documentTitle !== undefined ? documentTitle : text ? [text, where] : null);
   const styles = recipe({});
   const loading = useLoading(own);
   return (
