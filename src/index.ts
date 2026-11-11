@@ -170,4 +170,6 @@ export { SortableSections, type SectionMove, type SortableSection, type Sortable
 export { StatusPill, type StatusCategory, type StatusPillProps, type StatusTone } from './components/StatusPill';
 export { notify, toaster, Toaster } from './components/Toaster';
 export { TimelineChart, type TimelineChartProps, type TimelineItem, type TimelineRow } from './components/TimelineChart';
+export { TimelineCards, type TimelineCardsProps, type TimelineCardItem, type TimelineScale } from './components/TimelineCards';
+export { placeCards, type CardDates, type PlacedCard } from './components/timeline-cards-math';
 export { Tooltip, type TooltipProps } from './components/Tooltip';
