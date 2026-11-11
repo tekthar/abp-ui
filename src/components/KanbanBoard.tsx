@@ -95,8 +95,8 @@ export interface KanbanBoardProps<T extends KanbanItem> {
   /** Screen reader texts while dragging (translated by the host). */
   announcements?: Announcements;
   screenReaderInstructions?: string;
-  /** Shown in an empty cell. */
-  empty?: ReactNode;
+  /** Shown in an empty cell: one text, or the column's own (its title, and a line on why it's empty). */
+  empty?: ReactNode | ((column: string) => { title: ReactNode; description?: ReactNode });
   /**
    * Its cards are coming (ADR 0061): each column holds a few placeholder cards, and with no columns yet the board draws
    * `skeletonColumns` (4). A placeholder card is `skeletonCard` when given (the host's card drawn loading), else a card
@@ -458,7 +458,9 @@ export function KanbanBoard<T extends KanbanItem>({
                             {skeletonCard ? skeletonCard(ci * 5 + n) : <PlaceholderCard index={ci * 5 + n} />}
                           </Box>
                         ))}
-                      {!loading && list.length === 0 && empty && <EmptyState size="xs" title={empty} />}
+                      {!loading && list.length === 0 && empty && (typeof empty === 'function'
+                        ? <EmptyState size="xs" {...empty(c.id)} />
+                        : <EmptyState size="xs" title={empty} />)}
                       {footer}
                     </Cell>
                   );
