@@ -71,6 +71,19 @@ export interface QueryListLabels {
   run: string;
   suggestions: string;
   addFilter: string;
+  buildFilters: string;
+  clearAll: string;
+  matchAll: string;
+  sameFieldAny: string;
+  noConditions: string;
+  addCondition: string;
+  activeFilters: string;
+  noneActive: string;
+  matchCount: string;
+  matchCountOnly: string;
+  incompleteSkipped: string;
+  applyFilters: string;
+  incomplete: string;
   /** "Remove the {field} filter" */
   removeFilter: string;
   field: string;
@@ -141,6 +154,19 @@ export const defaultQueryListLabels: QueryListLabels = {
   run: 'Run',
   suggestions: 'Suggestions',
   addFilter: 'Add filter',
+  buildFilters: 'Build your filters',
+  clearAll: 'Clear all',
+  matchAll: 'Match records that meet all of these conditions.',
+  sameFieldAny: 'Conditions on the same field match any of their values.',
+  noConditions: 'No conditions yet. Add one to narrow the records.',
+  addCondition: 'Add condition',
+  activeFilters: 'Active filters',
+  noneActive: 'None — all records are shown',
+  matchCount: '{count} records match of {total}',
+  matchCountOnly: '{count} records match',
+  incompleteSkipped: 'incomplete conditions are skipped',
+  applyFilters: 'Apply filters',
+  incomplete: 'Choose a value or remove this condition',
   removeFilter: 'Remove the {field} filter',
   field: 'Field',
   operator: 'Operator',

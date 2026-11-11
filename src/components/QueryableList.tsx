@@ -12,6 +12,8 @@ import { SearchInput } from './SearchInput';
 import { SegmentedControl } from './SegmentedControl';
 import { DataTable, type DataTableColumn, type DataTableSelection, type DataTableSort } from './DataTable';
 import { DirectionalIcon } from './DirectionalIcon';
+import { NO_VALUE_OPS, valueText } from './query/conditions';
+import { FilterBuilderDialog } from './query/FilterBuilder';
 import { SelectField } from './Field';
 import { InlineAlert } from './InlineAlert';
 import { Panel } from './Panel';
@@ -125,6 +127,8 @@ export interface QueryableListProps {
   renderRow?: (row: QueryRow) => ReactNode | null;
   /** One selected row, moved with the keyboard (↑ ↓ Home End), opened with Enter. */
   selection?: DataTableSelection<QueryRow>;
+  /** How many records conditions match with the list's search (the filter builder's live count, UI round 9 step 57). */
+  countMatches?: (conditions: QueryConditionJson[]) => Promise<number>;
   /** A column before the fields' (the checkboxes of rows picked for a change, UI round 9 step 56). */
   leadingColumn?: DataTableColumn<QueryRow>;
   /** A row under the toolbar, across it (picking rows, changing them). */
@@ -187,8 +191,6 @@ export interface QueryableListProps {
 /** Text shaped like a record's key: letters (and digits) before a dash and a number, "FIN-12". */
 const KEY_SHAPE = /^[A-Za-z][A-Za-z0-9_]*-\d+$/;
 
-const NO_VALUE_OPS = new Set(['isEmpty', 'isNotEmpty']);
-const LIST_OPS = new Set(['in', 'notIn', 'hasAny', 'hasAll', 'between']);
 
 function isCondition(node: unknown): node is QueryConditionJson {
   return typeof node === 'object' && node !== null && 'field' in node && 'op' in node;
@@ -202,27 +204,8 @@ export function basicConditions(where: QueryNodeJson | null | undefined): QueryC
   return null;
 }
 
-function valueText(value: unknown): string {
-  if (value == null) return '';
-  if (Array.isArray(value)) return value.map(valueText).join(', ');
-  if (typeof value === 'object') {
-    const v = value as Record<string, unknown>;
-    if (typeof v.fn === 'string') return `${v.fn}(${Array.isArray(v.args) ? v.args.map(valueText).join(', ') : ''})`;
-    if (typeof v.field === 'string') return `field(${v.field})`;
-    if ('query' in v) return '(…)';
-  }
-  return String(value);
-}
 
 /** "currentUser()" becomes a function value; anything else stays text. */
-function parseValue(text: string): unknown {
-  const call = /^([A-Za-z]\w*)\((.*)\)$/.exec(text.trim());
-  if (call) {
-    const args = call[2].trim() === '' ? [] : call[2].split(',').map((a) => (Number.isFinite(Number(a.trim())) ? Number(a.trim()) : a.trim()));
-    return { fn: call[1], args };
-  }
-  return text.trim();
-}
 
 function fill(template: string, values: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (_, k: string) => String(values[k] ?? `{${k}}`));
@@ -246,6 +229,7 @@ export function QueryableList({
   selection,
   leadingColumn,
   toolbarFooter,
+  countMatches,
   suggest,
   renderValueEditor,
   skip,
@@ -339,7 +323,7 @@ export function QueryableList({
   const grouped = Boolean(groupField && result?.groups && result.groups.length > 0);
   // Grouped by the tree's field (parent), the rows are a hierarchy rather than groups.
   const asTree = Boolean(tree && groupField === tree.field);
-  const groupOf = (row: QueryRow) => groupKey(groupField ? row.values[groupField] : null);
+  const groupOf = (row: QueryRow) => groupKey(groupField ? ((row as QueryRow & { group?: unknown }).group ?? row.values[groupField]) : null);
   const groupInfo = (key: string) => result?.groups?.find((g) => groupKey(g.value) === key);
   const groupKeys = useMemo(() => [...new Set((result?.items ?? []).map((r) => groupKey(groupField ? r.values[groupField] : null)))], [result, groupField]);
 
@@ -460,46 +444,11 @@ export function QueryableList({
             {mode === 'basic' && conditions !== null ? (
               <HStack gap="2" wrap="wrap" flex="1" minW="0">
                 {search && <QuickSearch key={searchText} initial={searchText} placeholder={search.placeholder ?? labels.searchPlaceholder} onRun={runSearch} />}
-                {chips.map(({ c, i }) => (
-                  <chakra.span
-                    key={`${c.field}-${i}`}
-                    display="inline-flex"
-                    alignItems="center"
-                    gap="1"
-                    h="8"
-                    ps="2.5"
-                    pe="1"
-                    borderWidth="1px"
-                    borderColor="border.accent"
-                    borderRadius="l2"
-                    bg="bg.selected"
-                    textStyle="sm"
-                  >
-                    <Text as="span" fontWeight="medium">{label(c.field)}</Text>
-                    <Text as="span" color="fg.muted">{opLabel(c.op, c.field)}</Text>
-                    {!NO_VALUE_OPS.has(c.op) && <Text as="span">{valueText(c.value)}</Text>}
-                    <IconButton size="xs" variant="ghost" aria-label={fill(labels.removeFilter, { field: label(c.field) })} onClick={() => setConditions(conditions.filter((_, j) => j !== i))}>
-                      <X />
-                    </IconButton>
-                  </chakra.span>
-                ))}
-                {adding ? (
-                  <AddFilter
-                    fields={fields ?? []}
-                    suggest={suggest}
-                    renderValueEditor={renderValueEditor}
-                    onCancel={() => setAdding(false)}
-                    onAdd={(c) => {
-                      setAdding(false);
-                      setConditions([...conditions, c]);
-                    }}
-                  />
-                ) : (
-                  <Button size="sm" variant="secondary" onClick={() => setAdding(true)} disabled={!fields}>
-                    <Plus />
-                    {labels.addFilter}
-                  </Button>
-                )}
+                <Button size="sm" variant="secondary" onClick={() => setAdding(true)} disabled={!fields} data-add-filter="">
+                  <Plus />
+                  {labels.addFilter}
+                  {chips.length > 0 && <CountBadge value={chips.length} tone="accent" />}
+                </Button>
                 {sortable.length > 0 && (
                   <HStack gap="1" flexShrink={0}>
                     <SelectField
@@ -540,6 +489,31 @@ export function QueryableList({
             </HStack>
           )}
         </HStack>
+        {mode === 'basic' && conditions !== null && chips.length > 0 && (
+          <HStack gap="2" wrap="wrap" px="2.5" py="2" borderTopWidth="1px" borderColor="border.muted" data-filter-chips="">
+            {chips.map(({ c, i }) => (
+              <chakra.span key={`${c.field}-${i}`} display="inline-flex" alignItems="center" gap="1" h="7" ps="2.5" pe="1" borderWidth="1px"
+                borderColor="border.accent" borderRadius="l2" bg="bg.selected" textStyle="sm">
+                <Text as="span" fontWeight="medium">{label(c.field)}</Text>
+                <Text as="span" color="fg.muted">{opLabel(c.op, c.field)}</Text>
+                {!NO_VALUE_OPS.has(c.op) && <Text as="span">{valueText(c.value)}</Text>}
+                <IconButton size="xs" variant="ghost" aria-label={fill(labels.removeFilter, { field: label(c.field) })} onClick={() => setConditions(conditions.filter((_, j) => j !== i))}>
+                  <X />
+                </IconButton>
+              </chakra.span>
+            ))}
+            <Button size="xs" variant="ghost" onClick={() => setConditions(searching >= 0 ? [conditions[searching]] : [])}>{labels.clearAll}</Button>
+          </HStack>
+        )}
+        {adding && fields && conditions !== null && (
+          <FilterBuilderDialog fields={fields} initial={chips.map(({ c }) => c)} suggest={suggest} renderValueEditor={renderValueEditor}
+            countMatches={countMatches ? (cs) => countMatches(searching >= 0 ? [conditions[searching], ...cs] : cs) : undefined}
+            onClose={() => setAdding(false)}
+            onApply={(cs) => {
+              setAdding(false);
+              setConditions(searching >= 0 ? [conditions[searching], ...cs] : cs);
+            }} />
+        )}
         {toolbarFooter != null && (
           <chakra.div borderTopWidth="1px" borderColor="border.muted" data-toolbar-footer="">{toolbarFooter}</chakra.div>
         )}
@@ -764,122 +738,6 @@ function ExportMenu({ busy, disabled, onExport }: { busy: boolean; disabled: boo
         </Menu.Positioner>
       </Portal>
     </Menu.Root>
-  );
-}
-
-function AddFilter({
-  fields,
-  suggest,
-  renderValueEditor,
-  onAdd,
-  onCancel,
-}: {
-  fields: QueryField[];
-  suggest?: (rql: string, caret: number) => Promise<QuerySuggestions>;
-  renderValueEditor?: QueryValueEditor;
-  onAdd: (c: QueryConditionJson) => void;
-  onCancel: () => void;
-}) {
-  const labels = useTodaLabels().queryList;
-  const [fieldId, setFieldId] = useState(fields[0]?.id ?? '');
-  const field = fields.find((f) => f.id === fieldId);
-  const [op, setOp] = useState(field?.operators[0] ?? 'eq');
-  const [text, setText] = useState('');
-  const [chosen, setChosen] = useState<unknown>(undefined);
-  const [options, setOptions] = useState<QuerySuggestion[]>([]);
-  const listId = useId();
-
-  useEffect(() => {
-    setOp(field?.operators[0] ?? 'eq');
-    setText('');
-    setChosen(undefined);
-  }, [field]);
-  // The field's own control, when it brings one; its value is the condition's.
-  const own = field && renderValueEditor && !NO_VALUE_OPS.has(op) ? renderValueEditor({ field, op, value: chosen, onChange: setChosen }) : null;
-
-  // Values come from the same autocomplete the RQL box uses, as if typing "field = …".
-  useEffect(() => {
-    if (!suggest || !field || NO_VALUE_OPS.has(op)) return;
-    const typed = LIST_OPS.has(op) ? (text.split(',').pop() ?? '').trim() : text;
-    const prefix = `"${field.id}" = `;
-    let cancelled = false;
-    const timer = setTimeout(() => {
-      suggest(prefix + typed, prefix.length + typed.length)
-        .then((s) => !cancelled && setOptions(s.items))
-        .catch(() => !cancelled && setOptions([]));
-    }, 150);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [suggest, field, op, text]);
-
-  function submit() {
-    if (!field) return;
-    if (NO_VALUE_OPS.has(op)) {
-      onAdd({ field: field.id, op });
-      return;
-    }
-    if (own != null) {
-      if (chosen == null || (Array.isArray(chosen) && chosen.length === 0)) return;
-      onAdd({ field: field.id, op, value: chosen });
-      return;
-    }
-    if (!text.trim()) return;
-    const value = LIST_OPS.has(op) ? text.split(',').map((v) => v.trim()).filter(Boolean).map(parseValue) : parseValue(text);
-    onAdd({ field: field.id, op, value });
-  }
-
-  return (
-    <HStack
-      gap="1.5"
-      as="form"
-      wrap="wrap"
-      onSubmit={(e) => {
-        e.preventDefault();
-        submit();
-      }}
-    >
-      <SelectField width="auto" size="sm" aria-label={labels.field} value={fieldId} onChange={(e) => setFieldId(e.target.value)} options={fields.map((f) => ({ value: f.id, label: f.label }))} />
-      <SelectField
-        width="auto"
-        size="sm"
-        aria-label={labels.operator}
-        value={op}
-        onChange={(e) => setOp(e.target.value)}
-        options={(field?.operators ?? []).map((o) => ({ value: o, label: (field?.kind === 'number' ? labels.numberOperators[o] : undefined) ?? labels.operators[o] ?? o }))}
-      />
-      {own}
-      {!NO_VALUE_OPS.has(op) && own == null && (
-        <>
-          <Input
-            size="sm"
-            maxW="64"
-            autoFocus
-            aria-label={labels.value}
-            placeholder={LIST_OPS.has(op) ? labels.valuesHint : labels.value}
-            list={listId}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-          />
-          <datalist id={listId}>
-            {options
-              .filter((o) => o.kind !== 'keyword')
-              .map((o) => (
-                <option key={o.text} value={o.text.replace(/^"|"$/g, '')}>
-                  {o.label}
-                </option>
-              ))}
-          </datalist>
-        </>
-      )}
-      <Button size="sm" type="submit" variant="primary">
-        {labels.add}
-      </Button>
-      <IconButton size="sm" variant="ghost" aria-label={labels.cancel} onClick={onCancel}>
-        <X />
-      </IconButton>
-    </HStack>
   );
 }
 
