@@ -125,6 +125,10 @@ export interface QueryableListProps {
   renderRow?: (row: QueryRow) => ReactNode | null;
   /** One selected row, moved with the keyboard (↑ ↓ Home End), opened with Enter. */
   selection?: DataTableSelection<QueryRow>;
+  /** A column before the fields' (the checkboxes of rows picked for a change, UI round 9 step 56). */
+  leadingColumn?: DataTableColumn<QueryRow>;
+  /** A row under the toolbar, across it (picking rows, changing them). */
+  toolbarFooter?: ReactNode;
   /** RQL autocomplete at the caret; without it the RQL box is a plain input. */
   suggest?: (rql: string, caret: number) => Promise<QuerySuggestions>;
   /** A field's own value control in the basic search; without it, or when it gives null, the text box. */
@@ -240,6 +244,8 @@ export function QueryableList({
   renderCell,
   renderRow,
   selection,
+  leadingColumn,
+  toolbarFooter,
   suggest,
   renderValueEditor,
   skip,
@@ -291,7 +297,7 @@ export function QueryableList({
 
   const sort: DataTableSort | null = query.orderBy?.[0] ? { columnId: query.orderBy[0].field, direction: query.orderBy[0].desc ? 'desc' : 'asc' } : null;
   const loading = useLoading(own);
-  const columns: DataTableColumn<QueryRow>[] = state.columns.map((id) => ({
+  const fieldColumns: DataTableColumn<QueryRow>[] = state.columns.map((id) => ({
     id,
     header: columnLabels?.[id] ?? label(id),
     cell: (row) => renderCell(id, row.values[id], row),
@@ -300,6 +306,7 @@ export function QueryableList({
     nowrap: id !== 'title',
     skeleton: placeholderOf(id, byId.get(id)?.kind),
   }));
+  const columns = leadingColumn ? [leadingColumn, ...fieldColumns] : fieldColumns;
 
   const total = result?.total ?? 0;
   const from = total === 0 ? 0 : skip + 1;
@@ -533,6 +540,9 @@ export function QueryableList({
             </HStack>
           )}
         </HStack>
+        {toolbarFooter != null && (
+          <chakra.div borderTopWidth="1px" borderColor="border.muted" data-toolbar-footer="">{toolbarFooter}</chakra.div>
+        )}
       </chakra.div>
 
       {mode === 'basic' && error && <InlineAlert tone="danger">{error.message}</InlineAlert>}
