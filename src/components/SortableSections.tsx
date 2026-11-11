@@ -26,6 +26,8 @@ export interface SortableSection<T extends { id: string }> {
   items: T[];
   /** Shown when the section has no items (it still takes drops). */
   empty?: ReactNode;
+  /** Under its items: creating one in place. */
+  footer?: ReactNode;
 }
 
 export interface SectionMove {
@@ -142,6 +144,7 @@ export function SortableSections<T extends { id: string }>({
             {!loading && s.items.length === 0 && s.empty && (
               <Text textStyle="caption" color="fg.subtle" textAlign="center" py="4">{s.empty}</Text>
             )}
+            {!loading && s.footer}
           </Section>
         ))}
       </Stack>
