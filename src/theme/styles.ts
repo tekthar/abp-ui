@@ -60,7 +60,7 @@ export const layerStyles = defineLayerStyles({
 });
 
 export const globalCss = defineGlobalStyles({
-  // Chakra's default enables Inter's cv11; Plex has no such feature.
+  // Chakra's default enables Inter's cv11; Almarai has no such feature.
   '*': { fontFeatureSettings: 'normal' },
   html: {
     colorPalette: 'accent',

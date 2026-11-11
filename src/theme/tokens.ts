@@ -30,14 +30,13 @@ export const colors = defineTokens.colors({
 
 /**
  * Fonts. The host loads the files and sets the CSS variables (the shell uses next/font):
- *   --toda-font-sans    IBM Plex Sans          (Latin)
- *   --toda-font-arabic  IBM Plex Sans Arabic   (Arabic script; listed after Latin so each
- *                                               script picks its own face from one stack)
- *   --toda-font-mono    IBM Plex Mono          (record keys, code, ids)
- * Without the variables the stack falls back to locally installed Plex, then the system UI font.
+ *   --toda-font-sans    Almarai          (Latin and Arabic, one face, 400 and 700)
+ *   --toda-font-arabic  optional         (a host that loads a separate Arabic face; Almarai covers Arabic itself)
+ *   --toda-font-mono    IBM Plex Mono    (record keys, code, ids)
+ * Without the variables the stack falls back to a locally installed Almarai, then Plex, then the system UI font.
  */
 const sansStack =
-  "var(--toda-font-sans, 'IBM Plex Sans'), var(--toda-font-arabic, 'IBM Plex Sans Arabic'), ui-sans-serif, system-ui, 'Segoe UI', sans-serif";
+  "var(--toda-font-sans, 'Almarai'), var(--toda-font-arabic, 'Almarai'), 'IBM Plex Sans', 'IBM Plex Sans Arabic', ui-sans-serif, system-ui, 'Segoe UI', sans-serif";
 
 export const fonts = defineTokens.fonts({
   body: { value: sansStack },
@@ -58,11 +57,13 @@ export const fontSizes = defineTokens.fontSizes({
   '4xl': { value: '2.25rem' }, // 36px
 });
 
+// Almarai has two weights in the design (400, 700; @todahq/tokens `weights`). The names the UI uses resolve to them
+// explicitly, so the Plex fallback (scripts Almarai lacks) draws the same weights rather than its own 500 and 600.
 export const fontWeights = defineTokens.fontWeights({
   normal: { value: '400' },
-  medium: { value: '500' },
-  semibold: { value: '600' },
-  bold: { value: '600' }, // Plex is loaded up to 600; "bold" maps to it rather than faux bold.
+  medium: { value: '400' },
+  semibold: { value: '700' },
+  bold: { value: '700' },
 });
 
 export const lineHeights = defineTokens.lineHeights({
