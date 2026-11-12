@@ -99,6 +99,8 @@ export interface QueryableListExport {
 
 export interface QueryableListError {
   message: string;
+  /** The records couldn't load (the server or the connection failed), not a problem with the query: Try again, in the table's place. */
+  failed?: boolean;
   /** Where in the RQL the problem is, when the server knows. */
   start?: number;
   end?: number;
@@ -153,6 +155,8 @@ export interface QueryableListProps {
   /** Extra buttons on the toolbar (e.g. "Create record"). */
   actions?: ReactNode;
   empty?: ReactNode;
+  /** In the table's place when the records couldn't load (an error that's `failed`): the host's Try again (UI round 9, step 61). */
+  loadFailed?: ReactNode;
   /** At the toolbar's start, before the saved views: the host's layout switch (List, Board, Timeline). */
   leading?: ReactNode;
   /** At the end of the filter row: what needs attention, as chips that filter ("1 Overdue", "2 Due in 7 days"). */
@@ -243,6 +247,7 @@ export function QueryableList({
   onExport,
   actions,
   empty,
+  loadFailed,
   leading,
   attention,
   search,
@@ -478,7 +483,7 @@ export function QueryableList({
                 key={state.rql ?? result?.rql ?? ''}
                 initial={state.rql ?? result?.rql ?? ''}
                 suggest={suggest}
-                error={error}
+                error={loadFailed != null && error?.failed ? null : error}
                 onRun={(rql) => onStateChange({ rql, columns: state.columns })}
               />
             )}
@@ -519,7 +524,7 @@ export function QueryableList({
         )}
       </chakra.div>
 
-      {mode === 'basic' && error && <InlineAlert tone="danger">{error.message}</InlineAlert>}
+      {mode === 'basic' && error && !(loadFailed != null && error.failed && !result) && <InlineAlert tone="danger">{error.message}</InlineAlert>}
 
       {exported && (
         <InlineAlert tone={exported.tone} title={exported.tone === 'danger' ? labels.exportFailed : undefined}>
@@ -573,7 +578,7 @@ export function QueryableList({
           getRowId={(r) => r.id}
           loading={loading}
           skeletonRows={take}
-          empty={empty ?? labels.empty}
+          empty={loadFailed != null && error?.failed && !result ? loadFailed : (empty ?? labels.empty)}
           sortMode="manual"
           sort={sort}
           onSortChange={(next) => change({ ...query, orderBy: next ? [{ field: next.columnId, desc: next.direction === 'desc' }] : [] })}
