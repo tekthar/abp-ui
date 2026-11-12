@@ -244,14 +244,14 @@ export function AppShell({
 
 type ShellStyles = Record<string, SystemStyleObject>;
 
-/** A site page in the top bar: its name (icons are for the drawer), and the mark under it when it's current. */
+/** A site page in the top bar: its name (icons are for the drawer), on the pill when it's current. */
 function TopNavItem({ item, styles }: { item: AppShellNavItem; styles: ShellStyles }) {
   const Link = useLinkComponent();
   return (
     <chakra.a asChild css={styles.topNavItem}>
       <Link href={item.href} aria-current={item.current ? 'page' : undefined}>
-        {item.label}
         {item.current && <Indicator group="toda-top-nav" css={styles.topNavIndicator} />}
+        <chakra.span css={styles.topNavLabel}>{item.label}</chakra.span>
       </Link>
     </chakra.a>
   );

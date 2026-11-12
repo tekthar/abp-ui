@@ -86,8 +86,8 @@ export const radii = defineTokens.radii({
 /** Layout sizes used by the shell components. */
 export const sizes = defineTokens.sizes({
   sidebar: { value: '15rem' },
-  sidebarRail: { value: '3.5rem' },
-  topbar: { value: '3rem' },
+  sidebarRail: { value: '4rem' },
+  topbar: { value: '3.5rem' },
   content: { value: '80rem' },
   /** The widest a form's field grows: pages use the whole width, a single field never stretches across it. */
   form: { value: '48rem' },

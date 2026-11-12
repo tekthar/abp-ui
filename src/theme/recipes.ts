@@ -365,7 +365,8 @@ export const menuSlotRecipe = defineSlotRecipe({
     content: { bg: 'bg.panel', borderWidth: '1px', borderColor: 'border', boxShadow: 'lg', borderRadius: 'l3', p: '1', ...opens },
     item: { borderRadius: 'l2', textStyle: 'md', _highlighted: { bg: 'bg.muted' } },
     itemGroupLabel: { textStyle: 'overline', color: 'fg.subtle' },
-    separator: { bg: 'border.muted' },
+    // Groups are split by 8px of space, never a line (v12 navigation, UI round 9 step 65).
+    separator: { bg: 'transparent', borderWidth: '0', h: '2', my: '0' },
   },
   variants: {
     size: {

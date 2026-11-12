@@ -36,6 +36,7 @@ export const appShellSlotRecipe = defineSlotRecipe({
     'topNav',
     'topNavItem',
     'topNavIndicator',
+    'topNavLabel',
     'topbarEnd',
     'body',
     'sidebar',
@@ -74,7 +75,8 @@ export const appShellSlotRecipe = defineSlotRecipe({
       bg: 'bg.canvas',
       color: 'fg',
     },
-    // The site's bar: brand, the site's pages, then help, notices, language, colour mode, settings and the account.
+    // The site's bar: brand, the site's pages, then help, notices, language, colour mode, settings and the account. No line
+    // under it (v12 navigation): the white bar on the gray page is the edge.
     topbar: {
       position: 'sticky',
       top: '0',
@@ -86,8 +88,6 @@ export const appShellSlotRecipe = defineSlotRecipe({
       flexShrink: '0',
       px: { base: '3', md: '4' },
       bg: 'bg.chrome',
-      borderBottomWidth: '1px',
-      borderColor: 'border',
     },
     // The site's pages fit the top bar from 1280px; below that they're in the menu (the top bar's ten or so pages ran
     // under its icons just over 1024px).
@@ -115,28 +115,32 @@ export const appShellSlotRecipe = defineSlotRecipe({
       textStyle: 'label',
     },
     brandText: { display: { base: 'none', sm: 'flex' }, flexDirection: 'column', minW: '0' },
-    brandName: { textStyle: 'heading.section', truncate: true },
+    brandName: { textStyle: 'sm', fontWeight: 'bold', truncate: true },
     topbarStart: { display: 'flex', alignItems: 'center', gap: '2', ms: '2', minW: '0' },
-    topNav: { display: { base: 'none', xl: 'flex' }, alignItems: 'stretch', gap: '0.5', ms: '4', flex: '1', minW: '0' },
+    topNav: { display: { base: 'none', xl: 'flex' }, alignItems: 'center', gap: '1', ms: '4', flex: '1', minW: '0' },
+    // A site page: a 32px pill, gray on hover; the current one on the selected tint, in the accent and bold (v12).
     topNavItem: {
       position: 'relative',
       display: 'inline-flex',
       alignItems: 'center',
       gap: '1.5',
-      px: '2.5',
+      h: '8',
+      px: '3',
+      borderRadius: 'l2',
       color: 'fg.muted',
       textStyle: 'sm',
-      fontWeight: 'medium',
       whiteSpace: 'nowrap',
       textDecoration: 'none',
-      transitionProperty: 'color',
+      transitionProperty: 'background, color',
       transitionDuration: 'fast',
       focusVisibleRing: 'inside',
       _icon: { boxSize: '3.5' },
-      _hover: { color: 'fg' },
-      '&[aria-current=page]': { color: 'fg' },
+      _hover: { bg: 'bg.muted', color: 'fg' },
+      '&[aria-current=page]': { color: 'fg.accent', fontWeight: 'bold' },
     },
-    topNavIndicator: { position: 'absolute', insetInline: '2.5', bottom: '0', h: '2px', borderRadius: 'full', bg: 'accent.solid' },
+    topNavLabel: { position: 'relative' },
+    // The current page's pill, behind its name; it slides when the page changes.
+    topNavIndicator: { position: 'absolute', inset: '0', borderRadius: 'l2', bg: 'bg.selected' },
     topbarEnd: { display: 'flex', alignItems: 'center', gap: '1', flexShrink: '0', ms: 'auto' },
     body: { display: 'flex', flex: '1', minH: '0' },
     // A place's own menu: its card, its pages, its settings.
@@ -151,16 +155,14 @@ export const appShellSlotRecipe = defineSlotRecipe({
       h: 'calc(100dvh - var(--toda-sizes-topbar))',
       w: 'sidebar',
       bg: 'bg.chrome',
-      borderInlineEndWidth: '1px',
-      borderColor: 'border',
       zIndex: 'sidebar',
       overflowX: 'hidden',
       transition: `width ${SIDEBAR_EASE}`,
       ...still,
       '&[data-mobile]': { display: 'flex', position: 'static', h: 'full', w: 'full', borderInlineEndWidth: '0' },
     },
-    // In both states the place's mark is 12px from the edges: centred in the 56px rail.
-    placeHeader: { px: '1', pt: '3', pb: '1', flexShrink: '0' },
+    // In both states the place's mark is 16px from the edges: centred in the 64px rail.
+    placeHeader: { px: '2', pt: '3', pb: '1', flexShrink: '0' },
     place: {
       display: 'flex',
       alignItems: 'center',
@@ -191,7 +193,7 @@ export const appShellSlotRecipe = defineSlotRecipe({
     placeText: { display: 'flex', flexDirection: 'column', minW: '0', transition: WORDS_IN, ...still },
     placeName: { textStyle: 'label', fontWeight: 'semibold', truncate: true },
     placeDetail: { textStyle: 'caption', color: 'fg.subtle', truncate: true },
-    sidebarTop: { px: '2', pt: '3', pb: '1' },
+    sidebarTop: { px: '3', pt: '3', pb: '1' },
     // What folds away in the rail (a section's title, the box at the top): its height glides to nothing as it fades.
     fold: {
       display: 'grid',
@@ -204,7 +206,7 @@ export const appShellSlotRecipe = defineSlotRecipe({
     nav: {
       flex: '1',
       overflowY: 'auto',
-      px: '2',
+      px: '3',
       py: '2',
       display: 'flex',
       flexDirection: 'column',
@@ -246,7 +248,7 @@ export const appShellSlotRecipe = defineSlotRecipe({
       alignItems: 'center',
       gap: '2.5',
       h: 'control.md',
-      // 8px of the menu's and 12px here: the 16px icon is centred in the 56px rail, and stays where it is
+      // 12px of the menu's and 12px here: the 16px icon is centred in the 64px rail, and stays where it is
       px: '3',
       overflow: 'hidden',
       borderRadius: 'l2',
@@ -257,7 +259,7 @@ export const appShellSlotRecipe = defineSlotRecipe({
       transitionDuration: 'fast',
       focusVisibleRing: 'inside',
       _hover: { bg: 'bg.muted', color: 'fg' },
-      '&[aria-current=page]': { color: 'fg.accent', fontWeight: 'medium' },
+      '&[aria-current=page]': { color: 'fg.accent', fontWeight: 'bold' },
       // A page under another (a favourite view under Views): shorter and smaller, its icon at the line's side.
       '&[data-nested]': { h: 'control.sm', px: '2', gap: '2', textStyle: 'sm' },
     },
@@ -265,15 +267,13 @@ export const appShellSlotRecipe = defineSlotRecipe({
     navItemIndicator: { position: 'absolute', inset: '0', borderRadius: 'l2', bg: 'bg.selected' },
     navItemIcon: { position: 'relative', display: 'inline-flex', flexShrink: '0', _icon: { boxSize: '4' } },
     navItemLabel: { position: 'relative', truncate: true, minW: '0', transition: WORDS_IN, ...still },
-    // The pages under a page, indented behind a line from its icon; they fold away in the rail.
-    navChildren: { display: 'flex', flexDirection: 'column', gap: '0.5', ms: '5', ps: '1.5', mt: '0.5', borderStartWidth: '1px', borderColor: 'border.muted' },
+    // The pages under a page, indented under its name (no line, v12); they fold away in the rail.
+    navChildren: { display: 'flex', flexDirection: 'column', gap: '0.5', ms: '5', ps: '1.5', mt: '0.5' },
     // The toggle first, 12px from the edge (centred in the rail), its words after it.
     sidebarFooter: {
       flexShrink: '0',
-      px: '3',
+      px: '4',
       py: '2',
-      borderTopWidth: '1px',
-      borderColor: 'border.muted',
       display: 'flex',
       alignItems: 'center',
       gap: '2',

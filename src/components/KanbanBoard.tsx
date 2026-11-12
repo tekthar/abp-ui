@@ -364,7 +364,8 @@ export function KanbanBoard<T extends KanbanItem>({
         <Loading when={loading}>
           <Box
             display="grid"
-            gridTemplateColumns={shownColumns.map((c) => (folded.has(c.id) ? '3.5rem' : 'minmax(260px, 1fr)')).join(' ')}
+            // Columns at least 288 wide, a folded one a 48px strip (the canvas's board column, v12).
+            gridTemplateColumns={shownColumns.map((c) => (folded.has(c.id) ? '3rem' : 'minmax(288px, 1fr)')).join(' ')}
             columnGap="3"
             minW="fit-content"
           >
