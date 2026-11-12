@@ -120,6 +120,8 @@ export interface KanbanBoardProps<T extends KanbanItem> {
   onReorderColumns?: (ids: string[]) => void;
   /** The grip's name: "Reorder Draft, position 1 of 8. Drag, or use the Left and Right arrow keys." */
   reorderLabel?: (name: string, position: number, of: number) => string;
+  /** Where a dragged column lands, on the header it's over (the canvas's "Drop Review here"). */
+  dropColumnLabel?: (name: string) => string;
   skeletonColumns?: number;
 }
 
@@ -183,6 +185,7 @@ export function KanbanBoard<T extends KanbanItem>({
   foldKey,
   onReorderColumns,
   reorderLabel = (name, position, of) => `Reorder ${name}, position ${position} of ${of}`,
+  dropColumnLabel = (name) => `Drop ${name} here`,
   foldLabel = (name, isFolded) => `${isFolded ? 'Unfold' : 'Fold'} ${name}`,
   columnFooter,
 }: KanbanBoardProps<T>) {
@@ -191,6 +194,8 @@ export function KanbanBoard<T extends KanbanItem>({
   // A column being dragged by its header's grip, and the header it's over.
   const [movingColumn, setMovingColumn] = useState<string | null>(null);
   const [overColumn, setOverColumn] = useState<string | null>(null);
+  const movingCol = columns.find((c) => c.id === movingColumn);
+  const movingName = movingCol?.name ?? (typeof movingCol?.title === 'string' ? movingCol.title : (movingColumn ?? ''));
   const reorder = (id: string, to: number) => {
     if (!onReorderColumns) return;
     const ids = columns.map((c) => c.id);
@@ -369,7 +374,6 @@ export function KanbanBoard<T extends KanbanItem>({
               return (
                 <Box key={c.id} position="sticky" top="0" zIndex="1" bg="bg" data-column-header={c.id} data-folded={isFolded ? '' : undefined}
                   data-column-over={overColumn === c.id && movingColumn !== c.id ? '' : undefined}
-                  css={{ '&[data-column-over] > *': { boxShadow: 'inset 0 0 0 2px var(--toda-colors-border-accent)' } }}
                   {...(onReorderColumns && movingColumn
                     ? {
                         onDragOver: (e: DragEvent) => {
@@ -386,6 +390,14 @@ export function KanbanBoard<T extends KanbanItem>({
                         },
                       }
                     : {})}>
+                  {overColumn === c.id && movingColumn && movingColumn !== c.id && (
+                    <Box position="absolute" inset="0" zIndex="1" display="flex" alignItems="center" justifyContent="center" px="2" pointerEvents="none"
+                      borderWidth="2px" borderStyle="dashed" borderColor="border.accent" roundedTop="l3" bg="bg.panel" data-drop-column="">
+                      <Text textStyle="caption" fontWeight="bold" color="fg.accent" truncate>
+                        {dropColumnLabel(movingName)}
+                      </Text>
+                    </Box>
+                  )}
                   {isFolded ? (
                     <Stack align="center" gap="2" pt="2.5" pb="1" borderWidth="1px" borderBottomWidth="0" borderColor="border.muted"
                       roundedTop="l3" bg={c.over ? 'red.subtle' : 'bg.subtle'} h="full">
