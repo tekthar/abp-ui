@@ -66,6 +66,8 @@ export {
   type AppShellProps,
   type AppShellSidebar,
 } from './components/AppShell';
+export { Pagination, type PaginationProps } from './components/Pagination';
+export { pageList } from './components/pageList';
 export { AvatarStack, avatarPalette, type AvatarPerson, type AvatarStackProps } from './components/AvatarStack';
 export { Button, IconButton, type ButtonProps, type ButtonSize, type ButtonVariant, type IconButtonProps } from './components/Button';
 export {

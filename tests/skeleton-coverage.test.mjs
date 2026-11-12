@@ -17,6 +17,7 @@ const WITHOUT = {
   'IconTile.tsx': 'an icon on a tile: drawn as it is wherever it sits',
   'InlineAlert.tsx': 'shown for a result or an error, so after it',
   'LoadingState.tsx': 'a placeholder itself',
+  'Pagination.tsx': 'its pages come with the result it pages through; before that there are none to show',
   'Toaster.tsx': 'toasts come after something happened',
   'Tooltip.tsx': 'shown on hover, around what it describes',
   'UploadList.tsx': 'its rows are files the person drops, after the page has loaded; empty, it takes no room',

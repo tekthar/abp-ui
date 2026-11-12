@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Box, chakra, HStack, Input, Menu, Portal, Stack, Text } from '@chakra-ui/react';
-import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronDown, ChevronLeft, ChevronRight, Download, Filter, Plus, Rows3, Save, Trash2, X } from 'lucide-react';
+import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronDown, Download, Filter, Plus, Rows3, Save, Trash2, X } from 'lucide-react';
 import { useTodaLabels } from '../provider/labels';
 import { useFormatters } from '../utils/format';
 import { Button, IconButton } from './Button';
@@ -12,9 +12,9 @@ import { useTodaLocale } from '../provider/locale';
 import { SearchInput } from './SearchInput';
 import { SegmentedControl } from './SegmentedControl';
 import { DataTable, type DataTableColumn, type DataTableSelection, type DataTableSort, parentFoldKey } from './DataTable';
-import { DirectionalIcon } from './DirectionalIcon';
 import { NO_VALUE_OPS, valueText } from './query/conditions';
 import { FilterBuilderDialog } from './query/FilterBuilder';
+import { Pagination } from './Pagination';
 import { SelectField } from './Field';
 import { InlineAlert } from './InlineAlert';
 import { Panel } from './Panel';
@@ -595,7 +595,8 @@ export function QueryableList({
       <Panel
         flush
         footer={
-          <HStack justify="space-between" gap="3" wrap="wrap">
+          // Expand and collapse at the start, the pages in the middle (the canvas's v12, UI round 9 step 67), the range at the end.
+          <chakra.div display="grid" w="full" gridTemplateColumns={{ base: '1fr', md: '1fr auto 1fr' }} alignItems="center" gap="3">
             <HStack gap="3">
               {grouped && (
                 <>
@@ -608,22 +609,13 @@ export function QueryableList({
                 </>
               )}
             </HStack>
-            <HStack gap="2">
-              <Text textStyle="caption" color="fg.muted">
-                {result ? fill(labels.range, { from: fmt.number(from), to: fmt.number(to), total: fmt.number(total) }) : ' '}
-              </Text>
-              <IconButton size="sm" variant="secondary" aria-label={labels.previous} disabled={skip === 0 || loading} onClick={() => onSkipChange(Math.max(0, skip - take))}>
-                <DirectionalIcon>
-                  <ChevronLeft />
-                </DirectionalIcon>
-              </IconButton>
-              <IconButton size="sm" variant="secondary" aria-label={labels.next} disabled={skip + take >= total || loading} onClick={() => onSkipChange(skip + take)}>
-                <DirectionalIcon>
-                  <ChevronRight />
-                </DirectionalIcon>
-              </IconButton>
-            </HStack>
-          </HStack>
+            <Pagination page={Math.floor(skip / take) + 1} pages={Math.max(1, Math.ceil(total / take))} disabled={Boolean(loading)}
+              onPage={(n) => onSkipChange((n - 1) * take)} label={labels.pages} previous={labels.previous} next={labels.next}
+              pageLabel={(n) => fill(labels.page, { page: fmt.number(n) })} />
+            <Text textStyle="caption" color="fg.muted" textAlign={{ md: 'end' }} fontVariantNumeric="tabular-nums" aria-live="polite">
+              {result ? fill(labels.range, { from: fmt.number(from), to: fmt.number(to), total: fmt.number(total) }) : ' '}
+            </Text>
+          </chakra.div>
         }
       >
         <DataTable

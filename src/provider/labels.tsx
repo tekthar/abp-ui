@@ -107,6 +107,9 @@ export interface QueryListLabels {
   range: string;
   previous: string;
   next: string;
+  /** The pagination's name, and a page button's: "Page {page}". */
+  pages: string;
+  page: string;
   empty: string;
   export: string;
   exportCsv: string;
@@ -194,6 +197,8 @@ export const defaultQueryListLabels: QueryListLabels = {
   range: '{from}–{to} of {total}',
   previous: 'Previous page',
   next: 'Next page',
+  pages: 'Pages',
+  page: 'Page {page}',
   empty: 'Nothing matches this query.',
   export: 'Export',
   exportCsv: 'CSV (.csv)',
