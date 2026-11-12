@@ -153,6 +153,17 @@ export interface DataTableGroupMove<T> {
   /** The groups this row may go to, by key, with their names; the row's own isn't one. */
   targets: (row: T) => { group: string; label: string }[];
   onMove: (row: T, group: string) => void;
+  /**
+   * Rows that also go to a position (a list in rank order; UI round 9, step 64): dropped on a row's upper or lower half,
+   * a row lands before or after it, in that row's group; the grip's menu moves it up or down in its own. Without it, rows
+   * only go to a group.
+   */
+  place?: {
+    onPlace: (row: T, group: string, at: { before?: T; after?: T }) => void;
+    /** The menu's "Move up", "Move down". */
+    up: string;
+    down: string;
+  };
 }
 
 export interface DataTableSelection<T> {
@@ -241,6 +252,8 @@ export function DataTable<T>({
   // A tree's folded rows, by key.
   const [treeFolded, setTreeFolded] = useState<ReadonlySet<string>>(() => new Set());
   const [over, setOver] = useState<string | null>(null);
+  // The row a dragged row would land beside, and on which side.
+  const [dropAt, setDropAt] = useState<{ id: string; side: 'before' | 'after' } | null>(null);
   const rowRefs = useRef(new Map<string, HTMLTableRowElement>());
 
   const collator = useMemo(() => new Intl.Collator(locale, { numeric: true, sensitivity: 'base' }), [locale]);
@@ -345,8 +358,19 @@ export function DataTable<T>({
       selection.onSelect(visible[next]);
       rowRefs.current.get(ids[next])?.focus();
     };
+    // Each row's neighbours in its group, for Move up and Move down.
+    const place = grouping?.move?.place;
+    const neighbours = new Map<string, { prev?: T; next?: T }>();
+    if (place && grouping) {
+      for (const g of inGroups(sorted, grouping.of)) {
+        g.rows.forEach((r, i) => neighbours.set(getRowId(r), { prev: g.rows[i - 1], next: g.rows[i + 1] }));
+      }
+    }
+    // Where a dragged row may land: its own group, or one it may go to.
+    const mayLand = (moving: T, group: string) => grouping!.of(moving) === group || grouping!.move!.targets(moving).some((x) => x.group === group);
     const drawRow = (row: T, index: number) => {
       const id = ids[index];
+      const line = dropAt?.id === id ? dropAt.side : null;
       const sub = renderSubRow?.(row);
       const own = renderRow?.(row, index);
       const selected = selection ? selection.selectedId === id : undefined;
@@ -364,6 +388,31 @@ export function DataTable<T>({
             onKeyDown={selection ? (e: KeyboardEvent<HTMLTableRowElement>) => onKeyDown(e, row, index) : undefined}
             css={selection ? styles.navigableRow : undefined}
             {...rowProps?.(row)}
+            boxShadow={line ? `inset 0 ${line === 'before' ? '2px' : '-2px'} 0 0 var(--toda-colors-border-accent)` : undefined}
+            data-drop-line={line ?? undefined}
+            {...(place && grouping && dragging != null && dragging !== id
+              ? {
+                  onDragOver: (e: DragEvent<HTMLTableRowElement>) => {
+                    const moving = sorted.find((r) => getRowId(r) === dragging);
+                    if (!moving || !mayLand(moving, grouping.of(row))) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    const box = e.currentTarget.getBoundingClientRect();
+                    const side = e.clientY < box.top + box.height / 2 ? 'before' : 'after';
+                    if (dropAt?.id !== id || dropAt.side !== side) setDropAt({ id, side });
+                    if (over != null) setOver(null);
+                  },
+                  onDragLeave: () => setDropAt((d) => (d?.id === id ? null : d)),
+                  onDrop: (e: DragEvent<HTMLTableRowElement>) => {
+                    e.preventDefault();
+                    const moving = sorted.find((r) => getRowId(r) === dragging);
+                    const side = dropAt?.id === id ? dropAt.side : 'after';
+                    setDragging(null);
+                    setDropAt(null);
+                    if (moving) place.onPlace(moving, grouping.of(row), side === 'before' ? { before: row } : { after: row });
+                  },
+                }
+              : {})}
           >
             {own != null ? (
               <Table.Cell colSpan={colCount} data-own-row="">
@@ -391,8 +440,8 @@ export function DataTable<T>({
                     </TreeCell>
                   ) : ci === 0 && grouping?.move ? (
                     <chakra.div display="flex" alignItems="center" gap="1">
-                      <RowGrip move={grouping.move} row={row} dragging={dragging === id}
-                        onDragStart={() => setDragging(id)} onDragEnd={() => { setDragging(null); setOver(null); }} />
+                      <RowGrip move={grouping.move} row={row} dragging={dragging === id} group={grouping.of(row)} {...neighbours.get(id)}
+                        onDragStart={() => setDragging(id)} onDragEnd={() => { setDragging(null); setOver(null); setDropAt(null); }} />
                       {c.cell(row, index)}
                     </chakra.div>
                   ) : (
@@ -544,18 +593,33 @@ export function DataTable<T>({
  * A row's grip in a grouped list whose rows move between groups: dragged, it carries the row to a group's header;
  * pressed (or Enter), it opens a menu of the groups the row may go to. It shows on the row's hover and focus.
  */
-function RowGrip<T>({ move, row, dragging, onDragStart, onDragEnd }: {
+/** The grip menu's own values: never a group's key. */
+const UP = '\u0002up';
+const DOWN = '\u0002down';
+
+function RowGrip<T>({ move, row, dragging, group, prev, next, onDragStart, onDragEnd }: {
   move: DataTableGroupMove<T>;
   row: T;
   dragging: boolean;
+  /** Its group, and the rows before and after it there (for Move up and Move down). */
+  group: string;
+  prev?: T;
+  next?: T;
   onDragStart: () => void;
   onDragEnd: () => void;
 }) {
   const targets = move.targets(row);
+  const place = move.place;
+  const steps = place ? [prev && { value: UP, label: place.up }, next && { value: DOWN, label: place.down }].filter((x): x is { value: string; label: string } => Boolean(x)) : [];
   return (
-    <Menu.Root lazyMount unmountOnExit positioning={{ placement: 'bottom-start' }} onSelect={(e) => move.onMove(row, e.value)}>
+    <Menu.Root lazyMount unmountOnExit positioning={{ placement: 'bottom-start' }}
+      onSelect={(e) => {
+        if (e.value === UP && prev) place?.onPlace(row, group, { before: prev });
+        else if (e.value === DOWN && next) place?.onPlace(row, group, { after: next });
+        else move.onMove(row, e.value);
+      }}>
       <Menu.Trigger asChild>
-        <chakra.button type="button" draggable aria-label={move.label(row)} title={move.label(row)} disabled={targets.length === 0}
+        <chakra.button type="button" draggable aria-label={move.label(row)} title={move.label(row)} disabled={targets.length === 0 && steps.length === 0}
           display="inline-flex" alignItems="center" justifyContent="center" w="5" h="6" flexShrink="0" rounded="l1" color="fg.subtle"
           cursor="grab" opacity={dragging ? 1 : 0} transition="opacity 0.12s" _hover={{ color: 'fg', bg: 'bg.muted' }}
           _focusVisible={{ opacity: 1, outline: '2px solid', outlineColor: 'colorPalette.focusRing' }} _disabled={{ display: 'none' }}
@@ -577,14 +641,27 @@ function RowGrip<T>({ move, row, dragging, onDragStart, onDragEnd }: {
       <Portal>
         <Menu.Positioner>
           <Menu.Content minW="44" onClick={(e) => e.stopPropagation()}>
-            <Menu.ItemGroup>
-              <Menu.ItemGroupLabel>{move.menuTitle}</Menu.ItemGroupLabel>
-              {targets.map((x) => (
-                <Menu.Item key={x.group} value={x.group}>
-                  {x.label}
-                </Menu.Item>
-              ))}
-            </Menu.ItemGroup>
+            {steps.length > 0 && (
+              <Menu.ItemGroup>
+                {steps.map((x) => (
+                  <Menu.Item key={x.value} value={x.value}>
+                    {x.value === UP ? <ArrowUp /> : <ArrowDown />}
+                    {x.label}
+                  </Menu.Item>
+                ))}
+              </Menu.ItemGroup>
+            )}
+            {steps.length > 0 && targets.length > 0 && <Menu.Separator />}
+            {targets.length > 0 && (
+              <Menu.ItemGroup>
+                <Menu.ItemGroupLabel>{move.menuTitle}</Menu.ItemGroupLabel>
+                {targets.map((x) => (
+                  <Menu.Item key={x.group} value={x.group}>
+                    {x.label}
+                  </Menu.Item>
+                ))}
+              </Menu.ItemGroup>
+            )}
           </Menu.Content>
         </Menu.Positioner>
       </Portal>

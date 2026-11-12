@@ -199,6 +199,11 @@ export interface QueryableListProps {
     label: (row: QueryRow) => string;
     accepts?: (row: QueryRow, group: QueryGroup) => boolean;
     onMove: (row: QueryRow, group: QueryGroup) => void;
+    /**
+     * Puts a row at a position: before or after another, in that row's group (UI round 9, step 64). Offered only while the
+     * list is in rank order, where a position is something the list shows.
+     */
+    onPlace?: (row: QueryRow, group: QueryGroup, at: { before?: QueryRow; after?: QueryRow }) => void;
   };
 }
 
@@ -731,6 +736,16 @@ export function QueryableList({
                             const info = groupInfo(key);
                             if (info) moveToGroup.onMove(row, info);
                           },
+                          place: moveToGroup.onPlace && query.orderBy?.[0]?.field === 'rank' && !query.orderBy[0].desc
+                            ? {
+                                up: labels.moveUp,
+                                down: labels.moveDown,
+                                onPlace: (row, key, at) => {
+                                  const info = groupInfo(key);
+                                  if (info) moveToGroup.onPlace!(row, info, at);
+                                },
+                              }
+                            : undefined,
                         }
                       : undefined,
                   footer: renderGroupFooter

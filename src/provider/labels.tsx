@@ -63,6 +63,9 @@ export interface QueryListLabels {
   /** The group menu's second field (grouped by two fields). */
   thenBy: string;
   noSecondGrouping: string;
+  /** A row's menu in rank order: "Move up", "Move down". */
+  moveUp: string;
+  moveDown: string;
   /** A week's group: "Week of {day}". */
   periodWeek: string;
   /** A quarter's group: "Q{quarter} {year}". */
@@ -152,6 +155,8 @@ export const defaultQueryListLabels: QueryListLabels = {
   noGrouping: 'No grouping',
   thenBy: 'Then by',
   noSecondGrouping: 'Nothing more',
+  moveUp: 'Move up',
+  moveDown: 'Move down',
   periodWeek: 'Week of {day}',
   periodQuarter: 'Q{quarter} {year}',
   groups: 'Groups',
