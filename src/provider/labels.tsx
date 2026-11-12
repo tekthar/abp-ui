@@ -60,6 +60,13 @@ export interface QueryListLabels {
   /** "Group by {field}" */
   groupByField: string;
   noGrouping: string;
+  /** The group menu's second field (grouped by two fields). */
+  thenBy: string;
+  noSecondGrouping: string;
+  /** A week's group: "Week of {day}". */
+  periodWeek: string;
+  /** A quarter's group: "Q{quarter} {year}". */
+  periodQuarter: string;
   groups: string;
   filterToGroup: string;
   columns: string;
@@ -143,6 +150,10 @@ export const defaultQueryListLabels: QueryListLabels = {
   groupBy: 'Group by',
   groupByField: 'Group by {field}',
   noGrouping: 'No grouping',
+  thenBy: 'Then by',
+  noSecondGrouping: 'Nothing more',
+  periodWeek: 'Week of {day}',
+  periodQuarter: 'Q{quarter} {year}',
   groups: 'Groups',
   filterToGroup: 'Show only this group',
   columns: 'Columns',

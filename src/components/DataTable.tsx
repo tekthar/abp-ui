@@ -125,10 +125,24 @@ export interface DataTableGrouping<T> {
   /** The fold button's name: "Fold Draft", "Unfold Draft". */
   foldLabel: (group: string, folded: boolean) => string;
   /**
+   * Groups within groups (grouped by two fields; UI round 9, step 63): each group's parent. A parent's header comes before
+   * its first group and folds all of them; its key in `folded` and `onFold` is `parentFoldKey(parent)`.
+   */
+  parents?: {
+    of: (group: string) => string;
+    header: (parent: string, groups: { key: string; rows: T[] }[]) => ReactNode;
+    foldLabel: (parent: string, folded: boolean) => string;
+  };
+  /**
    * Rows that move to another group (a record to another status): each row's grip drags onto a group's header, or
    * opens a menu of the groups it may go to (the keyboard's way). What moving means is the host's.
    */
   move?: DataTableGroupMove<T>;
+}
+
+/** The key a parent group folds under in `folded` (a group's own keys never start with it). */
+export function parentFoldKey(parent: string): string {
+  return `\u0001${parent}`;
 }
 
 export interface DataTableGroupMove<T> {
@@ -290,7 +304,8 @@ export function DataTable<T>({
   } else {
     // A folded group's rows aren't drawn: the keyboard moves through the rows that are.
     const treeRows: TreeRow<T>[] | null = tree ? visibleInTree(inTree(sorted, tree.keyOf, tree.parentOf, tree.context ?? []), treeFolded) : null;
-    const visible = treeRows ? treeRows.map((t) => t.row) : grouping ? sorted.filter((r) => !grouping.folded.has(grouping.of(r))) : sorted;
+    const hidden = (group: string) => grouping!.folded.has(group) || (grouping!.parents != null && grouping!.folded.has(parentFoldKey(grouping!.parents.of(group))));
+    const visible = treeRows ? treeRows.map((t) => t.row) : grouping ? sorted.filter((r) => !hidden(grouping.of(r))) : sorted;
     const ids = visible.map(getRowId);
     const tabStop = selection?.selectedId != null && ids.includes(selection.selectedId) ? selection.selectedId : ids[0];
     const onKeyDown = (e: KeyboardEvent<HTMLTableRowElement>, row: T, index: number) => {
@@ -402,15 +417,34 @@ export function DataTable<T>({
     } else {
       // Each group: its header, then (unless folded) its rows and its footer.
       const groups = inGroups(sorted, grouping.of);
+      const parents = grouping.parents;
       let at = 0;
-      body = groups.map((g) => {
+      body = groups.map((g, gi) => {
+        // A parent's header before its first group; its groups aren't drawn while it's folded.
+        const parent = parents?.of(g.key);
+        const parentFolded = parent != null && grouping.folded.has(parentFoldKey(parent));
+        const parentRow = parents && parent != null && (gi === 0 || parents.of(groups[gi - 1].key) !== parent) ? (
+          <Table.Row css={styles.groupRow} data-group-parent={parent} data-folded={parentFolded ? '' : undefined}>
+            <Table.Cell colSpan={colCount} css={styles.groupCell}>
+              <chakra.div css={styles.groupHeader}>
+                <chakra.button type="button" css={styles.groupToggle} aria-expanded={!parentFolded} aria-label={parents.foldLabel(parent, parentFolded)}
+                  onClick={() => grouping.onFold(parentFoldKey(parent))}>
+                  <ChevronDown />
+                </chakra.button>
+                {parents.header(parent, groups.filter((x) => parents.of(x.key) === parent))}
+              </chakra.div>
+            </Table.Cell>
+          </Table.Row>
+        ) : null;
+        if (parentFolded) return <Fragment key={`group-${g.key}`}>{parentRow}</Fragment>;
         const folded = grouping.folded.has(g.key);
         const footer = folded ? null : grouping.footer?.(g.key, g.rows);
         const start = at;
         if (!folded) at += g.rows.length;
         return (
           <Fragment key={`group-${g.key}`}>
-            <Table.Row css={styles.groupRow} data-group={g.key} data-folded={folded ? '' : undefined}
+            {parentRow}
+            <Table.Row css={styles.groupRow} data-group={g.key} data-folded={folded ? '' : undefined} data-nested={parents ? '' : undefined}
               data-drop-over={over === g.key ? '' : undefined}
               {...(grouping.move && dragging != null
                 ? {
@@ -432,7 +466,7 @@ export function DataTable<T>({
                   }
                 : {})}>
               <Table.Cell colSpan={colCount} css={styles.groupCell}>
-                <chakra.div css={styles.groupHeader}>
+                <chakra.div css={styles.groupHeader} ps={parents ? '6' : undefined}>
                   <chakra.button type="button" css={styles.groupToggle} aria-expanded={!folded} aria-label={grouping.foldLabel(g.key, folded)}
                     onClick={() => grouping.onFold(g.key)}>
                     <ChevronDown />

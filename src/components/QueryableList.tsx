@@ -7,10 +7,11 @@ import { useFormatters } from '../utils/format';
 import { Button, IconButton } from './Button';
 import { CountBadge } from './CountBadge';
 import { ColumnsPopover } from './query/ColumnsPopover';
-import { groupKey } from './query/grouping';
+import { groupKey, periodName } from './query/grouping';
+import { useTodaLocale } from '../provider/locale';
 import { SearchInput } from './SearchInput';
 import { SegmentedControl } from './SegmentedControl';
-import { DataTable, type DataTableColumn, type DataTableSelection, type DataTableSort } from './DataTable';
+import { DataTable, type DataTableColumn, type DataTableSelection, type DataTableSort, parentFoldKey } from './DataTable';
 import { DirectionalIcon } from './DirectionalIcon';
 import { NO_VALUE_OPS, valueText } from './query/conditions';
 import { FilterBuilderDialog } from './query/FilterBuilder';
@@ -47,6 +48,8 @@ export interface QueryGroup {
   value: string | null;
   label: string;
   count: number;
+  /** Grouped by two fields: the second field's value and name in this group (each group is one pair). */
+  then?: { value: string | null; label: string } | null;
 }
 
 export interface QueryRow {
@@ -55,10 +58,17 @@ export interface QueryRow {
   values: Record<string, unknown>;
 }
 
+/** Between a pair's two keys (grouped by two fields); never in a key itself. */
+const PAIR = '\u001f';
+const pairKey = (first: string, second: string) => `${first}${PAIR}${second}`;
+
+/** A group's value as a filter: the field is it, or is empty for the group of none. */
+const condition = (field: string, value: string | null): QueryConditionJson => (value == null ? { field, op: 'isEmpty' } : { field, op: 'eq', value });
+
 /** The JSON form of a query (ADR 0013): { where, groupBy, orderBy }. */
 export type QueryJson = {
   where?: QueryNodeJson | null;
-  groupBy?: { field: string; aggregates?: unknown[] } | null;
+  groupBy?: { field: string; period?: string | null; then?: { field: string; period?: string | null } | null; aggregates?: unknown[] } | null;
   orderBy?: { field: string; desc?: boolean }[];
 };
 
@@ -172,7 +182,7 @@ export interface QueryableListProps {
   /** A column's header other than its field's name (the records list's "Record" over its titles). */
   columnLabels?: Record<string, ReactNode>;
   /** A row after each group's rows in a grouped list ("Create record" in that group); null for none. */
-  renderGroupFooter?: (group: { field: string; value: string | null; label: string }) => ReactNode | null;
+  renderGroupFooter?: (group: { field: string; value: string | null; label: string; then?: { field: string; value: string | null } }) => ReactNode | null;
   /** After a group's name and count in its header: what else to say of the group ("1 overdue"); null for nothing. */
   renderGroupAside?: (group: { field: string; value: string | null; label: string }) => ReactNode | null;
   /**
@@ -323,14 +333,35 @@ export function QueryableList({
   }
 
   const groupField = query.groupBy?.field ?? null;
+  // Grouped by two fields (UI round 9, step 63): each group is a pair, under a header of its first field's value.
+  const thenField = groupField ? (query.groupBy?.then?.field ?? null) : null;
   const [folded, setFolded] = useState<Set<string>>(() => new Set());
-  useEffect(() => setFolded(new Set()), [groupField]);
+  useEffect(() => setFolded(new Set()), [groupField, thenField]);
   const grouped = Boolean(groupField && result?.groups && result.groups.length > 0);
   // Grouped by the tree's field (parent), the rows are a hierarchy rather than groups.
   const asTree = Boolean(tree && groupField === tree.field);
-  const groupOf = (row: QueryRow) => groupKey(groupField ? ((row as QueryRow & { group?: unknown }).group ?? row.values[groupField]) : null);
-  const groupInfo = (key: string) => result?.groups?.find((g) => groupKey(g.value) === key);
-  const groupKeys = useMemo(() => [...new Set((result?.items ?? []).map((r) => groupKey(groupField ? r.values[groupField] : null)))], [result, groupField]);
+  // A row's group: its first field's value (a date period's first day when it has one, `group`), and with two fields the
+  // second's too (`thenGroup` for a period), as one key.
+  const groupOf = (row: QueryRow) => {
+    const r = row as QueryRow & { group?: unknown; thenGroup?: unknown };
+    const first = groupKey(groupField ? (r.group ?? row.values[groupField]) : null);
+    return thenField ? pairKey(first, groupKey(r.thenGroup ?? row.values[thenField])) : first;
+  };
+  const keyOfGroup = (g: QueryGroup) => (thenField ? pairKey(groupKey(g.value), groupKey(g.then?.value)) : groupKey(g.value));
+  const groupInfo = (key: string) => result?.groups?.find((g) => keyOfGroup(g) === key);
+  const firstOf = (key: string) => (thenField ? key.slice(0, key.indexOf(PAIR)) : key);
+  // A group's name: "None" in the reader's words, a period's in their language, else the server's.
+  const { locale } = useTodaLocale();
+  const groupName = (value: string | null | undefined, label: string | undefined, period: string | null | undefined) =>
+    value == null ? labels.noGroupValue
+      : period ? periodName(value, period, locale, { week: labels.periodWeek, quarter: labels.periodQuarter })
+        : (label || value);
+  const groupKeys = useMemo(() => {
+    const keys = [...new Set((result?.items ?? []).map(groupOf))];
+    return thenField ? [...keys, ...new Set(keys.map((k) => parentFoldKey(k.slice(0, k.indexOf(PAIR)))))] : keys;
+    // groupOf reads only the fields and the result
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result, groupField, thenField]);
 
   // The quick search: a "contains" condition on its field, shown in the box rather than as a chip.
   const searching = search && conditions
@@ -347,7 +378,7 @@ export function QueryableList({
   }
 
   const sortable = (fields ?? []).filter((f) => f.sortable);
-  const groupLabel = groupField ? label(groupField) : null;
+  const groupLabel = groupField ? (thenField ? `${label(groupField)} · ${label(thenField)}` : label(groupField)) : null;
 
   return (
     <Stack gap="3">
@@ -422,6 +453,25 @@ export function QueryableList({
                         </Menu.RadioItem>
                       ))}
                     </Menu.RadioItemGroup>
+                    {groupField && groupable.length > 1 && (
+                      <>
+                        <Menu.Separator />
+                        <Menu.RadioItemGroup value={thenField ?? ''}
+                          onValueChange={(d) => change({ ...query, groupBy: { ...query.groupBy!, then: d.value ? { field: d.value } : null } })}>
+                          <Menu.ItemGroupLabel>{labels.thenBy}</Menu.ItemGroupLabel>
+                          <Menu.RadioItem value="">
+                            {labels.noSecondGrouping}
+                            <Menu.ItemIndicator />
+                          </Menu.RadioItem>
+                          {groupable.filter((f) => f.id !== groupField).map((f) => (
+                            <Menu.RadioItem key={f.id} value={f.id}>
+                              {f.label}
+                              <Menu.ItemIndicator />
+                            </Menu.RadioItem>
+                          ))}
+                        </Menu.RadioItemGroup>
+                      </>
+                    )}
                   </Menu.Content>
                 </Menu.Positioner>
               </Portal>
@@ -617,18 +667,27 @@ export function QueryableList({
                   header: (key, rows) => {
                     const info = groupInfo(key);
                     const first = rows[0];
-                    const raw = first?.values[groupField];
+                    // Two fields: this group's header is its second field's value, and filters to both.
+                    const field = thenField ?? groupField;
+                    const raw = first?.values[field];
+                    const label = thenField ? info?.then?.label : info?.label;
+                    const value = thenField ? (info?.then?.value ?? null) : (info?.value ?? null);
+                    const period = thenField ? query.groupBy?.then?.period : query.groupBy?.period;
                     return (
                       <HStack gap="2.5" flex="1" minW="0">
                         <chakra.span display="inline-flex" alignItems="center" fontWeight="medium" textStyle="sm" minW="0">
-                          {raw == null ? (info?.label ?? labels.noGroupValue) : renderCell(groupField, raw, first)}
+                          {raw == null || period || value == null ? groupName(value, label, period) : renderCell(field, raw, first)}
                         </chakra.span>
                         <CountBadge value={info?.count ?? rows.length} />
-                        {renderGroupAside?.({ field: groupField, value: info?.value ?? null, label: info?.label ?? '' })}
-                        {conditions !== null && (
+                        {!thenField && renderGroupAside?.({ field: groupField, value: info?.value ?? null, label: info?.label ?? '' })}
+                        {conditions !== null && !period && (
                           <Button size="xs" variant="ghost" color="fg.muted" ms="auto" title={labels.filterToGroup} opacity="0"
                             transition="opacity 0.15s" _focusVisible={{ opacity: 1 }} css={{ '[data-group]:hover &': { opacity: 1 } }}
-                            onClick={() => setConditions([...conditions, info?.value == null ? { field: groupField, op: 'isEmpty' } : { field: groupField, op: 'eq', value: info.value }])}>
+                            onClick={() => setConditions([
+                              ...conditions,
+                              ...(thenField && info && !query.groupBy?.period ? [condition(groupField, info.value)] : []),
+                              condition(field, value),
+                            ])}>
                             <Filter />
                             <chakra.span hideBelow="md">{labels.filterToGroup}</chakra.span>
                           </Button>
@@ -636,8 +695,31 @@ export function QueryableList({
                       </HStack>
                     );
                   },
+                  parents: thenField
+                    ? {
+                        of: firstOf,
+                        foldLabel: (parent, isFolded) => fill(isFolded ? labels.unfoldGroup : labels.foldGroup, {
+                          group: (() => { const g = result?.groups?.find((x) => groupKey(x.value) === parent); return groupName(g?.value, g?.label, query.groupBy?.period); })(),
+                        }),
+                        header: (parent, groups) => {
+                          const info = result?.groups?.find((g) => groupKey(g.value) === parent);
+                          const first = groups[0]?.rows[0];
+                          const raw = first?.values[groupField];
+                          const count = (result?.groups ?? []).filter((g) => groupKey(g.value) === parent).reduce((n, g) => n + g.count, 0);
+                          return (
+                            <HStack gap="2.5" flex="1" minW="0">
+                              <chakra.span display="inline-flex" alignItems="center" fontWeight="bold" textStyle="sm" minW="0">
+                                {raw == null || query.groupBy?.period || info?.value == null ? groupName(info?.value, info?.label, query.groupBy?.period) : renderCell(groupField, raw, first)}
+                              </chakra.span>
+                              <CountBadge value={count} />
+                              {renderGroupAside?.({ field: groupField, value: info?.value ?? null, label: info?.label ?? '' })}
+                            </HStack>
+                          );
+                        },
+                      }
+                    : undefined,
                   move:
-                    moveToGroup && moveToGroup.field === groupField
+                    moveToGroup && moveToGroup.field === groupField && !thenField
                       ? {
                           label: moveToGroup.label,
                           menuTitle: labels.moveToGroup ?? 'Move to',
@@ -651,7 +733,14 @@ export function QueryableList({
                           },
                         }
                       : undefined,
-                  footer: renderGroupFooter ? (key) => renderGroupFooter({ field: groupField, value: groupInfo(key)?.value ?? null, label: groupInfo(key)?.label ?? '' }) : undefined,
+                  footer: renderGroupFooter
+                    ? (key) => {
+                        const info = groupInfo(key);
+                        // With two fields, the group's second value too; a period's isn't a value a record can start with.
+                        const then = thenField && !query.groupBy?.then?.period ? { field: thenField, value: info?.then?.value ?? null } : undefined;
+                        return query.groupBy?.period ? null : renderGroupFooter({ field: groupField, value: info?.value ?? null, label: info?.label ?? '', then });
+                      }
+                    : undefined,
                 }
               : undefined
           }
