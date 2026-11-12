@@ -13,6 +13,8 @@ export interface TodaLabels {
   noData: string;
   navigation: string;
   breadcrumb: string;
+  /** The folded middle of a long breadcrumb trail. */
+  moreBreadcrumbs: string;
   skipToContent: string;
   openNavigation: string;
   collapseSidebar: string;
@@ -230,6 +232,7 @@ export const defaultLabels: TodaLabels = {
   noData: 'Nothing to show yet.',
   navigation: 'Main navigation',
   breadcrumb: 'Breadcrumb',
+  moreBreadcrumbs: 'Show the levels between',
   skipToContent: 'Skip to content',
   openNavigation: 'Open navigation',
   collapseSidebar: 'Collapse sidebar',

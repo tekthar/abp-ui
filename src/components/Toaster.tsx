@@ -7,6 +7,18 @@ import { createToaster, Portal, Spinner, Stack, Toast, Toaster as ChakraToaster 
  */
 export const toaster = createToaster({ placement: 'bottom-end', pauseOnPageIdle: true, max: 5 });
 
+/**
+ * How long a toast stays (the canvas's v12 feedback, UI round 9 step 66): six seconds, long enough to read and reach its
+ * action; an error until it's closed, so what went wrong isn't missed; a loading one until it's settled. Hovering or
+ * focusing the toasts pauses them (the toaster's own). A toast given its own duration keeps it.
+ */
+export function toastDuration(type: string | undefined): number {
+  return type === 'error' || type === 'loading' ? Infinity : 6000;
+}
+const createToast = toaster.create.bind(toaster);
+toaster.create = ((data: Parameters<typeof createToast>[0]) =>
+  createToast({ ...data, duration: data.duration ?? toastDuration(data.type) })) as typeof toaster.create;
+
 type Message = ReactNode;
 
 export const notify = {

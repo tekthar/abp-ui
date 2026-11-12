@@ -39,10 +39,10 @@ export function avatarPalette(id: string): (typeof PALETTES)[number] {
   return PALETTES[Math.abs(hash) % PALETTES.length];
 }
 
-function PersonAvatar({ person, overlap, selected, inButton }: { person: AvatarPerson; overlap?: boolean; selected?: boolean; inButton?: boolean }) {
+function PersonAvatar({ person, selected, inButton }: { person: AvatarPerson; selected?: boolean; inButton?: boolean }) {
   return (
     <Avatar.Root colorPalette={avatarPalette(person.id)} bg="colorPalette.muted" color="colorPalette.fg" w="8" h="8" textStyle="caption"
-      borderWidth="2px" borderColor="bg" ms={overlap ? '-2' : undefined} flexShrink={0} outline={selected ? '2px solid' : undefined}
+      flexShrink={0} outline={selected ? '2px solid' : undefined}
       outlineColor="accent.solid" {...(inButton ? { 'aria-hidden': true } : { role: 'img', 'aria-label': person.name })}>
       <Avatar.Fallback name={person.name} aria-hidden />
       {person.picture && <Avatar.Image src={person.picture} alt="" />}
@@ -51,16 +51,17 @@ function PersonAvatar({ person, overlap, selected, inButton }: { person: AvatarP
 }
 
 /**
- * People as overlapping avatars (their initials, each in their own colour), the first `max` shown and the rest behind a
- * "+N" circle that opens a list of them. Names show on hover and are read out by screen readers. With `onToggle` each
+ * People as avatars side by side, 4 apart and never overlapping, no ring (the canvas's v12, UI round 9 step 66; their
+ * initials, each in their own colour until the colours land), the first `max` (three) shown and the rest behind a "+N"
+ * circle that opens a list of them. Names show on hover and are read out by screen readers. With `onToggle` each
  * person is a toggle (pressed when picked), for filtering by people: the list stays open so several can be picked.
  */
-export function AvatarStack({ 'aria-label': ariaLabel, people, max = 5, moreLabel, moreTitle, loading: own, selected = [], onToggle }: AvatarStackProps) {
+export function AvatarStack({ 'aria-label': ariaLabel, people, max = 3, moreLabel, moreTitle, loading: own, selected = [], onToggle }: AvatarStackProps) {
   const placeholders = useLoading(own) && people.length === 0;
   if (placeholders) {
     return (
-      <HStack gap="0" aria-hidden>
-        {[0, 1, 2].map((i) => <Bone key={i} circle height="8" ms={i > 0 ? '-2' : undefined} borderWidth="2px" borderColor="bg" />)}
+      <HStack gap="1" aria-hidden>
+        {[0, 1, 2].map((i) => <Bone key={i} circle height="8" />)}
       </HStack>
     );
   }
@@ -70,18 +71,18 @@ export function AvatarStack({ 'aria-label': ariaLabel, people, max = 5, moreLabe
   const picked = (p: AvatarPerson) => selected.includes(p.id);
   const restPicked = rest.some(picked);
   return (
-    <HStack gap="0" role="group" aria-label={ariaLabel}>
-      {shown.map((p, i) => (
+    <HStack gap="1" role="group" aria-label={ariaLabel}>
+      {shown.map((p) => (
         <Tooltip key={p.id} content={p.detail ? <>{p.name} · {p.detail}</> : p.name}>
           {onToggle ? (
             // Picked avatars sit above their neighbours so the whole ring shows.
-            <Box as="button" display="inline-flex" rounded="full" ms={i > 0 ? '-2' : undefined} position="relative" zIndex={picked(p) ? 1 : undefined}
+            <Box as="button" display="inline-flex" rounded="full" position="relative" zIndex={picked(p) ? 1 : undefined}
               cursor="pointer" _hover={{ zIndex: 2 }} focusVisibleRing="outside" aria-pressed={picked(p)} aria-label={p.name} onClick={() => onToggle(p.id)}>
               <PersonAvatar person={p} selected={picked(p)} inButton />
             </Box>
           ) : (
             <Box display="inline-flex">
-              <PersonAvatar person={p} overlap={i > 0} />
+              <PersonAvatar person={p} />
             </Box>
           )}
         </Tooltip>
@@ -89,8 +90,8 @@ export function AvatarStack({ 'aria-label': ariaLabel, people, max = 5, moreLabe
       {rest.length > 0 && (
         <Popover.Root positioning={{ placement: 'bottom-end' }} lazyMount unmountOnExit>
           <Popover.Trigger asChild>
-            <Box as="button" display="inline-flex" alignItems="center" justifyContent="center" w="8" h="8" ms="-2" flexShrink={0} rounded="full"
-              bg="bg.muted" color="fg.muted" borderWidth="2px" borderColor="bg" textStyle="caption" fontWeight="medium" cursor="pointer"
+            <Box as="button" display="inline-flex" alignItems="center" justifyContent="center" w="8" h="8" flexShrink={0} rounded="full"
+              bg="bg.muted" color="fg.muted" textStyle="caption" fontWeight="medium" cursor="pointer"
               outline={restPicked ? '2px solid' : undefined} outlineColor="accent.solid" position="relative" zIndex={restPicked ? 1 : undefined}
               _hover={{ bg: 'bg.emphasized', color: 'fg' }} focusVisibleRing="outside" aria-label={moreLabel(rest.length)}>
               +{rest.length}

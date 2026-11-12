@@ -10,9 +10,12 @@ export interface TooltipProps extends Omit<ChakraTooltip.RootProps, 'children'> 
   inactive?: boolean;
 }
 
-/** Short helper text on hover and focus. Never the only place important information lives. */
+/**
+ * Short helper text on hover and focus: after 400 ms of hover, at once on keyboard focus (v12). Never the only place
+ * important information lives.
+ */
 export const Tooltip = forwardRef<HTMLDivElement, TooltipProps>(function Tooltip(
-  { content, children, disabled, inactive, openDelay = 300, closeDelay = 0, ...rest },
+  { content, children, disabled, inactive, openDelay = 400, closeDelay = 0, ...rest },
   ref,
 ) {
   if (disabled) return children;

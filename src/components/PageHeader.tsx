@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from 'react';
-import { Breadcrumb, chakra, useSlotRecipe } from '@chakra-ui/react';
+import { Breadcrumb, chakra, Menu, Portal, useSlotRecipe } from '@chakra-ui/react';
 import { ChevronRight } from 'lucide-react';
 import { useTodaLabels } from '../provider/labels';
 import { usePageTitle, type TitleParts } from '../provider/title';
@@ -7,6 +7,7 @@ import { useLinkComponent } from '../provider/link';
 import { useLoading } from '../skeleton/loading';
 import { TextBone } from '../skeleton/bones';
 import { CountBadge } from './CountBadge';
+import { foldBreadcrumbs } from './breadcrumbFold';
 
 export interface BreadcrumbItem {
   /** Its label; while the page loads, one not given yet is drawn as text that's coming. */
@@ -73,31 +74,59 @@ export function PageHeader({ title, description, breadcrumbs, meta, count, adorn
   );
 }
 
-/** Breadcrumb trail; the separator chevron mirrors in right-to-left layouts. */
+/**
+ * Breadcrumb trail; the separator chevron mirrors in right-to-left layouts. Past four levels the middle ones fold into
+ * "…", a menu of them (the canvas's v12, UI round 9 step 66): the first and the last two stay.
+ */
 export function Breadcrumbs({ items, loading: own }: { items: BreadcrumbItem[]; loading?: boolean }) {
   const labels = useTodaLabels();
   const loading = useLoading(own);
   const label = (item: BreadcrumbItem, i: number) => (loading && item.label == null ? <TextBone width={8 + (i % 3) * 3} /> : item.label);
   const Link = useLinkComponent();
+  const { shown, hidden } = foldBreadcrumbs(items);
   return (
     <Breadcrumb.Root aria-label={labels.breadcrumb}>
       <Breadcrumb.List>
-        {items.map((item, i) => (
-          <Fragment key={i}>
-            {i > 0 && (
+        {shown.map((entry, n) => (
+          <Fragment key={entry ? entry.index : 'more'}>
+            {n > 0 && (
               <Breadcrumb.Separator>
                 <ChevronRight />
               </Breadcrumb.Separator>
             )}
+            {entry == null ? (
+              <Breadcrumb.Item>
+                <Menu.Root positioning={{ placement: 'bottom-start' }}>
+                  <Menu.Trigger asChild>
+                    <chakra.button type="button" px="1" rounded="l1" color="fg.muted" cursor="pointer" _hover={{ color: 'fg', bg: 'bg.muted' }}
+                      focusVisibleRing="outside" aria-label={labels.moreBreadcrumbs} title={labels.moreBreadcrumbs}>
+                      …
+                    </chakra.button>
+                  </Menu.Trigger>
+                  <Portal>
+                    <Menu.Positioner>
+                      <Menu.Content minW="40">
+                        {hidden.map((h, k) => (
+                          <Menu.Item key={k} value={String(k)} asChild={Boolean(h.href)}>
+                            {h.href ? <Link href={h.href}>{h.label}</Link> : <span>{h.label}</span>}
+                          </Menu.Item>
+                        ))}
+                      </Menu.Content>
+                    </Menu.Positioner>
+                  </Portal>
+                </Menu.Root>
+              </Breadcrumb.Item>
+            ) : (
             <Breadcrumb.Item>
-              {item.href && i < items.length - 1 ? (
+              {entry.item.href && entry.index < items.length - 1 ? (
                 <Breadcrumb.Link asChild>
-                  <Link href={item.href}>{label(item, i)}</Link>
+                  <Link href={entry.item.href}>{label(entry.item, entry.index)}</Link>
                 </Breadcrumb.Link>
               ) : (
-                <Breadcrumb.CurrentLink>{label(item, i)}</Breadcrumb.CurrentLink>
+                <Breadcrumb.CurrentLink>{label(entry.item, entry.index)}</Breadcrumb.CurrentLink>
               )}
             </Breadcrumb.Item>
+            )}
           </Fragment>
         ))}
       </Breadcrumb.List>

@@ -3,19 +3,14 @@ import { chakra, type HTMLChakraProps, type SystemStyleObject } from '@chakra-ui
 import { useArriving, useLoading } from './loading';
 
 /**
- * The shine every placeholder shares (Chakra's skeleton shine, ADR 0058's look): a soft band crossing the shape. Still
- * with less motion: the global rule ends keyframes at once when the person chose less, and this one when the system
- * asks for less and the person left it to the system.
+ * What every placeholder shares: a flat gray block with a gentle pulse, no shine crossing it (the canvas's v12 skeleton,
+ * UI round 9 step 66; ADR 0058's shine before). Still with less motion: the global rule ends keyframes at once when the
+ * person chose less, and this one when the system asks for less and the person left it to the system.
  */
 export const shineCss: SystemStyleObject = {
-  '--animate-from': '200%',
-  '--animate-to': '-200%',
-  '--start-color': 'colors.bg.muted',
-  '--end-color': 'colors.bg.emphasized',
   backgroundColor: 'bg.muted',
-  backgroundImage: 'linear-gradient(270deg,var(--start-color),var(--end-color),var(--end-color),var(--start-color))',
-  backgroundSize: '400% 100%',
-  animation: 'bg-position 5s ease-in-out infinite',
+  // Chakra's own `pulse` keyframes (half opacity at the middle).
+  animation: 'pulse 1.8s ease-in-out infinite',
   'html:not([data-motion=full]) &': { '@media (prefers-reduced-motion: reduce)': { animation: 'none' } },
 };
 
