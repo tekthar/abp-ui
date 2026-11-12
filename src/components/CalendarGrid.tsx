@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { Box, Grid, Stack, Text } from '@chakra-ui/react';
+import { Box, chakra, Grid, Stack, Text } from '@chakra-ui/react';
 import { DndContext, DragOverlay, PointerSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
 import { useLoading } from '../skeleton/loading';
 import { Bone } from '../skeleton/bones';
@@ -33,6 +33,8 @@ export interface CalendarGridProps<T extends CalendarItem> {
   /** At most this many items per cell before "+n more". */
   maxPerDay?: number;
   more?: (count: number) => ReactNode;
+  /** "+n more" opens its day (UI round 9: the calendar's day period); without it, the count is only said. */
+  onMore?: (day: string) => void;
   /** Week grids are taller: every item shows. */
   tall?: boolean;
   /** Its items are coming (ADR 0061): the grid as it is, a few days holding placeholders. The nearest `Loading` scope's when not given. */
@@ -63,6 +65,7 @@ export function CalendarGrid<T extends CalendarItem>({
   onMove,
   maxPerDay = 4,
   more,
+  onMore,
   tall,
   loading: own,
 }: CalendarGridProps<T>) {
@@ -134,7 +137,15 @@ export function CalendarGrid<T extends CalendarItem>({
                       {(dragging) => renderItem(item, { dragging, continued })}
                     </Chip>
                   ))}
-                  {list.length > shown.length && more && <Text textStyle="caption" color="fg.muted" px="1">{more(list.length - shown.length)}</Text>}
+                  {list.length > shown.length && more && (onMore
+                    ? (
+                      <chakra.button type="button" alignSelf="start" textStyle="caption" color="fg.muted" px="1" rounded="l1" cursor="pointer"
+                        _hover={{ color: 'fg', textDecoration: 'underline' }} _focusVisible={{ outline: '2px solid', outlineColor: 'colorPalette.focusRing' }}
+                        onPointerDown={(e) => e.stopPropagation()} onClick={() => onMore(day)} data-more="">
+                        {more(list.length - shown.length)}
+                      </chakra.button>
+                    )
+                    : <Text textStyle="caption" color="fg.muted" px="1">{more(list.length - shown.length)}</Text>)}
                 </DayCell>
               );
             })}
