@@ -1,7 +1,7 @@
 // Long breadcrumb trails fold their middle into "…" (UI round 9, step 66).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { foldBreadcrumbs } from '../src/components/breadcrumbFold.ts';
+import { foldBreadcrumbs } from '@todahq/client/rules';
 
 test('four levels or fewer stay as they are', () => {
   const { shown, hidden } = foldBreadcrumbs(['Projects', 'Group', 'Project', 'Records']);

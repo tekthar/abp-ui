@@ -7,7 +7,7 @@ import { useLinkComponent } from '../provider/link';
 import { useLoading } from '../skeleton/loading';
 import { TextBone } from '../skeleton/bones';
 import { CountBadge } from './CountBadge';
-import { foldBreadcrumbs } from './breadcrumbFold';
+import { foldBreadcrumbs } from '@todahq/client/rules';
 
 export interface BreadcrumbItem {
   /** Its label; while the page loads, one not given yet is drawn as text that's coming. */

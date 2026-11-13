@@ -5,7 +5,7 @@ import { useTodaLabels } from '../../provider/labels';
 import { Button, IconButton } from '../Button';
 import { SelectField } from '../Field';
 import type { QueryConditionJson, QueryField, QuerySuggestion, QuerySuggestions, QueryValueEditor } from '../QueryableList';
-import { LIST_OPS, mergeSameField, NO_VALUE_OPS, parseValue, valueText } from './conditions';
+import { LIST_OPS, mergeSameField, NO_VALUE_OPS, parseValue, valueText } from '@todahq/client/rules';
 
 /** One condition while it's being written: its field, operator, and the value typed or picked. */
 interface Draft {

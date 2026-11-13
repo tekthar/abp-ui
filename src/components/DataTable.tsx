@@ -8,7 +8,7 @@ import { EmptyState } from './EmptyState';
 import { InlineAlert } from './InlineAlert';
 import { RecordKey } from './RecordKey';
 import { StatusPill } from './StatusPill';
-import { inGroups } from './query/grouping';
+import { inGroups } from '@todahq/client/rules';
 import { inTree, visibleInTree, type TreeRow } from './query/tree';
 import { Loading, useLoading } from '../skeleton/loading';
 import { boneWidth, TextBone } from '../skeleton/bones';

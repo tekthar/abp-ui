@@ -98,7 +98,9 @@ export { IconTile, type IconTileProps } from './components/IconTile';
 export { PersonChip, type PersonChipProps } from './components/PersonChip';
 export { PriorityMark, type PriorityMarkProps } from './components/PriorityMark';
 export { priorityLevel } from './components/priority-level';
-export { groupKey } from './components/query/grouping';
+import { groupKey as sharedGroupKey } from '@todahq/client/rules';
+/** A row's group as its key (the client package's rule); typed here, so the ui package's types stand alone. */
+export const groupKey: (value: unknown) => string = sharedGroupKey;
 export { SegmentedControl, type SegmentedControlProps, type SegmentedItem } from './components/SegmentedControl';
 export {
   CheckboxField,

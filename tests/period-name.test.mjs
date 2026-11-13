@@ -1,7 +1,7 @@
 // Grouped by a date period (UI round 9, step 63): a group's name from its first day, in the reader's language.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { groupKey, periodName } from '../src/components/query/grouping.ts';
+import { groupKey, periodName } from '@todahq/client/rules';
 
 const labels = { week: 'Week of {day}', quarter: 'Q{quarter} {year}' };
 
