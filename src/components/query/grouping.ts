@@ -20,11 +20,11 @@ export function periodName(day: string, period: string, locale: string, labels: 
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
   if (!m) return day;
   const date = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
-  const format = (options: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' }).format(date);
+  const format = (options: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(locale, { numberingSystem: 'latn', ...options, timeZone: 'UTC' }).format(date);
   const fill = (template: string, values: Record<string, string>) => template.replace(/\{(\w+)\}/g, (_, k: string) => values[k] ?? `{${k}}`);
   switch (period) {
     case 'year': return format({ year: 'numeric' });
-    case 'quarter': return fill(labels.quarter, { quarter: new Intl.NumberFormat(locale).format(Math.floor((Number(m[2]) - 1) / 3) + 1), year: format({ year: 'numeric' }) });
+    case 'quarter': return fill(labels.quarter, { quarter: new Intl.NumberFormat(locale, { numberingSystem: 'latn' }).format(Math.floor((Number(m[2]) - 1) / 3) + 1), year: format({ year: 'numeric' }) });
     case 'month': return format({ month: 'long', year: 'numeric' });
     case 'week': return fill(labels.week, { day: format({ day: 'numeric', month: 'short', year: 'numeric' }) });
     default: return format({ day: 'numeric', month: 'short', year: 'numeric' });

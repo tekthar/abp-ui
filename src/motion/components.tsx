@@ -279,7 +279,7 @@ export function Counter({ value, format, fromZero = true, ...rest }: CounterProp
   const { reduce } = useMotionSetting();
   const ref = useRef<HTMLSpanElement>(null);
   const shown = useRef(fromZero ? 0 : value);
-  const write = format ?? ((n: number) => new Intl.NumberFormat(locale, { maximumFractionDigits: Number.isInteger(value) ? 0 : 1 }).format(n));
+  const write = format ?? ((n: number) => new Intl.NumberFormat(locale, { numberingSystem: 'latn', maximumFractionDigits: Number.isInteger(value) ? 0 : 1 }).format(n));
 
   useEffect(() => {
     const element = ref.current;
