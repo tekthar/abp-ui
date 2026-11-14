@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { formatMessage } from '../src/texts/format.ts';
 import { createHostRequest, fileNameOf } from '../src/host/request.ts';
 import { AbpApiError } from '../src/host/errors.ts';
+import { createHostEvents } from '../src/host/events.ts';
 
 test('a text fills its values and keeps a missing one as it was', () => {
   assert.equal(formatMessage('en', 'Hello {name}', { name: 'Lama' }), 'Hello Lama');
@@ -62,4 +63,20 @@ test('a file comes back with the name the server gives', async () => {
   assert.equal(file.name, 'usage Nov.csv');
   assert.equal(await file.blob.text(), 'csv,data');
   assert.equal(fileNameOf('attachment; filename="a.json"'), 'a.json');
+});
+
+test('server-sent events: each event with its id, resumed from the last, a refusal before the stream thrown', async () => {
+  const sent = [];
+  const fetch = async (url, init) => {
+    sent.push(init.headers['Last-Event-ID'] ?? null);
+    if (sent.length === 1) return new Response(JSON.stringify({ error: { code: 'nope', message: 'No' } }), { status: 403 });
+    return new Response('event: step\nid: 7\ndata: {"n":1}\n\ndata: {"n":2}\nid: 8\n\n', { status: 200, headers: { 'Content-Type': 'text/event-stream' } });
+  };
+  const events = createHostEvents({ fetch });
+  await assert.rejects(events('/chats/1/events', () => {}), (e) => e instanceof AbpApiError && e.code === 'nope');
+  const got = [];
+  const last = await events('/chats/1/events', (name, data, id) => got.push([name, data.n, id]), { lastEventId: '6' });
+  assert.deepEqual(got, [['step', 1, '7'], ['message', 2, '8']]);
+  assert.equal(last, '8');
+  assert.equal(sent[1], '6');
 });

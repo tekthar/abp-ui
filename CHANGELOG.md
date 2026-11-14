@@ -10,6 +10,8 @@ its own entry, moving to its own package later by import path alone.
   without its own (anti-forgery cookie and header, a 401 handed back, one retry after a step-up, files with their names).
 - `useApiQuery`, `useApiAction`, `useApiDownload`, `useAreaRequest`, `useCan`, `useNavigate`, `useNames`,
   `useHostLanguages`, `HostSlot`; `AbpApiError` reads ABP's error shape.
+- `createHostEvents` and `useAreaEvents`: server-sent events resumed from the last id, a refusal thrown before the
+  stream; optional, so a host without it gets screens that ask again. `me` and `useMe` for the person signed in.
 - `createAreaTexts` and `formatMessage`: an area's English and Arabic texts with plurals and choices, overridable by
   the host.
 - `FormDialog`, with the labels `formRequired` and `formFix`.

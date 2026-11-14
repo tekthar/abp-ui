@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from 'react';
 import { errorText } from './errors';
+import type { HostEventHandler, HostEvents } from './events';
 import type { HostFile, HostRequest, HostRequestInit } from './request';
 
 /** A scope as a host knows it: a project, an org unit. */
@@ -25,6 +26,10 @@ export interface HostLanguage {
 export interface AbpHost {
   /** The host's request: same origin, its session, anti-forgery header, sign-in and step-up (`createHostRequest`). */
   request: HostRequest;
+  /** The host's reader for server-sent events (`createHostEvents`); without it, a live screen asks again every few seconds. */
+  events?: HostEvents;
+  /** The person signed in: their account's id, for "you" and for what's theirs. */
+  me?: { accountId: string };
   /** Each package's base path on this host: `{ ai: '/api/platform/ai', guard: '/api/guard', agent: '/api/agent' }`. */
   paths: Record<string, string>;
   /** Go to an address in the host's router. */
@@ -141,6 +146,25 @@ export function useApiDownload(area: string) {
     setTimeout(() => URL.revokeObjectURL(url), 0);
     return file;
   }, [request]);
+}
+
+/**
+ * A package's stream of server-sent events on this host, or null when the host reads none (the screen then asks again
+ * every few seconds). Resolves with the last event's id, for resuming.
+ */
+export function useAreaEvents(area: string): ((path: string, onEvent: HostEventHandler, options?: { lastEventId?: string | null; signal?: AbortSignal }) => Promise<string | null>) | null {
+  const host = useHost();
+  const base = host.paths[area];
+  const events = host.events;
+  return useMemo(() => {
+    if (!events || base === undefined) return null;
+    return (path: string, onEvent: HostEventHandler, options?: { lastEventId?: string | null; signal?: AbortSignal }) => events(`${base.replace(/\/$/, '')}${path}`, onEvent, options);
+  }, [events, base]);
+}
+
+/** The person signed in, when the host says. */
+export function useMe(): { accountId: string } | null {
+  return useOptionalHost()?.me ?? null;
 }
 
 /** Go somewhere in the host's router (a link is `AppLink`). */

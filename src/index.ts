@@ -106,6 +106,7 @@ export { groupKey, heavierFirst, inSections } from './rules';
 // The host contract for the screens (ADR 0109 amendment): how they call the host's server, move, ask what the person
 // may do, and read their words
 export { AbpApiError, errorText, isStepUp, readAbpError, STEP_UP_REQUIRED } from './host/errors';
+export { createHostEvents, readEvents, type HostEventHandler, type HostEvents } from './host/events';
 export { createHostRequest, fileNameOf, type HostFile, type HostRequest, type HostRequestInit, type HostRequestOptions } from './host/request';
 export {
   HostProvider,
@@ -113,10 +114,12 @@ export {
   useApiAction,
   useApiDownload,
   useApiQuery,
+  useAreaEvents,
   useAreaRequest,
   useCan,
   useHost,
   useHostLanguages,
+  useMe,
   useNames,
   useNavigate,
   useOptionalHost,
