@@ -43,7 +43,7 @@ type Ways = { hasApp: boolean; senders: Sender[] };
  * up a strong factor (a strong step-up asked of someone with none: the password, then a passkey or the app, then the
  * recovery codes when it's their first factor).
  */
-type Stage = 'confirm' | 'passkey' | 'setup' | 'setupPasskey' | 'setupApp' | 'recovery';
+type Stage = 'confirm' | 'code' | 'passkey' | 'setup' | 'setupPasskey' | 'setupApp' | 'recovery';
 
 /** Whether what was typed can be a code yet: six digits (spaces between are fine), or a recovery code's ten characters. */
 export function looksLikeCode(value: string, recovery: boolean): boolean {
@@ -58,8 +58,9 @@ const SEND_ERRORS: Record<string, string> = { too_many_attempts: 'tooManySends',
  *
  * - At the password level: the password, and a code of their second factor when they have one (their app, a recovery
  *   code, or one the site sends).
- * - At the strong level (AbpGuard 0.7.0): a passkey first when they have one, or the password with an authenticator
- *   code.
+ * - At the strong level (AbpGuard 0.7.0): a passkey first when they have one, or an authenticator code: alone where the
+ *   server says one passes alone (`appCodeAlone`, the operator's setting), else with the password. Where a code passes
+ *   alone it's offered at the password level too.
  * - Asked for a strong step-up with no strong factor (`strong_factor_required`): the password, then setting up a passkey
  *   or the app here (with recovery codes, shown once, for a first factor); the call then asks again, and they confirm
  *   with what they set up.
@@ -110,7 +111,8 @@ export function StepUpDialog() {
           setRecoveryCodes([]);
           setCopied(false);
           const passkeyFirst = asked.code !== 'strong_factor_required' && asked.level === 'strong' && asked.methods.includes('passkey') && passkeysSupported();
-          setStage(passkeyFirst ? 'passkey' : 'confirm');
+          const codeFirst = asked.code !== 'strong_factor_required' && asked.level === 'strong' && asked.appCodeAlone && asked.methods.includes('app');
+          setStage(passkeyFirst ? 'passkey' : codeFirst ? 'code' : 'confirm');
           // At the strong level the code is the app's, asked with the password.
           setMethod('app');
           setOpen(true);
@@ -193,6 +195,30 @@ export function StepUpDialog() {
       setBusy(false);
     }
   }
+
+  /** An authenticator code alone, where the server lets one pass. */
+  async function confirmCode(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await call('/session/step-up', { method: 'POST', body: { method: 'app', code: code.replace(/\D/g, '') } });
+      close(true);
+    } catch (e) {
+      if (ended(e)) return;
+      setError(e instanceof AbpApiError && e.message ? e.message : t('failed'));
+      setCode('');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const codeAlone = !!need?.appCodeAlone && !!need.methods.includes('app') && !settingUp;
+  const toStage = (next: Stage) => {
+    setStage(next);
+    setCode('');
+    setError(null);
+  };
 
   async function withPasskey() {
     setBusy(true);
@@ -350,14 +376,39 @@ export function StepUpDialog() {
             {busy && <Text textStyle="sm" color="fg.muted">{t('passkeyPrompt')}</Text>}
             <InlineAlert tone="danger">{error}</InlineAlert>
             {need?.methods.includes('app') && (
-              <Button variant="link" size="sm" onClick={() => { setStage('confirm'); setError(null); }} data-testid="use-password-and-app">
-                {t('usePasswordAndApp')}
+              <Button variant="link" size="sm" onClick={() => toStage(codeAlone ? 'code' : 'confirm')} data-testid="use-password-and-app">
+                {codeAlone ? t('useAppCode') : t('usePasswordAndApp')}
               </Button>
             )}
           </Stack>
         </Dialog.Body>
         {footer(null)}
       </>
+    );
+  } else if (stage === 'code') {
+    body = (
+      <form onSubmit={(e) => void confirmCode(e)}>
+        <Dialog.Body>
+          <Stack gap="field">
+            <Text color="fg.muted">{t('appCodeWhy')}</Text>
+            {codeInput(t('code'))}
+            <InlineAlert tone="danger">{error}</InlineAlert>
+            <Stack gap="0.5" align="start">
+              {need?.methods.includes('passkey') && canPasskey && (
+                <Button variant="link" size="sm" onClick={() => toStage('passkey')}>
+                  {t('usePasskey')}
+                </Button>
+              )}
+              {!strong && (
+                <Button variant="link" size="sm" onClick={() => toStage('confirm')} data-testid="use-password">
+                  {t('usePassword')}
+                </Button>
+              )}
+            </Stack>
+          </Stack>
+        </Dialog.Body>
+        {footer(t('confirm'), !looksLikeCode(code, false))}
+      </form>
     );
   } else if (stage === 'confirm' && strong && !settingUp) {
     body = (
@@ -431,6 +482,11 @@ export function StepUpDialog() {
               </Stack>
             )}
             <InlineAlert tone="danger">{error}</InlineAlert>
+            {codeAlone && !ways && (
+              <Button variant="link" size="sm" alignSelf="start" onClick={() => toStage('code')} data-testid="use-app-code">
+                {t('useAppCode')}
+              </Button>
+            )}
           </Stack>
         </Dialog.Body>
         {footer(settingUp ? t('continue') : t('confirm'), !password || (!!ways && !looksLikeCode(code, recovery)))}

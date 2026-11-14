@@ -50,5 +50,8 @@
   "recoverySaved": "I've saved them",
   "continue": "Continue",
   "back": "Back",
-  "strongWhyApp": "This action needs more than your password: enter it with a code from your authenticator app."
+  "strongWhyApp": "This action needs more than your password: enter it with a code from your authenticator app.",
+  "appCodeWhy": "Enter a code from your authenticator app.",
+  "useAppCode": "Use a code from your authenticator app instead",
+  "usePassword": "Use your password instead"
 }

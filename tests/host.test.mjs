@@ -90,8 +90,9 @@ test('by default the step-up dialog asks: none registered fails as the server sa
 
 test("the need a step-up carries: the level, the person's ways best first, a strong factor to set up", () => {
   assert.deepEqual(stepUpNeedOf('step_up_required', { level: 'strong', category: 'plugins', methods: ['passkey', 'app', 'password'], maxAgeSeconds: 600 }),
-    { code: 'step_up_required', level: 'strong', category: 'plugins', methods: ['passkey', 'app', 'password'] });
-  assert.deepEqual(stepUpNeedOf('strong_factor_required', { category: 'roles' }), { code: 'strong_factor_required', level: 'strong', category: 'roles', methods: [] });
+    { code: 'step_up_required', level: 'strong', category: 'plugins', methods: ['passkey', 'app', 'password'], appCodeAlone: false });
+  assert.equal(stepUpNeedOf('step_up_required', { level: 'strong', methods: ['app'], appCodeAlone: true }).appCodeAlone, true);
+  assert.deepEqual(stepUpNeedOf('strong_factor_required', { category: 'roles' }), { code: 'strong_factor_required', level: 'strong', category: 'roles', methods: [], appCodeAlone: false });
   assert.equal(stepUpNeedOf('step_up_required', null).level, 'password', 'an older server: the password level');
 });
 

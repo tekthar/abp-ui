@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0-next.6
+
+A prerelease under npm's `next` tag.
+
+- `StepUpDialog`: an authenticator code alone where the server lets one pass (`appCodeAlone` in `step_up_required`'s
+  data, the operator's setting): the strong level asks for the code alone (a passkey still first when the person has
+  one), and the password level offers it instead of the password. Without the field, a code goes with the password, as
+  before. `StepUpNeed.appCodeAlone`.
+
 ## 0.2.0-next.5
 
 A prerelease under npm's `next` tag: the step-up dialog for AbpGuard 0.7.0's strong step-up and passkeys. Against an
