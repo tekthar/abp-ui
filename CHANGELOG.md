@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.2.0-next.10
+
+A prerelease under npm's `next` tag.
 
 - ai: a scope's page (`AiScopeScreen`) no longer shows a named account's or group's limit (an agent's own, say) as
   the site's or the scope's: those are counted on one line ("3 accounts and groups have limits of their own."), and a
