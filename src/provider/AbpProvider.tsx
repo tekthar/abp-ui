@@ -8,6 +8,7 @@ import { Toaster } from '../components/Toaster';
 import { createAbpSystem } from '../theme/system';
 import { ColorModeProvider } from './color-mode';
 import { LabelsProvider, type AbpLabels } from './labels';
+import { HostProvider, type AbpHost } from '../host/HostContext';
 import { LinkComponentProvider, type LinkComponent } from './link';
 import { PluginTextsProvider } from './texts';
 
@@ -18,6 +19,8 @@ export interface AbpProviderProps {
   children: ReactNode;
   /** The host's Chakra system (`createAbpSystem` with its prefix and brand); the package's own when not given. */
   system?: SystemContext;
+  /** What the host gives the screens (`@abpjs/ui/ai` and the other areas): its requests, paths, rights and words. */
+  host?: AbpHost;
   /** BCP 47 locale ("en", "ar"). Sets direction for every component, portals included. */
   locale?: string;
   /** Translated strings for the components' own text (close, cancel, sort ...). */
@@ -43,12 +46,13 @@ export interface AbpProviderProps {
  *
  * The host must also set `<html lang dir>` and `suppressHydrationWarning` on <html>.
  */
-export function AbpProvider({ children, system = defaultSystem, locale = 'en', labels, linkComponent, defaultColorMode = 'system', pluginTexts, productName, timeZone, motion }: AbpProviderProps) {
+export function AbpProvider({ children, system = defaultSystem, host, locale = 'en', labels, linkComponent, defaultColorMode = 'system', pluginTexts, productName, timeZone, motion }: AbpProviderProps) {
   return (
     <ChakraProvider value={system}>
       <ColorModeProvider defaultTheme={defaultColorMode}>
         <LocaleProvider locale={locale}>
           <TimeZoneProvider value={timeZone}>
+          <HostProvider value={host}>
           <LabelsProvider value={labels}>
             <LinkComponentProvider value={linkComponent}>
               <PluginTextsProvider value={pluginTexts as never} product={productName}>
@@ -61,6 +65,7 @@ export function AbpProvider({ children, system = defaultSystem, locale = 'en', l
               </PluginTextsProvider>
             </LinkComponentProvider>
           </LabelsProvider>
+          </HostProvider>
           </TimeZoneProvider>
         </LocaleProvider>
       </ColorModeProvider>

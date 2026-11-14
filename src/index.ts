@@ -103,6 +103,32 @@ export { PriorityMark, type PriorityMarkProps } from './components/PriorityMark'
 export { priorityLevel } from './components/priority-level';
 export { groupKey, heavierFirst, inSections } from './rules';
 
+// The host contract for the screens (ADR 0109 amendment): how they call the host's server, move, ask what the person
+// may do, and read their words
+export { AbpApiError, errorText, isStepUp, readAbpError, STEP_UP_REQUIRED } from './host/errors';
+export { createHostRequest, fileNameOf, type HostFile, type HostRequest, type HostRequestInit, type HostRequestOptions } from './host/request';
+export {
+  HostProvider,
+  HostSlot,
+  useApiAction,
+  useApiDownload,
+  useApiQuery,
+  useAreaRequest,
+  useCan,
+  useHost,
+  useHostLanguages,
+  useNames,
+  useNavigate,
+  useOptionalHost,
+  type AbpHost,
+  type ApiQuery,
+  type HostLanguage,
+  type HostScope,
+} from './host/HostContext';
+export { formatMessage } from './texts/format';
+export { createAreaTexts, type AreaTexts } from './texts/area';
+export { FormDialog, type FormDialogProps } from './components/FormDialog';
+
 // Settings areas (ADR 0095, ADR 0109): sections and pages by weight, static and loaded, and their frame
 export { findSettingsPage, settingsArea, type SettingsArea, type SettingsPage, type SettingsSection } from './settings/registry';
 export { SettingsLayout, type SettingsLayoutProps } from './settings/SettingsLayout';

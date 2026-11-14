@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased (0.2.0)
+
+The foundation for the screens (ADR 0109's amendment in the application it came from): areas under `src/areas`, each
+its own entry, moving to its own package later by import path alone.
+
+- The host contract: `AbpProvider`'s `host` (`AbpHost`): the host's `request`, a base path per package, `navigate`,
+  `can(right, scopeId?)`, scopes, people's names, languages, text overrides and slots. `createHostRequest` for a host
+  without its own (anti-forgery cookie and header, a 401 handed back, one retry after a step-up, files with their names).
+- `useApiQuery`, `useApiAction`, `useApiDownload`, `useAreaRequest`, `useCan`, `useNavigate`, `useNames`,
+  `useHostLanguages`, `HostSlot`; `AbpApiError` reads ABP's error shape.
+- `createAreaTexts` and `formatMessage`: an area's English and Arabic texts with plurals and choices, overridable by
+  the host.
+- `FormDialog`, with the labels `formRequired` and `formFix`.
+- `tests/areas-boundary.test.mjs` keeps each area to its boundary; prereleases publish under npm's `next` tag.
+
 ## 0.1.0
 
 The design system as a package of its own (ADR 0109 in the application it came from).

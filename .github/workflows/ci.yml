@@ -55,7 +55,11 @@ jobs:
           if npm view "@abpjs/ui@$(node -p "require('./package.json').version")" version > /dev/null 2>&1; then
             echo "This version is on npm already."
           else
-            npm publish --access public
+            # A prerelease (0.2.0-next.1) goes under npm's `next` tag, so `latest` stays the last release.
+            case "$(node -p "require('./package.json').version")" in
+              *-*) npm publish --access public --tag next ;;
+              *) npm publish --access public ;;
+            esac
           fi
       - name: GitHub release
         env:

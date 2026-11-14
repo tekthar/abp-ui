@@ -25,6 +25,10 @@ export interface AbpLabels {
   sortAscending: string;
   sortDescending: string;
   path: string;
+  /** A form's field that's required and empty. */
+  formRequired: string;
+  /** Above a form with wrong fields, `{count}` of them (ICU plural). */
+  formFix: string;
   queryList: QueryListLabels;
 }
 
@@ -248,6 +252,8 @@ export const defaultLabels: AbpLabels = {
   sortAscending: 'Sort ascending',
   sortDescending: 'Sort descending',
   path: 'Path',
+  formRequired: 'Fill this in',
+  formFix: '{count, plural, one {Fix this field before saving} other {Fix these # fields before saving}}',
   queryList: defaultQueryListLabels,
 };
 
