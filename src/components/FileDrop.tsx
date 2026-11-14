@@ -36,7 +36,7 @@ export const FileDropArea = forwardRef<HTMLDivElement, FileDropAreaProps>(functi
       data-drop-area={over ? 'over' : awake ? 'awake' : undefined}
       style={{
         transform: over && !reduce ? 'scale(1.01)' : undefined,
-        boxShadow: over ? '0 0 0 4px var(--toda-colors-accent-muted)' : undefined,
+        boxShadow: over ? '0 0 0 4px {colors.accent.muted}' : undefined,
         transition: reduce ? 'none' : `transform 160ms ${OUT}, box-shadow 160ms ${OUT}, border-color 160ms ease`,
       }}
       {...rest}

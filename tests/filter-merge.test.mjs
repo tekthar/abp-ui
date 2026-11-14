@@ -1,7 +1,7 @@
 // The filter builder (UI round 9, step 57): conditions on one field saying "is" become one "is any of".
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mergeSameField } from '@todahq/client/rules';
+import { mergeSameField } from '../src/rules/conditions.ts';
 
 const fields = [
   { id: 'status', kind: 'choice', label: 'Status', sortable: true, groupable: true, operators: ['eq', 'ne', 'in', 'notIn'] },

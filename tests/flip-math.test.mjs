@@ -36,7 +36,7 @@ test('the farther something travels, the higher it is drawn, within 1 to 9', () 
   assert.equal(liftOf(box(0, 0), box(5000, 4000)), 9, 'never above what floats over the page');
 });
 
-test("the curve starts and ends where it should and follows Toda's out curve", () => {
+test("the curve starts and ends where it should and follows the out curve", () => {
   const out = cubicBezier(0.23, 1, 0.32, 1);
   assert.equal(out(0), 0);
   assert.equal(out(1), 1);

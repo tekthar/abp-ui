@@ -5,12 +5,12 @@ import { curves } from './tokens';
 
 /**
  * Sliding to a new place (ADR 0058, amended): FLIP on the browser's Web Animations instead of Motion's layout features.
- * Something that moved is drawn where it was, then slides home on Toda's on-screen curve; nothing plays with less
+ * Something that moved is drawn where it was, then slides home on the on-screen curve; nothing plays with less
  * motion. Used by the sliding marks, items that change places, list rows and the board's cards.
  */
 export const SLIDE_MS = 250;
 const SLIDE_EASING = `cubic-bezier(${curves.inOut.join(', ')})`;
-const SLIDE_ID = 'toda-slide';
+const SLIDE_ID = 'abp-slide';
 
 const boxOf = (element: Element): Box => {
   const r = element.getBoundingClientRect();

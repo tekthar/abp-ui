@@ -2,9 +2,9 @@ import { createContext, useContext, type ReactNode } from 'react';
 
 /**
  * Every string the components render on their own. The package ships English defaults and
- * knows nothing about i18n libraries: the host passes translated labels to TodaProvider.
+ * knows nothing about i18n libraries: the host passes translated labels to AbpProvider.
  */
-export interface TodaLabels {
+export interface AbpLabels {
   close: string;
   cancel: string;
   confirm: string;
@@ -228,7 +228,7 @@ export const defaultQueryListLabels: QueryListLabels = {
   kinds: { field: 'field', operator: 'operator', value: 'value', function: 'function', keyword: 'keyword', person: 'person' },
 };
 
-export const defaultLabels: TodaLabels = {
+export const defaultLabels: AbpLabels = {
   close: 'Close',
   cancel: 'Cancel',
   confirm: 'Confirm',
@@ -251,13 +251,13 @@ export const defaultLabels: TodaLabels = {
   queryList: defaultQueryListLabels,
 };
 
-const LabelsContext = createContext<TodaLabels>(defaultLabels);
+const LabelsContext = createContext<AbpLabels>(defaultLabels);
 
-export function LabelsProvider({ value, children }: { value?: Partial<TodaLabels>; children: ReactNode }) {
+export function LabelsProvider({ value, children }: { value?: Partial<AbpLabels>; children: ReactNode }) {
   const merged = { ...defaultLabels, ...value, queryList: { ...defaultQueryListLabels, ...value?.queryList } };
   return <LabelsContext.Provider value={merged}>{children}</LabelsContext.Provider>;
 }
 
-export function useTodaLabels(): TodaLabels {
+export function useAbpLabels(): AbpLabels {
   return useContext(LabelsContext);
 }

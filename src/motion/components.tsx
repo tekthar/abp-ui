@@ -1,7 +1,7 @@
 import { Children, cloneElement, isValidElement, useEffect, useLayoutEffect, useRef, type ComponentProps, type ReactElement, type ReactNode } from 'react';
 import { AnimatePresence, m } from 'motion/react';
 import { chakra, type HTMLChakraProps, type SystemStyleObject } from '@chakra-ui/react';
-import { useTodaLocale } from '../provider/locale';
+import { useAbpLocale } from '../provider/locale';
 import { cubicBezier } from './flip-math';
 import { placeOf, slide, useSlideItems } from './flip';
 import { hiddenPose, SHOWN, staggerDelay, type Arrival } from './presets';
@@ -17,7 +17,7 @@ const MotionDiv = chakra(m.div, {}, { forwardProps: ['transition'] });
 const MotionSpan = chakra(m.span, {}, { forwardProps: ['transition'] });
 const MotionLi = chakra(m.li, {}, { forwardProps: ['transition'] });
 
-/** Toda's out curve, for what eases in a frame loop or Web Animations. */
+/** The out curve, for what eases in a frame loop or Web Animations. */
 const OUT = `cubic-bezier(${curves.out.join(', ')})`;
 const easeOut = cubicBezier(...curves.out);
 
@@ -31,7 +31,7 @@ type BoxProps = Omit<HTMLChakraProps<'div'>, 'transition' | 'translate' | 'rotat
 
 /** The hidden pose for an arrival in the current language, and whether movement is off. */
 function useArrival(kind: Arrival) {
-  const { isRtl } = useTodaLocale();
+  const { isRtl } = useAbpLocale();
   const { reduce } = useMotionSetting();
   return hiddenPose(kind, { rtl: isRtl, reduce });
 }
@@ -275,7 +275,7 @@ export interface CounterProps extends Omit<HTMLChakraProps<'span'>, 'children'> 
 
 /** A number counts to its value: a dashboard's totals the first time they show, and when they change. */
 export function Counter({ value, format, fromZero = true, ...rest }: CounterProps) {
-  const { locale } = useTodaLocale();
+  const { locale } = useAbpLocale();
   const { reduce } = useMotionSetting();
   const ref = useRef<HTMLSpanElement>(null);
   const shown = useRef(fromZero ? 0 : value);
@@ -289,7 +289,7 @@ export function Counter({ value, format, fromZero = true, ...rest }: CounterProp
       element.textContent = write(value);
       return;
     }
-    // A frame loop on Toda's out curve (Motion's own animate would cost more than the rest of it).
+    // A frame loop on the out curve (Motion's own animate would cost more than the rest of it).
     const from = shown.current;
     const start = performance.now();
     const length = durations.count * 1000;

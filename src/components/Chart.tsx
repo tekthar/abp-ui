@@ -3,7 +3,7 @@
 import { Box, Flex, Text } from '@chakra-ui/react';
 import { Chart as ChakraChart, useChart } from '@chakra-ui/charts';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { useTodaLocale } from '../provider/locale';
+import { useAbpLocale } from '../provider/locale';
 import { useLoading } from '../skeleton/loading';
 import { Bone } from '../skeleton/bones';
 
@@ -41,7 +41,7 @@ const PALETTE = ['teal.solid', 'blue.solid', 'orange.solid', 'purple.solid', 'gr
  * legend. The same numbers are in a table screen readers read, so nothing is only in the picture.
  */
 export function Chart({ kind, stacked, data, x, series, 'aria-label': ariaLabel, height = 280, formatX, formatValue, loading: own }: ChartProps) {
-  const { isRtl: rtl } = useTodaLocale();
+  const { isRtl: rtl } = useAbpLocale();
   const loading = useLoading(own);
   const chart = useChart({
     data,

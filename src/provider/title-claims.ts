@@ -1,10 +1,10 @@
 /**
  * What the browser's tab says for a page, kept apart from React so it can be tested alone (provider/title.tsx).
  *
- * The convention, the same in Toda, its portals and its plugins: "{what the page shows} · {where} · {site}", the most
- * specific part first ("PAY-41 Retry failed payouts · Payments · Toda"). A page claims its parts; the last claim set
+ * The convention, the same in the app, its portals and its plugins: "{what the page shows} · {where} · {site}", the most
+ * specific part first ("PAY-41 Retry failed payouts · Payments · Acme"). A page claims its parts; the last claim set
  * wins, and a page's claim leaves with it, so the one under it shows again. An empty claim is no claim, so a page
- * whose title is still loading never shows " · Toda" alone. The site's name ends every title; a portal on a host of
+ * whose title is still loading never shows " · Acme" alone. The site's name ends every title; a portal on a host of
  * its own may claim another name in its place.
  */
 

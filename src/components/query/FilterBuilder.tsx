@@ -1,11 +1,11 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { CloseButton, Dialog, HStack, Input, Portal, Stack, Text } from '@chakra-ui/react';
 import { Plus, Trash2 } from 'lucide-react';
-import { useTodaLabels } from '../../provider/labels';
+import { useAbpLabels } from '../../provider/labels';
 import { Button, IconButton } from '../Button';
 import { SelectField } from '../Field';
 import type { QueryConditionJson, QueryField, QuerySuggestion, QuerySuggestions, QueryValueEditor } from '../QueryableList';
-import { LIST_OPS, mergeSameField, NO_VALUE_OPS, parseValue, valueText } from '@todahq/client/rules';
+import { LIST_OPS, mergeSameField, NO_VALUE_OPS, parseValue, valueText } from '../../rules';
 
 /** One condition while it's being written: its field, operator, and the value typed or picked. */
 interface Draft {
@@ -48,7 +48,7 @@ export function FilterBuilderDialog({ fields, initial, suggest, renderValueEdito
   onApply: (conditions: QueryConditionJson[]) => void;
   onClose: () => void;
 }) {
-  const labels = useTodaLabels().queryList;
+  const labels = useAbpLabels().queryList;
   const [seq, setSeq] = useState(initial.length + 1);
   // An "is any of" on a field opens as one row per value, as it was built.
   const [rows, setRows] = useState<Draft[]>(() => initial.flatMap((c, i) => (c.op === 'in' && Array.isArray(c.value) && fields.find((f) => f.id === c.field)?.operators.includes('eq')
@@ -158,7 +158,7 @@ export function FilterBuilderDialog({ fields, initial, suggest, renderValueEdito
   );
 }
 
-type Labels = ReturnType<typeof useTodaLabels>['queryList'];
+type Labels = ReturnType<typeof useAbpLabels>['queryList'];
 
 /** A condition in words: "Status is Draft". */
 function describe(c: QueryConditionJson, fields: QueryField[], labels: Labels): string {
@@ -177,7 +177,7 @@ function ConditionRow({ draft, fields, suggest, renderValueEditor, warn, onChang
   onChange: (patch: Partial<Draft>) => void;
   onRemove: () => void;
 }) {
-  const labels = useTodaLabels().queryList;
+  const labels = useAbpLabels().queryList;
   const listId = useId();
   const field = fields.find((f) => f.id === draft.field);
   const { op, text } = draft;

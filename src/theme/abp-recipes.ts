@@ -1,7 +1,7 @@
 import { defineRecipe, defineSlotRecipe } from '@chakra-ui/react';
 
 /*
- * Recipes for Toda's own components. They are registered in the system under the keys below,
+ * Recipes for the design system's own components. They are registered in the system under the keys below,
  * so a host can override them the same way it overrides Chakra's built-in recipes.
  */
 
@@ -13,7 +13,7 @@ import { defineRecipe, defineSlotRecipe } from '@chakra-ui/react';
  * quickly as it narrows and back in once there's room; titles and the top box fold their height away. With less
  * motion, all of it changes at once.
  */
-const SIDEBAR_EASE = '300ms var(--toda-easings-drawer)';
+const SIDEBAR_EASE = '300ms {easings.drawer}';
 /** Words fading: in after the room opens (a short wait), out at once. */
 const WORDS_IN = 'opacity 200ms ease 120ms';
 const WORDS_OUT = 'opacity 120ms ease';
@@ -23,7 +23,7 @@ const still = {
 } as const;
 
 export const appShellSlotRecipe = defineSlotRecipe({
-  className: 'toda-app-shell',
+  className: 'abp-app-shell',
   slots: [
     'root',
     'topbar',
@@ -151,8 +151,8 @@ export const appShellSlotRecipe = defineSlotRecipe({
       position: 'sticky',
       // `top` reads spacing tokens, not sizes: the top bar's height comes as its variable, or it computes to auto and
       // the sidebar scrolls away under the top bar.
-      top: 'var(--toda-sizes-topbar)',
-      h: 'calc(100dvh - var(--toda-sizes-topbar))',
+      top: '{sizes.topbar}',
+      h: 'calc(100dvh - {sizes.topbar})',
       w: 'sidebar',
       bg: 'bg.chrome',
       zIndex: 'sidebar',
@@ -313,7 +313,7 @@ export const appShellSlotRecipe = defineSlotRecipe({
 
 // ---- PageHeader ----------------------------------------------------------------------------
 export const pageHeaderSlotRecipe = defineSlotRecipe({
-  className: 'toda-page-header',
+  className: 'abp-page-header',
   slots: ['root', 'breadcrumbs', 'row', 'titleGroup', 'title', 'description', 'meta', 'actions'],
   base: {
     root: { display: 'flex', flexDirection: 'column', gap: '2', mb: 'section' },
@@ -329,7 +329,7 @@ export const pageHeaderSlotRecipe = defineSlotRecipe({
 
 // ---- Panel ---------------------------------------------------------------------------------
 export const panelSlotRecipe = defineSlotRecipe({
-  className: 'toda-panel',
+  className: 'abp-panel',
   slots: ['root', 'header', 'titleGroup', 'title', 'description', 'actions', 'body', 'footer'],
   base: {
     root: {
@@ -393,7 +393,7 @@ export const panelSlotRecipe = defineSlotRecipe({
 
 // ---- StatusPill ----------------------------------------------------------------------------
 export const statusPillSlotRecipe = defineSlotRecipe({
-  className: 'toda-status-pill',
+  className: 'abp-status-pill',
   slots: ['root', 'indicator'],
   base: {
     root: {
@@ -434,7 +434,7 @@ export const statusPillSlotRecipe = defineSlotRecipe({
 
 // ---- RecordKey -----------------------------------------------------------------------------
 export const recordKeyRecipe = defineRecipe({
-  className: 'toda-record-key',
+  className: 'abp-record-key',
   base: {
     textStyle: 'key',
     color: 'fg',
@@ -470,7 +470,7 @@ export const recordKeyRecipe = defineRecipe({
 
 // ---- PathChips -----------------------------------------------------------------------------
 export const pathChipsSlotRecipe = defineSlotRecipe({
-  className: 'toda-path-chips',
+  className: 'abp-path-chips',
   slots: ['root', 'item', 'chip', 'separator'],
   base: {
     root: { display: 'inline-flex', flexWrap: 'wrap', alignItems: 'center', gap: '1', listStyle: 'none', m: '0', p: '0' },
@@ -494,7 +494,7 @@ export const pathChipsSlotRecipe = defineSlotRecipe({
 
 // ---- DataTable -----------------------------------------------------------------------------
 export const dataTableSlotRecipe = defineSlotRecipe({
-  className: 'toda-data-table',
+  className: 'abp-data-table',
   slots: ['root', 'scrollArea', 'sortTrigger', 'sortIcon', 'state', 'navigableRow', 'groupRow', 'groupCell', 'groupHeader', 'groupToggle', 'groupFooterRow', 'groupFooterCell'],
   base: {
     root: { position: 'relative', w: 'full', minW: '0' },
@@ -522,7 +522,7 @@ export const dataTableSlotRecipe = defineSlotRecipe({
       bg: 'bg.subtle',
       _hover: { bg: 'bg.subtle' },
       // A row dragged over a group it may go to.
-      '&[data-drop-over]': { bg: 'bg.selected', boxShadow: 'inset 0 0 0 2px var(--toda-colors-border-accent)' },
+      '&[data-drop-over]': { bg: 'bg.selected', boxShadow: 'inset 0 0 0 2px {colors.border.accent}' },
     },
     groupCell: { py: '2', borderBottomWidth: '1px', borderColor: 'border.muted' },
     groupHeader: { display: 'flex', alignItems: 'center', gap: '2.5', minH: '7' },
@@ -546,15 +546,15 @@ export const dataTableSlotRecipe = defineSlotRecipe({
   },
 });
 
-export const todaRecipes = {
-  todaRecordKey: recordKeyRecipe,
+export const abpRecipes = {
+  abpRecordKey: recordKeyRecipe,
 };
 
-export const todaSlotRecipes = {
-  todaAppShell: appShellSlotRecipe,
-  todaPageHeader: pageHeaderSlotRecipe,
-  todaPanel: panelSlotRecipe,
-  todaStatusPill: statusPillSlotRecipe,
-  todaPathChips: pathChipsSlotRecipe,
-  todaDataTable: dataTableSlotRecipe,
+export const abpSlotRecipes = {
+  abpAppShell: appShellSlotRecipe,
+  abpPageHeader: pageHeaderSlotRecipe,
+  abpPanel: panelSlotRecipe,
+  abpStatusPill: statusPillSlotRecipe,
+  abpPathChips: pathChipsSlotRecipe,
+  abpDataTable: dataTableSlotRecipe,
 };

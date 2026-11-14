@@ -12,7 +12,7 @@ import {
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Columns3, GripVertical } from 'lucide-react';
-import { useTodaLabels } from '../../provider/labels';
+import { useAbpLabels } from '../../provider/labels';
 import { Button } from '../Button';
 
 export interface ColumnsPopoverField {
@@ -30,7 +30,7 @@ function fill(template: string, values: Record<string, string>): string {
  * always stays.
  */
 export function ColumnsPopover({ fields, columns, onChange }: { fields: ColumnsPopoverField[]; columns: string[]; onChange: (next: string[]) => void }) {
-  const labels = useTodaLabels().queryList;
+  const labels = useAbpLabels().queryList;
   const byId = useMemo(() => new Map(fields.map((f) => [f.id, f])), [fields]);
   const shown = columns.filter((c) => byId.has(c));
   const hidden = fields.filter((f) => !columns.includes(f.id));
@@ -91,7 +91,7 @@ export function ColumnsPopover({ fields, columns, onChange }: { fields: ColumnsP
 }
 
 function ColumnRow({ id, label, checked, disabled, onCheckedChange }: { id: string; label: string; checked: boolean; disabled?: boolean; onCheckedChange: () => void }) {
-  const labels = useTodaLabels().queryList;
+  const labels = useAbpLabels().queryList;
   const sortable = useSortable({ id, disabled: !checked });
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = sortable;
   return (

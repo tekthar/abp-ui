@@ -2,9 +2,9 @@ import { useCallback, useState, type ReactNode } from 'react';
 import { chakra, Drawer, Portal, SkipNavContent, SkipNavLink, useSlotRecipe, type SystemStyleObject } from '@chakra-ui/react';
 import { ChevronDown, Menu as MenuIcon, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
 import { ArriveOnChange, Collapse, FadeIn, Indicator, Swap } from '../motion/components';
-import { useTodaLabels } from '../provider/labels';
+import { useAbpLabels } from '../provider/labels';
 import { useLinkComponent } from '../provider/link';
-import { useTodaLocale } from '../provider/locale';
+import { useAbpLocale } from '../provider/locale';
 import { IconButton } from './Button';
 import { DirectionalIcon } from './DirectionalIcon';
 import { Tooltip } from './Tooltip';
@@ -88,7 +88,7 @@ export interface AppShellProps {
   children: ReactNode;
 }
 
-const MAIN_ID = 'toda-main';
+const MAIN_ID = 'abp-main';
 
 /**
  * Application frame (ADR 0058): the site's pages in the top bar, with a mark that slides to the current one; a place's
@@ -111,12 +111,12 @@ export function AppShell({
   pageKey,
   children,
 }: AppShellProps) {
-  const labels = useTodaLabels();
+  const labels = useAbpLabels();
   const Link = useLinkComponent();
   const [collapsedState, setCollapsedState] = useState(defaultCollapsed);
   const collapsed = collapsedProp ?? collapsedState;
   const [mobileOpen, setMobileOpen] = useState(false);
-  const recipe = useSlotRecipe({ key: 'todaAppShell' });
+  const recipe = useSlotRecipe({ key: 'abpAppShell' });
   const styles = recipe({ collapsed });
   const mobileStyles = recipe({ collapsed: false });
   const hasSidebar = sidebar != null && (!!sidebar.loading || sidebar.top != null || sidebar.sections.some((s) => s.items.length > 0));
@@ -250,7 +250,7 @@ function TopNavItem({ item, styles }: { item: AppShellNavItem; styles: ShellStyl
   return (
     <chakra.a asChild css={styles.topNavItem}>
       <Link href={item.href} aria-current={item.current ? 'page' : undefined}>
-        {item.current && <Indicator group="toda-top-nav" css={styles.topNavIndicator} />}
+        {item.current && <Indicator group="abp-top-nav" css={styles.topNavIndicator} />}
         <chakra.span css={styles.topNavLabel}>{item.label}</chakra.span>
       </Link>
     </chakra.a>
@@ -272,7 +272,7 @@ function SidebarContents({
   drawer?: boolean;
 }) {
   const Link = useLinkComponent();
-  const labels = useTodaLabels();
+  const labels = useAbpLabels();
   const { place } = sidebar;
   const loading = !!sidebar.loading;
   // The real card and pages fade in where their placeholders were.
@@ -403,11 +403,11 @@ function NavSection({ section, styles, collapsed, group }: { section: AppShellNa
 
 function NavItem({ item, styles, collapsed, group, nested }: { item: AppShellNavItem; styles: ShellStyles; collapsed: boolean; group: string; nested?: boolean }) {
   const Link = useLinkComponent();
-  const { isRtl } = useTodaLocale();
+  const { isRtl } = useAbpLocale();
   const link = (
     <chakra.a asChild css={styles.navItem}>
       <Link href={item.href} aria-current={item.current ? 'page' : undefined} data-nested={nested || undefined}>
-        {item.current && <Indicator group={`toda-side-${group}`} css={styles.navItemIndicator} />}
+        {item.current && <Indicator group={`abp-side-${group}`} css={styles.navItemIndicator} />}
         <chakra.span css={styles.navItemIcon} aria-hidden="true">
           {item.icon ?? <chakra.span textStyle="label">{item.label.slice(0, 1)}</chakra.span>}
         </chakra.span>

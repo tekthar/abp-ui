@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
 import { CloseButton, Dialog, Portal } from '@chakra-ui/react';
-import { useTodaLabels } from '../provider/labels';
+import { useAbpLabels } from '../provider/labels';
 import { Button } from './Button';
 
 export interface ConfirmOptions {
@@ -32,7 +32,7 @@ export function ConfirmDialog({
   cancelLabel,
   danger,
 }: ConfirmDialogProps) {
-  const labels = useTodaLabels();
+  const labels = useAbpLabels();
   const cancelRef = useRef<HTMLButtonElement>(null);
   return (
     <Dialog.Root
@@ -79,7 +79,7 @@ type ConfirmFn = (options: ConfirmOptions) => Promise<boolean>;
 
 const ConfirmContext = createContext<ConfirmFn | null>(null);
 
-/** Provides `useConfirm()`. TodaProvider renders it; you rarely need it directly. */
+/** Provides `useConfirm()`. AbpProvider renders it; you rarely need it directly. */
 export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<(ConfirmOptions & { open: boolean }) | null>(null);
   const resolver = useRef<((value: boolean) => void) | null>(null);
@@ -117,6 +117,6 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 /** `if (await confirm({ title, danger: true })) ...` */
 export function useConfirm(): ConfirmFn {
   const ctx = useContext(ConfirmContext);
-  if (!ctx) throw new Error('useConfirm must be used inside TodaProvider');
+  if (!ctx) throw new Error('useConfirm must be used inside AbpProvider');
   return ctx;
 }

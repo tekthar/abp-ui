@@ -3,7 +3,7 @@
 import { useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { Box, chakra } from '@chakra-ui/react';
 import { GripVertical, MoveDiagonal2 } from 'lucide-react';
-import { useTodaLocale } from '../provider/locale';
+import { useAbpLocale } from '../provider/locale';
 import { useLoading } from '../skeleton/loading';
 import { shineCss } from '../skeleton/bones';
 
@@ -105,7 +105,7 @@ export function DashboardGrid<T extends GridItem>({
   'aria-label': ariaLabel,
   loading: own,
 }: DashboardGridProps<T>) {
-  const { isRtl } = useTodaLocale();
+  const { isRtl } = useAbpLocale();
   const placeholders = useLoading(own) && items.length === 0;
   const ref = useRef<HTMLDivElement>(null);
   const gesture = useRef<Gesture | null>(null);

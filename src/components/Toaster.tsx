@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { createToaster, Portal, Spinner, Stack, Toast, Toaster as ChakraToaster } from '@chakra-ui/react';
 
 /**
- * The page's single toaster. It lives in @todahq/ui (a Module Federation singleton), so a
+ * The page's single toaster. It lives in the design system (a Module Federation singleton), so a
  * plugin calling `notify.success(...)` shows its toast in the shell's toaster.
  */
 export const toaster = createToaster({ placement: 'bottom-end', pauseOnPageIdle: true, max: 5 });
@@ -41,7 +41,7 @@ const rtlPlacementFix = {
   },
 } as const;
 
-/** Rendered once by TodaProvider. */
+/** Rendered once by AbpProvider. */
 export function Toaster() {
   return (
     <Portal>

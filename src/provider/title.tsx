@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { useTodaLocale } from './locale';
+import { useAbpLocale } from './locale';
 import { composeTitle, partsOf, TitleStore, type TitleParts } from './title-claims';
 
 export { composeTitle, partsOf, TITLE_SEPARATOR, type TitleParts } from './title-claims';
@@ -17,7 +17,7 @@ const noSubscription = () => () => {};
 export function PageTitleProvider({ site, children }: { site?: string; children: ReactNode }) {
   const [store] = useState(() => new TitleStore());
   const { parts, site: claimed } = useSyncExternalStore(store.subscribe, store.current, store.current);
-  const { isRtl } = useTodaLocale();
+  const { isRtl } = useAbpLocale();
   const text = composeTitle(parts, claimed ?? site, isRtl);
   return (
     <TitleContext.Provider value={store}>

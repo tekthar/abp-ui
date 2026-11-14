@@ -7,7 +7,7 @@ export function TimeZoneProvider({ value, children }: { value?: string; children
   return <TimeZoneContext.Provider value={value}>{children}</TimeZoneContext.Provider>;
 }
 
-/** The time zone times are shown in: the person's preference from the nearest TodaProvider, else the browser's. */
-export function useTodaTimeZone(): string | undefined {
+/** The time zone times are shown in: the person's preference from the nearest AbpProvider, else the browser's. */
+export function useAbpTimeZone(): string | undefined {
   return useContext(TimeZoneContext);
 }

@@ -9,7 +9,7 @@ import { useLoading } from '../skeleton/loading';
 import { ghostCss } from '../skeleton/bones';
 
 /**
- * Toda button semantics on top of Chakra's button recipe:
+ * The design system's button semantics on top of Chakra's button recipe:
  *   primary    the one main action of a view (accent, solid)
  *   secondary  every other action (outlined neutral); the default
  *   ghost      low-emphasis actions in toolbars and table rows
@@ -19,7 +19,7 @@ import { ghostCss } from '../skeleton/bones';
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'link';
 export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg';
 
-interface TodaButtonProps {
+interface AbpButtonProps {
   variant?: ButtonVariant;
   size?: ButtonSize;
   danger?: boolean;
@@ -32,7 +32,7 @@ function palette(variant: ButtonVariant, danger: boolean | undefined): string {
   return variant === 'primary' || variant === 'link' ? 'accent' : 'neutral';
 }
 
-export type ButtonProps = Omit<ChakraButtonProps, 'variant' | 'size' | 'colorPalette'> & TodaButtonProps;
+export type ButtonProps = Omit<ChakraButtonProps, 'variant' | 'size' | 'colorPalette'> & AbpButtonProps;
 
 /**
  * Inside a `Loading` scope a button is drawn as its own ghost, at its size, and can't be pressed (ADR 0061). Its own
@@ -59,7 +59,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 });
 
 export type IconButtonProps = Omit<ChakraIconButtonProps, 'variant' | 'size' | 'colorPalette'> &
-  TodaButtonProps & { 'aria-label': string };
+  AbpButtonProps & { 'aria-label': string };
 
 /** Square icon-only button. `aria-label` is required; it is also shown as the native tooltip. */
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(

@@ -2,13 +2,13 @@ import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type R
 import { createPortal } from 'react-dom';
 import { Box, chakra, HStack, Input, Menu, Portal, Stack, Text } from '@chakra-ui/react';
 import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronDown, Download, Filter, Plus, Rows3, Save, Trash2, X } from 'lucide-react';
-import { useTodaLabels } from '../provider/labels';
+import { useAbpLabels } from '../provider/labels';
 import { useFormatters } from '../utils/format';
 import { Button, IconButton } from './Button';
 import { CountBadge } from './CountBadge';
 import { ColumnsPopover } from './query/ColumnsPopover';
-import { groupKey, NO_VALUE_OPS, periodName, valueText } from '@todahq/client/rules';
-import { useTodaLocale } from '../provider/locale';
+import { groupKey, NO_VALUE_OPS, periodName, valueText } from '../rules';
+import { useAbpLocale } from '../provider/locale';
 import { SearchInput } from './SearchInput';
 import { SegmentedControl } from './SegmentedControl';
 import { DataTable, type DataTableColumn, type DataTableSelection, type DataTableSort, parentFoldKey } from './DataTable';
@@ -272,7 +272,7 @@ export function QueryableList({
   columnLabels,
   exportTarget,
 }: QueryableListProps) {
-  const labels = useTodaLabels().queryList;
+  const labels = useAbpLabels().queryList;
   const fmt = useFormatters();
   const byId = useMemo(() => new Map((fields ?? []).map((f) => [f.id, f])), [fields]);
   const query: QueryJson = result?.query ?? state.query ?? {};
@@ -355,7 +355,7 @@ export function QueryableList({
   const groupInfo = (key: string) => result?.groups?.find((g) => keyOfGroup(g) === key);
   const firstOf = (key: string) => (thenField ? key.slice(0, key.indexOf(PAIR)) : key);
   // A group's name: "None" in the reader's words, a period's in their language, else the server's.
-  const { locale } = useTodaLocale();
+  const { locale } = useAbpLocale();
   const groupName = (value: string | null | undefined, label: string | undefined, period: string | null | undefined) =>
     value == null ? labels.noGroupValue
       : period ? periodName(value, period, locale, { week: labels.periodWeek, quarter: labels.periodQuarter })
@@ -758,7 +758,7 @@ export function QueryableList({
 
 /** The quick search box: runs as you stop typing (and on Enter), cleared with its button or Escape. */
 function QuickSearch({ initial, placeholder, onRun }: { initial: string; placeholder: string; onRun: (text: string) => void }) {
-  const labels = useTodaLabels().queryList;
+  const labels = useAbpLabels().queryList;
   const [text, setText] = useState(initial);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
@@ -820,7 +820,7 @@ function placeholderOf(id: string, kind: string | undefined): DataTableColumn<Qu
 
 /** Export: the list's query and columns as CSV or an Excel workbook, every page of it. */
 function ExportMenu({ busy, disabled, onExport }: { busy: boolean; disabled: boolean; onExport: (format: QueryExportFormat) => void }) {
-  const labels = useTodaLabels().queryList;
+  const labels = useAbpLabels().queryList;
   return (
     <Menu.Root positioning={{ placement: 'bottom-end' }} onSelect={(d) => onExport(d.value as QueryExportFormat)}>
       <Menu.Trigger asChild>
@@ -853,7 +853,7 @@ function RqlBox({
   error?: QueryableListError | null;
   onRun: (rql: string) => void;
 }) {
-  const labels = useTodaLabels().queryList;
+  const labels = useAbpLabels().queryList;
   const [text, setText] = useState(initial);
   const [found, setFound] = useState<QuerySuggestions | null>(null);
   const [active, setActive] = useState(0);

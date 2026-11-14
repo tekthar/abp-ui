@@ -1,17 +1,22 @@
-// @todahq/ui: the Toda design system. Tokens, recipes and components on Chakra UI v3.
+// The design system (ADR 0109): tokens, recipes and components on Chakra UI v3, naming no product. The host gives its
+// prefix, colours and words; Toda's layer (src/toda/) gives Toda's, and keeps the names Toda's web and plugins use.
 
 // System
-export { system, todaConfig } from './theme/system';
-export { scales } from './theme/tokens';
-export { TODA_UI_VERSION } from './version';
+export { abpConfig, createAbpSystem, type AbpSystemOptions } from './theme/system';
+export { defaultBrand, type AbpBrand, type Scale } from './theme/brand';
+export { useTokenVar } from './theme/token-var';
+export { ABP_UI_VERSION } from './version';
+
+// Toda's layer (ADR 0109): its system, colours and the names it has used
+export { scales, system, todaBrand, todaConfig, TodaProvider, TODA_UI_VERSION, useTodaLabels, useTodaLocale, useTodaTimeZone, type TodaLabels, type TodaProviderProps } from './toda';
 
 // Providers and hooks
-export { TodaProvider, type TodaProviderProps } from './provider/TodaProvider';
+export { AbpProvider, type AbpProviderProps } from './provider/AbpProvider';
 export { ColorModeProvider, ColorModeToggle, useColorMode, type ColorMode } from './provider/color-mode';
-export { defaultLabels, defaultQueryListLabels, useTodaLabels, type TodaLabels, type QueryListLabels } from './provider/labels';
+export { defaultLabels, defaultQueryListLabels, useAbpLabels, type AbpLabels, type QueryListLabels } from './provider/labels';
 export { AppLink, useLinkComponent, type AppLinkProps, type LinkComponent } from './provider/link';
-export { directionOf, useTodaLocale, type Direction } from './provider/locale';
-export { useTodaTimeZone } from './provider/time-zone';
+export { directionOf, useAbpLocale, type Direction } from './provider/locale';
+export { useAbpTimeZone } from './provider/time-zone';
 export { PluginTextsProvider, usePluginTexts } from './provider/texts';
 export { composeTitle, PageTitleProvider, partsOf, TITLE_SEPARATOR, usePageTitle, usePageTitleParts, usePageTitleSite, type TitleParts } from './provider/title';
 export { compareOrdinal } from './utils/compare';
@@ -98,9 +103,7 @@ export { IconTile, type IconTileProps } from './components/IconTile';
 export { PersonChip, type PersonChipProps } from './components/PersonChip';
 export { PriorityMark, type PriorityMarkProps } from './components/PriorityMark';
 export { priorityLevel } from './components/priority-level';
-import { groupKey as sharedGroupKey } from '@todahq/client/rules';
-/** A row's group as its key (the client package's rule); typed here, so the ui package's types stand alone. */
-export const groupKey: (value: unknown) => string = sharedGroupKey;
+export { groupKey } from './rules';
 export { SegmentedControl, type SegmentedControlProps, type SegmentedItem } from './components/SegmentedControl';
 export {
   CheckboxField,

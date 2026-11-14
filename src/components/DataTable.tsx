@@ -2,13 +2,13 @@ import { Fragment, useMemo, useRef, useState, type DragEvent, type KeyboardEvent
 import { chakra, Menu, Portal, Table, useSlotRecipe, type TableRowProps } from '@chakra-ui/react';
 import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, ChevronsUpDown, GripVertical } from 'lucide-react';
 import { DirectionalIcon } from './DirectionalIcon';
-import { useTodaLabels } from '../provider/labels';
-import { useTodaLocale } from '../provider/locale';
+import { useAbpLabels } from '../provider/labels';
+import { useAbpLocale } from '../provider/locale';
 import { EmptyState } from './EmptyState';
 import { InlineAlert } from './InlineAlert';
 import { RecordKey } from './RecordKey';
 import { StatusPill } from './StatusPill';
-import { inGroups } from '@todahq/client/rules';
+import { inGroups } from '../rules';
 import { inTree, visibleInTree, type TreeRow } from './query/tree';
 import { Loading, useLoading } from '../skeleton/loading';
 import { boneWidth, TextBone } from '../skeleton/bones';
@@ -240,10 +240,10 @@ export function DataTable<T>({
   tree,
   'aria-label': ariaLabel,
 }: DataTableProps<T>) {
-  const labels = useTodaLabels();
-  const { locale } = useTodaLocale();
+  const labels = useAbpLabels();
+  const { locale } = useAbpLocale();
   const loading = useLoading(own);
-  const recipe = useSlotRecipe({ key: 'todaDataTable' });
+  const recipe = useSlotRecipe({ key: 'abpDataTable' });
   const styles = recipe({});
   const [sortState, setSortState] = useState<DataTableSort | null>(defaultSort);
   const sort = sortProp !== undefined ? sortProp : sortState;
@@ -388,7 +388,7 @@ export function DataTable<T>({
             onKeyDown={selection ? (e: KeyboardEvent<HTMLTableRowElement>) => onKeyDown(e, row, index) : undefined}
             css={selection ? styles.navigableRow : undefined}
             {...rowProps?.(row)}
-            boxShadow={line ? `inset 0 ${line === 'before' ? '2px' : '-2px'} 0 0 var(--toda-colors-border-accent)` : undefined}
+            boxShadow={line ? `inset 0 ${line === 'before' ? '2px' : '-2px'} 0 0 {colors.border.accent}` : undefined}
             data-drop-line={line ?? undefined}
             {...(place && grouping && dragging != null && dragging !== id
               ? {

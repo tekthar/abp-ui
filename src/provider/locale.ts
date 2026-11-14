@@ -10,10 +10,10 @@ export function directionOf(locale: string): Direction {
 }
 
 /**
- * Locale and direction from the nearest TodaProvider. Plugins use this instead of a router
+ * Locale and direction from the nearest AbpProvider. Plugins use this instead of a router
  * or i18n library: the shell's provider is shared with them through Module Federation.
  */
-export function useTodaLocale(): { locale: string; dir: Direction; isRtl: boolean } {
+export function useAbpLocale(): { locale: string; dir: Direction; isRtl: boolean } {
   const { locale, dir } = useLocaleContext();
   return { locale, dir, isRtl: dir === 'rtl' };
 }

@@ -1,5 +1,5 @@
 import { Box, VisuallyHidden } from '@chakra-ui/react';
-import { useTodaLabels } from '../provider/labels';
+import { useAbpLabels } from '../provider/labels';
 import { TextBone } from '../skeleton/bones';
 
 /**
@@ -7,7 +7,7 @@ import { TextBone } from '../skeleton/bones';
  * loading instead (ADR 0061); this is never a page's whole answer. Announces "Loading" to screen readers.
  */
 export function LoadingState({ lines = 3, label }: { lines?: number; label?: string }) {
-  const labels = useTodaLabels();
+  const labels = useAbpLabels();
   return (
     <Box aria-busy="true" role="status">
       <VisuallyHidden>{label ?? labels.loading}</VisuallyHidden>

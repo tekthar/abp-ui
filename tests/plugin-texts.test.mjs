@@ -31,5 +31,6 @@ test("{product} is the product's name in any file, unless the plugin gives a pro
   assert.equal(translate(undefined, bundles, 'intro', withProductValue('Toda')), 'Bring a project into Toda.', 'a shipped text');
   assert.equal(translate({ intro: 'Into {product}, now.' }, bundles, 'intro', withProductValue('أكمي')), 'Into أكمي, now.', "the site's text");
   assert.equal(translate(undefined, bundles, 'item', withProductValue('Toda', { product: 'Widget', count: 2 })), 'Widget × 2', "the plugin's value wins");
-  assert.equal(DEFAULT_PRODUCT_NAME, 'Toda');
+  // Neutral since ADR 0109: a host names its product (Toda's layer passes Toda).
+  assert.equal(DEFAULT_PRODUCT_NAME, 'the app');
 });

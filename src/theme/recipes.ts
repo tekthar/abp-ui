@@ -24,12 +24,12 @@ import {
 
 /*
  * Overrides of Chakra's built-in recipes. createSystem deep-merges these into the defaults, so
- * each block only states what Toda changes: denser sizes, Toda surfaces and borders, the accent
+ * each block only states what changes: denser sizes, the system's surfaces and borders, the accent
  * focus ring. Control heights share one ladder (sizes.control.*): xs 24, sm 28, md 32, lg 36.
  */
 
 /**
- * Overlays keep Chakra's open and close animations (scale and fade from the trigger, slide for drawers) on Toda's
+ * Overlays keep Chakra's open and close animations (scale and fade from the trigger, slide for drawers) on the system's
  * curves (ADR 0058): ease-out both ways, never ease-in, and drawers on the drawer curve.
  */
 const opens = { _open: { animationTimingFunction: 'out' }, _closed: { animationTimingFunction: 'out' } } as const;

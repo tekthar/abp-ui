@@ -6,6 +6,7 @@ import { useLoading } from '../skeleton/loading';
 import { Bone, boneWidth, TextBone } from '../skeleton/bones';
 import { Button } from './Button';
 import { Tooltip } from './Tooltip';
+import { useTokenVar } from '../theme/token-var';
 
 /** A bar: its first and last day (yyyy-mm-dd); with only one of them, it's that one day. */
 export interface TimelineItem {
@@ -138,6 +139,7 @@ export function TimelineChart<T extends TimelineItem>({
   loading: own,
   skeletonRows = 6,
 }: TimelineChartProps<T>) {
+  const tv = useTokenVar();
   const placeholders = useLoading(own) && rows.length === 0;
   const shown: TimelineRow<T>[] = placeholders ? Array.from({ length: skeletonRows }, (_, i) => ({ id: `skeleton-${i}` })) : rows;
   const root = useRef<HTMLDivElement>(null);
@@ -559,11 +561,11 @@ export function TimelineChart<T extends TimelineItem>({
                 borderWidth={hollow ? '2px' : 0} borderStyle="dashed" borderColor="colorPalette.solid" cursor={item.movable === false ? 'default' : 'grab'}
                 display="flex" alignItems="center" px="1.5" overflow="hidden" whiteSpace="nowrap" textStyle="caption" userSelect="none" touchAction="none"
                 opacity={drag?.id === item.id ? 0.85 : item.emphasis === 'faint' ? 0.3 : 1}
-                boxShadow={item.emphasis === 'strong' ? '0 0 0 2px var(--toda-colors-danger-solid)' : undefined} _focusVisible={{ outline: '2px solid', outlineColor: 'colorPalette.focusRing', outlineOffset: '2px' }}
+                boxShadow={item.emphasis === 'strong' ? '0 0 0 2px {colors.danger.solid}' : undefined} _focusVisible={{ outline: '2px solid', outlineColor: 'colorPalette.focusRing', outlineOffset: '2px' }}
                 outline={linking?.target === item.id ? '2px solid' : undefined} outlineColor="accent.solid" outlineOffset="2px"
                 onPointerDown={(e) => { cardOff(); down(item, 'move', e); }} onPointerMove={move} onPointerUp={() => up(item)} onPointerCancel={() => setDrag(null)}
                 onPointerEnter={(e) => { setHot(item.id); cardSoon(item, e); }} onPointerLeave={() => { setHot((h) => (h === item.id ? null : h)); cardOff(); }}
-                onFocus={(e) => cardNow(item, e.currentTarget)} onBlur={cardOff} aria-describedby={card?.id === item.id ? 'toda-timeline-card' : undefined}
+                onFocus={(e) => cardNow(item, e.currentTarget)} onBlur={cardOff} aria-describedby={card?.id === item.id ? 'abp-timeline-card' : undefined}
                 onKeyDown={(e) => key(item, e)} data-bar={item.id}>
                 {!single && !thin && renderBar?.(item)}
                 {item.progress != null && !single && (
@@ -594,7 +596,7 @@ export function TimelineChart<T extends TimelineItem>({
             aria-hidden={!onUnlink}>
           <svg width={width} height={rows.length * rowHeight} style={{ position: 'absolute', left: 0, top: 0 }}>
             <defs>
-              <marker id="toda-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <marker id="abp-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
                 <path d="M 0 0 L 8 4 L 0 8 z" fill="context-stroke" />
               </marker>
             </defs>
@@ -614,8 +616,8 @@ export function TimelineChart<T extends TimelineItem>({
               return (
                 <g key={`${l.from}>${l.to}`}>
                   <path d={d} fill="none" strokeWidth={picked || l.strong ? 2.5 : 1.5} strokeDasharray={late ? '4 3' : undefined} opacity={faint ? 0.25 : 1}
-                    stroke={late || l.strong ? 'var(--toda-colors-fg-error)' : picked ? 'var(--toda-colors-accent-solid)' : 'var(--toda-colors-fg-muted)'}
-                    markerEnd="url(#toda-arrow)" />
+                    stroke={late || l.strong ? tv('colors.fg.error') : picked ? tv('colors.accent.solid') : tv('colors.fg.muted')}
+                    markerEnd="url(#abp-arrow)" />
                   {/* A wider, invisible line over the arrow, easier to click; Enter opens the same menu from the keyboard. */}
                   {onUnlink && (
                     <path d={d} fill="none" stroke="transparent" strokeWidth={10} style={{ pointerEvents: 'stroke', cursor: 'pointer' }} tabIndex={0} role="button"
@@ -635,8 +637,8 @@ export function TimelineChart<T extends TimelineItem>({
           {/* The dependency being drawn: from the dot to the pointer, on screen as it is (not mirrored). */}
           {linking && (
             <svg width="100%" height={shown.length * rowHeight} style={{ position: 'absolute', left: 0, top: 0, pointerEvents: 'none', zIndex: 3 }} aria-hidden>
-              <line x1={linking.x0} y1={linking.y0} x2={linking.x} y2={linking.y} stroke="var(--toda-colors-accent-solid)" strokeWidth={2} strokeDasharray="5 4" />
-              <circle cx={linking.x} cy={linking.y} r={4} fill="var(--toda-colors-accent-solid)" />
+              <line x1={linking.x0} y1={linking.y0} x2={linking.x} y2={linking.y} stroke={tv('colors.accent.solid')} strokeWidth={2} strokeDasharray="5 4" />
+              <circle cx={linking.x} cy={linking.y} r={4} fill={tv('colors.accent.solid')} />
             </svg>
           )}
         </Box>
@@ -644,7 +646,7 @@ export function TimelineChart<T extends TimelineItem>({
       {card && renderCard && items.has(card.id) && (
         <Portal>
           {/* Above the bar, or below it near the top of the screen; kept inside the window. */}
-          <Box id="toda-timeline-card" role="tooltip" position="fixed" zIndex="popover" pointerEvents="none" w="80" maxW="calc(100vw - 16px)" bg="bg.panel"
+          <Box id="abp-timeline-card" role="tooltip" position="fixed" zIndex="popover" pointerEvents="none" w="80" maxW="calc(100vw - 16px)" bg="bg.panel"
             borderWidth="1px" borderColor="border" rounded="l3" shadow="lg" p="3"
             style={{
               left: Math.max(8, Math.min(card.x - 24, window.innerWidth - 328)),

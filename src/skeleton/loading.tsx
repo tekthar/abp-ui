@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { chakra, VisuallyHidden } from '@chakra-ui/react';
-import { useTodaLabels } from '../provider/labels';
+import { useAbpLabels } from '../provider/labels';
 
 /** Whether the components below are waiting for their data (ADR 0061). */
 const LoadingContext = createContext(false);
@@ -20,7 +20,7 @@ export interface LoadingProps {
  * placeholders were when the data comes.
  */
 export function Loading({ when, label, children }: LoadingProps) {
-  const labels = useTodaLabels();
+  const labels = useAbpLabels();
   return (
     <LoadingContext.Provider value={when}>
       <chakra.div display="contents" aria-busy={when || undefined} inert={when || undefined} data-loading={when ? '' : undefined}>

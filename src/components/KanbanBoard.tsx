@@ -29,6 +29,7 @@ import { RecordKey } from './RecordKey';
 import { StatusPill } from './StatusPill';
 import { Loading, useLoading } from '../skeleton/loading';
 import { boneWidth, TextBone } from '../skeleton/bones';
+import { useTokenVar } from '../theme/token-var';
 
 export interface KanbanColumn {
   id: string;
@@ -583,7 +584,7 @@ const HELD = 'rotate(-2deg) scale(1.03)';
 const LAND_MS = 220;
 
 /**
- * Let go, the preview flies to its place (dnd-kit's drop animation, on Toda's out curve) and straightens as it lands; the
+ * Let go, the preview flies to its place (dnd-kit's drop animation, on the out curve) and straightens as it lands; the
  * cards stacked behind it fade, since the others travel on the board itself.
  */
 const landing: DropAnimation = {
@@ -606,9 +607,10 @@ const landing: DropAnimation = {
  */
 function Lifted({ carried, count, reduce, children }: { carried: number; count?: string; reduce: boolean; children: ReactNode }) {
   const held = useRef<HTMLDivElement>(null);
+  const tv = useTokenVar();
   useLayoutEffect(() => {
     if (reduce) return;
-    held.current?.animate?.([{ transform: 'none', boxShadow: 'var(--toda-shadows-sm)' }, { transform: HELD, boxShadow: 'var(--toda-shadows-xl)' }], { duration: 160, easing: OUT });
+    held.current?.animate?.([{ transform: 'none', boxShadow: tv('shadows.sm') }, { transform: HELD, boxShadow: tv('shadows.xl') }], { duration: 160, easing: OUT });
     // once, when it's picked up
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -662,7 +664,7 @@ function Mark() {
       rounded="full"
       bg="accent.solid"
       color="accent.contrast"
-      boxShadow="0 0 0 2px var(--toda-colors-bg)"
+      boxShadow="0 0 0 2px {colors.bg}"
       pointerEvents="none"
       aria-hidden="true"
       _icon={{ boxSize: '3' }}
@@ -689,7 +691,7 @@ function Count({ children }: { children: ReactNode }) {
       color="accent.contrast"
       textStyle="caption"
       fontWeight="semibold"
-      boxShadow="0 0 0 2px var(--toda-colors-bg)"
+      boxShadow="0 0 0 2px {colors.bg}"
       data-testid="carry-count"
     >
       {children}
@@ -710,17 +712,19 @@ function FoldButton({ folded, label, onClick }: { folded: boolean; label: string
 
 /** Which columns are folded: kept in this browser under the board's key (when it has one), else for the page's life. */
 function useFolded(key: string | undefined): [ReadonlySet<string>, (column: string) => void] {
-  const storage = key ? `toda.board.folded.${key}` : null;
+  const storage = key ? `board.folded.${key}` : null;
+  // Saved under the old name before ADR 0109; read once so nobody's folds are lost.
+  const before = key ? `toda.board.folded.${key}` : null;
   const [folded, setFolded] = useState<ReadonlySet<string>>(() => new Set());
   useEffect(() => {
     if (!storage) return;
     try {
-      const saved = JSON.parse(window.localStorage.getItem(storage) ?? '[]');
+      const saved = JSON.parse(window.localStorage.getItem(storage) ?? (before ? window.localStorage.getItem(before) : null) ?? '[]');
       if (Array.isArray(saved)) setFolded(new Set(saved.map(String)));
     } catch {
       // Storage off or unreadable: nothing folded.
     }
-  }, [storage]);
+  }, [storage, before]);
   const fold = (column: string) =>
     setFolded((current) => {
       const next = new Set(current);

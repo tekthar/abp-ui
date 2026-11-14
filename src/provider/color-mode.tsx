@@ -1,7 +1,7 @@
 import { ClientOnly, IconButton, Skeleton } from '@chakra-ui/react';
 import { Moon, Sun } from 'lucide-react';
 import { ThemeProvider, useTheme, type ThemeProviderProps } from 'next-themes';
-import { useTodaLabels } from './labels';
+import { useAbpLabels } from './labels';
 
 export type ColorMode = 'light' | 'dark';
 
@@ -26,7 +26,7 @@ export function useColorMode(): {
 
 /** Icon button that flips between light and dark. Renders a placeholder until mounted (no hydration mismatch). */
 export function ColorModeToggle({ size = 'sm' }: { size?: 'xs' | 'sm' | 'md' }) {
-  const labels = useTodaLabels();
+  const labels = useAbpLabels();
   const { colorMode, toggleColorMode } = useColorMode();
   const box = size === 'xs' ? 'control.xs' : size === 'sm' ? 'control.sm' : 'control.md';
   return (

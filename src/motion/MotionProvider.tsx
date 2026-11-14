@@ -27,7 +27,7 @@ function useSystemReduces(): boolean {
  * reduced-motion handling: movement off, fades kept), less (always reduced), or full (even when the system asks for
  * less). The page's root element carries it (`data-motion`), so CSS motion follows the same choice. Springs are soft
  * unless a component asks otherwise, and only the light `m` components are allowed (strict), with Motion's
- * `domAnimation` features: layout motion is the FLIP helper's (flip.ts), a third lighter. TodaProvider renders it;
+ * `domAnimation` features: layout motion is the FLIP helper's (flip.ts), a third lighter. AbpProvider renders it;
  * plugins render inside it.
  */
 export function MotionProvider({ setting: initial = 'system', children }: { setting?: MotionSetting; children: ReactNode }) {

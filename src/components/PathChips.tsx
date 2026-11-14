@@ -1,6 +1,6 @@
 import { chakra, useSlotRecipe, type HTMLChakraProps } from '@chakra-ui/react';
 import { ChevronRight } from 'lucide-react';
-import { useTodaLabels } from '../provider/labels';
+import { useAbpLabels } from '../provider/labels';
 import { useLoading } from '../skeleton/loading';
 import { boneWidth, ghostCss } from '../skeleton/bones';
 
@@ -20,8 +20,8 @@ export interface PathChipsProps extends Omit<HTMLChakraProps<'ol'>, 'children'> 
  * English, left in Arabic. Each segment is bidi-isolated so mixed scripts keep their order.
  */
 export function PathChips({ path, highlightLast = true, loading: own, skeletonCount = 3, css, ...rest }: PathChipsProps) {
-  const labels = useTodaLabels();
-  const recipe = useSlotRecipe({ key: 'todaPathChips' });
+  const labels = useAbpLabels();
+  const recipe = useSlotRecipe({ key: 'abpPathChips' });
   const styles = recipe({});
   const loading = useLoading(own) && path.length === 0;
   const segments = loading ? Array.from({ length: skeletonCount }, (_, i) => '\u00a0'.repeat(boneWidth(i, 6, 12))) : path;

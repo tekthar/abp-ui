@@ -1,13 +1,13 @@
 import { Fragment, type ReactNode } from 'react';
 import { Breadcrumb, chakra, Menu, Portal, useSlotRecipe } from '@chakra-ui/react';
 import { ChevronRight } from 'lucide-react';
-import { useTodaLabels } from '../provider/labels';
+import { useAbpLabels } from '../provider/labels';
 import { usePageTitle, type TitleParts } from '../provider/title';
 import { useLinkComponent } from '../provider/link';
 import { useLoading } from '../skeleton/loading';
 import { TextBone } from '../skeleton/bones';
 import { CountBadge } from './CountBadge';
-import { foldBreadcrumbs } from '@todahq/client/rules';
+import { foldBreadcrumbs } from '../rules';
 
 export interface BreadcrumbItem {
   /** Its label; while the page loads, one not given yet is drawn as text that's coming. */
@@ -45,7 +45,7 @@ const textOf = (label: ReactNode): string | undefined => (typeof label === 'stri
 
 /** Title block at the top of every page: breadcrumbs, title, description, meta and actions. */
 export function PageHeader({ title, description, breadcrumbs, meta, count, adornments, actions, loading: own, titleWidth = 24, documentTitle }: PageHeaderProps) {
-  const recipe = useSlotRecipe({ key: 'todaPageHeader' });
+  const recipe = useSlotRecipe({ key: 'abpPageHeader' });
   const text = textOf(title);
   const where = breadcrumbs?.filter((b) => b.href).map((b) => textOf(b.label)).filter((l) => l && l !== text).pop();
   usePageTitle(documentTitle !== undefined ? documentTitle : text ? [text, where] : null);
@@ -79,7 +79,7 @@ export function PageHeader({ title, description, breadcrumbs, meta, count, adorn
  * "…", a menu of them (the canvas's v12, UI round 9 step 66): the first and the last two stay.
  */
 export function Breadcrumbs({ items, loading: own }: { items: BreadcrumbItem[]; loading?: boolean }) {
-  const labels = useTodaLabels();
+  const labels = useAbpLabels();
   const loading = useLoading(own);
   const label = (item: BreadcrumbItem, i: number) => (loading && item.label == null ? <TextBone width={8 + (i % 3) * 3} /> : item.label);
   const Link = useLinkComponent();

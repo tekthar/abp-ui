@@ -30,7 +30,7 @@ export const Panel = forwardRef<HTMLElement, PanelProps>(function Panel(
   { title, description, actions, footer, flush = false, headingAs = 'h2', loading, tone, children, css, ...rest },
   ref,
 ) {
-  const recipe = useSlotRecipe({ key: 'todaPanel' });
+  const recipe = useSlotRecipe({ key: 'abpPanel' });
   const inherited = useContext(ToneContext);
   const styles = recipe({ flush, tone: tone ?? inherited });
   const hasHeader = title != null || actions != null || description != null;

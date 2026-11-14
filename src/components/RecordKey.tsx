@@ -23,14 +23,14 @@ export interface RecordKeyProps extends Omit<HTMLChakraProps<'span'>, 'children'
 }
 
 /** The view transition's name for a record's key: one per record, a valid CSS name whatever the key holds. */
-export const glideName = (key: string) => `toda-key-${key.toUpperCase().replace(/[^A-Z0-9_-]/g, '_')}`;
+export const glideName = (key: string) => `abp-key-${key.toUpperCase().replace(/[^A-Z0-9_-]/g, '_')}`;
 
 /** A record key or identifier in mono, always left-to-right, never wrapped. */
 export const RecordKey = forwardRef<HTMLElement, RecordKeyProps>(function RecordKey(
   { value, children, href, variant = 'plain', size = 'sm', glide = false, loading: own, css, ...rest },
   ref,
 ) {
-  const recipe = useRecipe({ key: 'todaRecordKey' });
+  const recipe = useRecipe({ key: 'abpRecordKey' });
   const styles = recipe({ variant, size, link: Boolean(href) });
   const Link = useLinkComponent();
   const content = children ?? value;

@@ -22,8 +22,8 @@ export function bundlesFor(bundled: { en: Messages } & Record<string, Messages>,
   return [bundled[locale], bundled[locale.split('-')[0] ?? ''], bundled.en];
 }
 
-/** The product's name when the host gives none (docs/toda.md, layer 1): the server's default. */
-export const DEFAULT_PRODUCT_NAME = 'Toda';
+/** The product's name when the host gives none, for `{product}`. */
+export const DEFAULT_PRODUCT_NAME = 'the app';
 
 /** A text's values with `product` the product's name, unless the plugin gives a `product` of its own. */
 export function withProductValue(product: string, values?: Record<string, string | number>): Record<string, string | number> {

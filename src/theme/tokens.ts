@@ -1,10 +1,10 @@
 import { defineTokens } from '@chakra-ui/react';
-import { accent, amber, blue, green, neutral, red } from '@todahq/tokens';
+import type { AbpBrand } from './brand';
 
 /**
- * Raw scales, from @todahq/tokens (the phone app uses the same). Components never use these directly: they use the
- * semantic tokens in semantic-tokens.ts (bg, fg, border, accent, success, statusCategory ...), which pick a step
- * per colour mode. The raw scales exist so the semantic layer has one place to point at.
+ * Raw scales, from the host's brand (brand.ts). Components never use these directly: they use the semantic tokens in
+ * semantic-tokens.ts (bg, fg, border, accent, success, statusCategory ...), which pick a step per colour mode. The raw
+ * scales exist so the semantic layer has one place to point at.
  */
 
 function ramp<T extends Record<string | number, string>>(scale: T) {
@@ -13,36 +13,35 @@ function ramp<T extends Record<string | number, string>>(scale: T) {
   };
 }
 
-/** Chakra's own recipes speak "gray"; point it at the Toda neutral scale so they match. */
-const grayAlias = Object.fromEntries(
-  Object.keys(neutral).map((k) => [k, { value: `{colors.neutral.${k}}` }]),
-) as Record<keyof typeof neutral, { value: string }>;
-
-export const colors = defineTokens.colors({
-  neutral: ramp(neutral),
-  gray: grayAlias,
-  accent: ramp(accent),
-  green: ramp(green),
-  amber: ramp(amber),
-  red: ramp(red),
-  blue: ramp(blue),
-});
+/** The brand's scales as colour tokens; Chakra's own recipes speak "gray", pointed at the brand's neutral so they match. */
+export function colorsFor(brand: AbpBrand) {
+  const grayAlias = Object.fromEntries(Object.keys(brand.neutral).map((k) => [k, { value: `{colors.neutral.${k}}` }]));
+  return defineTokens.colors({
+    neutral: ramp(brand.neutral),
+    gray: grayAlias,
+    accent: ramp(brand.accent),
+    green: ramp(brand.green),
+    amber: ramp(brand.amber),
+    red: ramp(brand.red),
+    blue: ramp(brand.blue),
+  });
+}
 
 /**
- * Fonts. The host loads the files and sets the CSS variables (the shell uses next/font):
- *   --toda-font-sans    Almarai          (Latin and Arabic, one face, 400 and 700)
- *   --toda-font-arabic  optional         (a host that loads a separate Arabic face; Almarai covers Arabic itself)
- *   --toda-font-mono    IBM Plex Mono    (record keys, code, ids)
+ * Fonts. The host loads the files and sets the CSS variables, named with its prefix (a Next.js host uses next/font):
+ *   --{prefix}-font-sans    Almarai          (Latin and Arabic, one face, 400 and 700)
+ *   --{prefix}-font-arabic  optional         (a host that loads a separate Arabic face; Almarai covers Arabic itself)
+ *   --{prefix}-font-mono    IBM Plex Mono    (record keys, code, ids)
  * Without the variables the stack falls back to a locally installed Almarai, then Plex, then the system UI font.
  */
-const sansStack =
-  "var(--toda-font-sans, 'Almarai'), var(--toda-font-arabic, 'Almarai'), 'IBM Plex Sans', 'IBM Plex Sans Arabic', ui-sans-serif, system-ui, 'Segoe UI', sans-serif";
-
-export const fonts = defineTokens.fonts({
-  body: { value: sansStack },
-  heading: { value: sansStack },
-  mono: { value: "var(--toda-font-mono, 'IBM Plex Mono'), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" },
-});
+export function fontsFor(prefix: string) {
+  const sansStack = `var(--${prefix}-font-sans, 'Almarai'), var(--${prefix}-font-arabic, 'Almarai'), 'IBM Plex Sans', 'IBM Plex Sans Arabic', ui-sans-serif, system-ui, 'Segoe UI', sans-serif`;
+  return defineTokens.fonts({
+    body: { value: sansStack },
+    heading: { value: sansStack },
+    mono: { value: `var(--${prefix}-font-mono, 'IBM Plex Mono'), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace` },
+  });
+}
 
 /** Dense type scale: body copy is `md` (14px); tables and controls use `sm`/`md`. */
 export const fontSizes = defineTokens.fontSizes({
@@ -57,7 +56,7 @@ export const fontSizes = defineTokens.fontSizes({
   '4xl': { value: '2.25rem' }, // 36px
 });
 
-// Almarai has two weights in the design (400, 700; @todahq/tokens `weights`). The names the UI uses resolve to them
+// Almarai has two weights in the design (400, 700). The names the UI uses resolve to them
 // explicitly, so the Plex fallback (scripts Almarai lacks) draws the same weights rather than its own 500 and 600.
 export const fontWeights = defineTokens.fontWeights({
   normal: { value: '400' },
@@ -127,7 +126,7 @@ export const easings = defineTokens.easings({
   drawer: { value: 'cubic-bezier(0.32, 0.72, 0, 1)' },
 });
 
-export const tokens = { colors, fonts, fontSizes, fontWeights, lineHeights, radii, sizes, zIndex, durations, easings };
-
-/** Exposed for the design reference page. */
-export const scales = { neutral, accent, green, amber, red, blue };
+/** Every token, for a prefix (the fonts' variables) and a brand (the colours). */
+export function tokensFor(prefix: string, brand: AbpBrand) {
+  return { colors: colorsFor(brand), fonts: fontsFor(prefix), fontSizes, fontWeights, lineHeights, radii, sizes, zIndex, durations, easings };
+}

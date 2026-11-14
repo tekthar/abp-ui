@@ -1,11 +1,11 @@
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
-import { useTodaLocale } from './locale';
+import { useAbpLocale } from './locale';
 import { bundlesFor, DEFAULT_PRODUCT_NAME, translate, withProductValue, type Messages } from './texts-lookup';
 
 interface PluginTexts {
   /** Each plugin's texts in the current language, as the site serves them (bundled texts plus admin translations). */
   texts: Record<string, Messages>;
-  /** The product's name in the current language, for `{product}` (docs/toda.md, layer 1). */
+  /** The product's name in the current language, for `{product}`. */
   product: string;
 }
 
@@ -31,7 +31,7 @@ export function PluginTextsProvider({ value, product, children }: { value?: Reco
 export function usePluginTexts<M extends Messages>(pluginKey: string, bundled: { en: M } & Record<string, Messages>) {
   const { texts, product } = useContext(PluginTextsContext);
   const site = texts[pluginKey];
-  const { locale } = useTodaLocale();
+  const { locale } = useAbpLocale();
   const [own, base, en] = bundlesFor(bundled, locale);
   return useCallback(
     (key: string, values?: Record<string, string | number>) => translate(site, [own, base, en], key, withProductValue(product, values)),

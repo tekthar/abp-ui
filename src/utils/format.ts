@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { useTodaLocale } from '../provider/locale';
-import { useTodaTimeZone } from '../provider/time-zone';
+import { useAbpLocale } from '../provider/locale';
+import { useAbpTimeZone } from '../provider/time-zone';
 
 /** A calendar day ("2026-01-31"): shown as that day wherever the person is, never shifted by their time zone. */
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -35,10 +35,10 @@ export function formatNumber(value: number | null | undefined, locale: string, o
   return new Intl.NumberFormat(locale, { numberingSystem: 'latn', ...options }).format(value);
 }
 
-/** Formatters bound to the current TodaProvider locale and the person's time zone. */
+/** Formatters bound to the current AbpProvider locale and the person's time zone. */
 export function useFormatters() {
-  const { locale } = useTodaLocale();
-  const timeZone = useTodaTimeZone();
+  const { locale } = useAbpLocale();
+  const timeZone = useAbpTimeZone();
   return useMemo(
     () => ({
       dateTime: (value: string | number | Date | null | undefined, options?: Intl.DateTimeFormatOptions) =>

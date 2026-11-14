@@ -2,7 +2,7 @@
 // `pnpm --dir packages/ui test`.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { groupKey, inGroups } from '@todahq/client/rules';
+import { groupKey, inGroups } from '../src/rules/grouping.ts';
 import { priorityLevel } from '../src/components/priority-level.ts';
 
 test('a row keys its group the way the query keys its groups', () => {

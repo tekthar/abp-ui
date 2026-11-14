@@ -27,7 +27,7 @@ export const StatusPill = forwardRef<HTMLSpanElement, StatusPillProps>(function 
   { tone = 'neutral', category, variant = 'subtle', size = 'sm', dot = true, loading: own, skeletonWidth = 8, children, css, ...rest },
   ref,
 ) {
-  const recipe = useSlotRecipe({ key: 'todaStatusPill' });
+  const recipe = useSlotRecipe({ key: 'abpStatusPill' });
   const styles = recipe({ tone: category ?? tone, variant, size });
   const loading = useLoading(own);
   const arriving = useArriving(loading);
