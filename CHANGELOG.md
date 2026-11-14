@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.2.0-next.4
+
+A prerelease under npm's `next` tag, for a host's scope page on the `ai` area.
 
 - ai: `ai.models.can`'s context names the scope too (`scopeId`), so a host that keeps the connections reads that
   scope's own record of what its models can do on a scope's screen.
