@@ -16,6 +16,9 @@ its own entry, moving to its own package later by import path alone.
   the host.
 - `FormDialog`, with the labels `formRequired` and `formFix`.
 - `tests/areas-boundary.test.mjs` keeps each area to its boundary; prereleases publish under npm's `next` tag.
+- **`@abpjs/ui/ai`**, AbpAi's screens on AbpAi.HttpApi 0.7.0 (`src/areas/ai`): the site's AI page in tabs (models,
+  aliases, each scope's access, limits, usage, exports) as `aiPages` and `AiAdmin`, a scope's AI as `AiScopeScreen`,
+  and their panels. Types from AbpAi's OpenAPI document; rights, slots and pages in its README.
 
 ## 0.1.0
 

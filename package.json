@@ -34,6 +34,11 @@
       "import": "./dist/rules.js",
       "default": "./dist/rules.js"
     },
+    "./ai": {
+      "types": "./dist/ai.d.ts",
+      "import": "./dist/ai.js",
+      "default": "./dist/ai.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
