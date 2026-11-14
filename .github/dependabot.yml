@@ -1,0 +1,18 @@
+# Dependabot version updates. Security updates are switched on in the repository settings; the ignore rules below hold them back too.
+version: 2
+updates:
+  # Keeps the actions the workflows pin by commit SHA current (the version is the comment after each pin).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  # The package's npm dependencies. Minor and patch bumps arrive as one grouped pull request.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
