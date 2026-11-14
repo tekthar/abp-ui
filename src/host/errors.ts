@@ -39,6 +39,11 @@ export async function readAbpError(res: Response): Promise<AbpApiError> {
     if (e) {
       return new AbpApiError(res.status, e.code ?? null, e.message || e.details || message, e.details ?? null, e.validationErrors ?? [], e.data ?? null);
     }
+    // A refusal at the top level (AbpAi's 422s: { code, message, limit }): its code and message, the rest as data.
+    if (body && typeof body === 'object' && typeof body.message === 'string' && body.message) {
+      const { code, message: text, details, ...rest } = body as Record<string, unknown>;
+      return new AbpApiError(res.status, typeof code === 'string' ? code : null, text as string, typeof details === 'string' ? details : null, [], Object.keys(rest).length ? rest : null);
+    }
     if (typeof body?.title === 'string') message = body.title;
   } catch {
     // Not JSON: the status says it.

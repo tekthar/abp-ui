@@ -46,6 +46,12 @@ test('a refusal comes back as ABP says it, read as JSON whatever the content typ
   assert.equal(s.calls[0].body, '{"a":1}');
 });
 
+test('a refusal at the top level (AbpAi 422) gives its code and message, the rest as data', async () => {
+  const s = server([[422, { code: 'over_limit', message: 'Over the monthly limit', limit: { amount: 5 } }]]);
+  await assert.rejects(createHostRequest({ fetch: s.fetch })('/try', { method: 'POST', body: {} }), (e) =>
+    e instanceof AbpApiError && e.status === 422 && e.code === 'over_limit' && e.message === 'Over the monthly limit' && e.data.limit.amount === 5);
+});
+
 test('a 401 tells the host; a step-up is asked once and the call retried', async () => {
   let told = 0;
   let asked = 0;

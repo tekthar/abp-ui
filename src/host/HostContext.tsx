@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useInsertionEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from 'react';
 import { errorText } from './errors';
 import type { HostEventHandler, HostEvents } from './events';
 import type { HostFile, HostRequest, HostRequestInit } from './request';
@@ -74,12 +74,28 @@ export function useOptionalHost(): AbpHost | null {
   return useContext(HostContext);
 }
 
-/** A package's calls on this host: its base path in front of each path. */
+/**
+ * The host as it is now, for callbacks that must not change with it: a host built afresh on each render (an object
+ * literal, no `useMemo`) would otherwise make every query ask again on every render, a tab switch included.
+ */
+function useLatest<T>(value: T): { readonly current: T } {
+  const ref = useRef(value);
+  useInsertionEffect(() => {
+    ref.current = value;
+  });
+  return ref;
+}
+
+/**
+ * A package's calls on this host: its base path in front of each path. The same function while the area's path stays
+ * the same, whatever the host object is; each call goes through the host's current `request`.
+ */
 export function useAreaRequest(area: string): HostRequest {
   const host = useHost();
+  const latest = useLatest(host);
   const base = host.paths[area];
   if (base === undefined) throw new Error(`The host gives no path for "${area}" (AbpHost.paths).`);
-  return useCallback(<T,>(path: string, init?: HostRequestInit) => host.request<T>(`${base.replace(/\/$/, '')}${path}`, init), [host, base]) as HostRequest;
+  return useCallback(<T,>(path: string, init?: HostRequestInit) => latest.current.request<T>(`${base.replace(/\/$/, '')}${path}`, init), [latest, base]) as HostRequest;
 }
 
 export interface ApiQuery<T> {
@@ -159,12 +175,14 @@ export function useApiDownload(area: string) {
  */
 export function useAreaEvents(area: string): ((path: string, onEvent: HostEventHandler, options?: { lastEventId?: string | null; signal?: AbortSignal }) => Promise<string | null>) | null {
   const host = useHost();
+  const latest = useLatest(host);
   const base = host.paths[area];
-  const events = host.events;
+  const has = Boolean(host.events);
   return useMemo(() => {
-    if (!events || base === undefined) return null;
-    return (path: string, onEvent: HostEventHandler, options?: { lastEventId?: string | null; signal?: AbortSignal }) => events(`${base.replace(/\/$/, '')}${path}`, onEvent, options);
-  }, [events, base]);
+    if (!has || base === undefined) return null;
+    return (path: string, onEvent: HostEventHandler, options?: { lastEventId?: string | null; signal?: AbortSignal }) =>
+      latest.current.events!(`${base.replace(/\/$/, '')}${path}`, onEvent, options);
+  }, [has, latest, base]);
 }
 
 /** The person signed in, when the host says. */
@@ -195,18 +213,21 @@ export function useHostLanguages(): HostLanguage[] {
  */
 export function useNames(kind: 'people' | 'scopes', ids: readonly string[]): Record<string, string> {
   const host = useOptionalHost();
+  const latest = useLatest(host);
+  const can = Boolean(kind === 'people' ? host?.names : host?.scopes?.name);
   const [names, setNames] = useState<Record<string, string>>({});
   const key = useMemo(() => [...new Set(ids)].sort().join(','), [ids]);
   useEffect(() => {
     const wanted = key ? key.split(',') : [];
-    const resolve = kind === 'people' ? host?.names : host?.scopes?.name;
+    const h = latest.current;
+    const resolve = kind === 'people' ? h?.names : h?.scopes?.name;
     if (!resolve || wanted.length === 0) return;
     let alive = true;
     resolve(wanted).then((found) => alive && setNames(found), () => undefined);
     return () => {
       alive = false;
     };
-  }, [host, kind, key]);
+  }, [can, latest, kind, key]);
   return names;
 }
 
