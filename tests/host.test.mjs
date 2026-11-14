@@ -6,7 +6,7 @@ import { formatMessage } from '../src/texts/format.ts';
 import { createHostRequest, fileNameOf } from '../src/host/request.ts';
 import { AbpApiError } from '../src/host/errors.ts';
 import { createHostEvents } from '../src/host/events.ts';
-import { requestStepUp, setStepUpHandler } from '../src/host/step-up.ts';
+import { requestStepUp, setStepUpHandler, stepUpNeedOf } from '../src/host/step-up.ts';
 
 test('a text fills its values and keeps a missing one as it was', () => {
   assert.equal(formatMessage('en', 'Hello {name}', { name: 'Lama' }), 'Hello Lama');
@@ -86,6 +86,28 @@ test('by default the step-up dialog asks: none registered fails as the server sa
   } finally {
     setStepUpHandler(null);
   }
+});
+
+test("the need a step-up carries: the level, the person's ways best first, a strong factor to set up", () => {
+  assert.deepEqual(stepUpNeedOf('step_up_required', { level: 'strong', category: 'plugins', methods: ['passkey', 'app', 'password'], maxAgeSeconds: 600 }),
+    { code: 'step_up_required', level: 'strong', category: 'plugins', methods: ['passkey', 'app', 'password'] });
+  assert.deepEqual(stepUpNeedOf('strong_factor_required', { category: 'roles' }), { code: 'strong_factor_required', level: 'strong', category: 'roles', methods: [] });
+  assert.equal(stepUpNeedOf('step_up_required', null).level, 'password', 'an older server: the password level');
+});
+
+test('a strong factor set up, then the strong step-up with it, then the call; a call that opts out is refused as is', async () => {
+  const asked = [];
+  const s = server([
+    [403, { error: { code: 'strong_factor_required', message: 'Set one up', data: { category: 'plugins' } } }],
+    [403, { error: { code: 'step_up_required', message: 'Confirm', data: { level: 'strong', category: 'plugins', methods: ['passkey', 'password'] } } }],
+    [200, { installed: true }],
+    [403, { error: { code: 'step_up_required', message: 'Confirm', data: { level: 'password' } } }],
+  ]);
+  const request = createHostRequest({ fetch: s.fetch, stepUp: async (need) => (asked.push(`${need.code}:${need.level}:${need.methods.join('|')}`), true) });
+  assert.deepEqual(await request('/plugins', { method: 'POST' }), { installed: true });
+  assert.deepEqual(asked, ['strong_factor_required:strong:', 'step_up_required:strong:passkey|password']);
+  await assert.rejects(request('/x', { method: 'POST', stepUp: false }), (e) => e.code === 'step_up_required');
+  assert.equal(asked.length, 2);
 });
 
 test('a file comes back with the name the server gives', async () => {

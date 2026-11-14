@@ -1,4 +1,5 @@
-import { AbpApiError, isStepUp, readAbpError } from './errors.ts';
+import { AbpApiError, needsStepUp, readAbpError } from './errors.ts';
+import { requestStepUp, stepUpNeedOf } from './step-up.ts';
 import type { HostRequestOptions } from './request.ts';
 
 /** One server-sent event: its name (`message` when none), its data as JSON, and its id when it has one. */
@@ -38,9 +39,10 @@ export async function readEvents(res: Response, onEvent: HostEventHandler): Prom
   }
 }
 
-/** Server-sent events for a host without its own reader: same origin, its headers, a 401 handed back, one step-up. */
+/** Server-sent events for a host without its own reader: same origin, its headers, a 401 handed back, a step-up (the dialog's by default). */
 export function createHostEvents(options: Pick<HostRequestOptions, 'onUnauthorized' | 'stepUp' | 'headers' | 'fetch'> = {}): HostEvents {
   const doFetch = options.fetch ?? ((input, init) => fetch(input, init));
+  const stepUp = options.stepUp ?? requestStepUp;
   return async function events(path, onEvent, { lastEventId = null, signal } = {}) {
     const open = () => {
       const headers: Record<string, string> = { Accept: 'text/event-stream', ...options.headers?.() };
@@ -48,12 +50,11 @@ export function createHostEvents(options: Pick<HostRequestOptions, 'onUnauthoriz
       return doFetch(path, { method: 'GET', headers, credentials: 'same-origin', cache: 'no-store', signal });
     };
     let res = await open();
-    if (!res.ok) {
+    for (let asked = 0; !res.ok; asked++) {
       const error: AbpApiError = await readAbpError(res.clone());
       if (res.status === 401) options.onUnauthorized?.();
-      if (isStepUp(error) && options.stepUp && (await options.stepUp())) res = await open();
+      if (asked < 3 && needsStepUp(error) && (await stepUp(stepUpNeedOf(error.code!, error.data)))) res = await open();
       else throw error;
-      if (!res.ok) throw await readAbpError(res);
     }
     let last = lastEventId;
     await readEvents(res, (name, data, id) => {

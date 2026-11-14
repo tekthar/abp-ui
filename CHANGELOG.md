@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.2.0-next.5
+
+A prerelease under npm's `next` tag: the step-up dialog for AbpGuard 0.7.0's strong step-up and passkeys. Against an
+older AbpGuard nothing changes (no level means the password level).
+
+- `StepUpDialog` reads the level the server asks for (`step_up_required` with `level`, `methods`). At `strong`, it
+  offers a passkey first when the person has one, or the password with an authenticator code. Asked of someone with no
+  strong factor (`strong_factor_required`), it takes the password, then sets up a passkey or the app (QR and key) right
+  there, with the recovery codes shown once for a first factor; the call then asks again and they confirm with it.
+- Passkeys in the browser's own JSON both ways (`createPasskey`, `getPasskey`, `passkeysSupported`), with a base64url
+  fallback for browsers without `PublicKeyCredential.parse*FromJSON`.
+- `requestStepUp(need)` and `StepUpHandler` take the server's need (`StepUpNeed`, `stepUpNeedOf`). `createHostRequest`
+  and `createHostEvents` pass it on and ask again when the server asks for more (a factor set up, then the strong step-up),
+  up to three times. `HostRequestInit.stepUp: false` throws a step-up refusal instead of asking (the dialog's own calls).
+  `needsStepUp` and `STRONG_FACTOR_REQUIRED` beside `isStepUp`.
+- `createHostEvents` asks the step-up dialog by default, as `createHostRequest` does.
+
 ## 0.2.0-next.4
 
 A prerelease under npm's `next` tag, for a host's scope page on the `ai` area.

@@ -105,7 +105,7 @@ export { groupKey, heavierFirst, inSections } from './rules';
 
 // The host contract for the screens (ADR 0109 amendment): how they call the host's server, move, ask what the person
 // may do, and read their words
-export { AbpApiError, errorText, isStepUp, readAbpError, STEP_UP_REQUIRED } from './host/errors';
+export { AbpApiError, errorText, isStepUp, needsStepUp, readAbpError, STEP_UP_REQUIRED, STRONG_FACTOR_REQUIRED } from './host/errors';
 export { createHostEvents, readEvents, type HostEventHandler, type HostEvents } from './host/events';
 export { createHostRequest, fileNameOf, type HostFile, type HostRequest, type HostRequestInit, type HostRequestOptions } from './host/request';
 export {
@@ -129,7 +129,7 @@ export {
   type HostScope,
 } from './host/HostContext';
 export { useSlotSaves, type RegisterSlotSave, type SlotSave } from './host/slot-saves';
-export { requestStepUp, setStepUpHandler, type StepUpHandler } from './host/step-up';
+export { requestStepUp, setStepUpHandler, stepUpNeedOf, type StepUpHandler, type StepUpNeed } from './host/step-up';
 export { looksLikeCode, StepUpDialog } from './host/StepUpDialog';
 export { formatMessage } from './texts/format';
 export { createAreaTexts, type AreaTexts } from './texts/area';

@@ -57,3 +57,10 @@ export function errorText(e: unknown): string {
 }
 
 export const isStepUp = (e: unknown) => e instanceof AbpApiError && e.status === 403 && e.code === STEP_UP_REQUIRED;
+
+/** A strong step-up asked of someone with no strong factor yet (AbpGuard 0.7.0): they set one up, then step up. */
+export const STRONG_FACTOR_REQUIRED = 'strong_factor_required';
+
+/** A refusal the step-up dialog answers: a step-up, or a strong factor to set up first. */
+export const needsStepUp = (e: unknown): e is AbpApiError =>
+  e instanceof AbpApiError && e.status === 403 && (e.code === STEP_UP_REQUIRED || e.code === STRONG_FACTOR_REQUIRED);

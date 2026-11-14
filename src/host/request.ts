@@ -1,5 +1,5 @@
-import { AbpApiError, isStepUp, readAbpError } from './errors.ts';
-import { requestStepUp } from './step-up.ts';
+import { AbpApiError, needsStepUp, readAbpError } from './errors.ts';
+import { requestStepUp, stepUpNeedOf, type StepUpNeed } from './step-up.ts';
 
 /** What a call sends: its method, a JSON body (or FormData as is), headers, and a way to stop it. */
 export interface HostRequestInit {
@@ -9,6 +9,8 @@ export interface HostRequestInit {
   signal?: AbortSignal;
   /** The answer as a file (a Blob and the name Content-Disposition gives) rather than JSON. */
   as?: 'json' | 'file';
+  /** False: a refusal that asks for a step-up is thrown, not asked (the step-up dialog's own calls). */
+  stepUp?: false;
 }
 
 /** A file the server answered with. */
@@ -32,7 +34,7 @@ export interface HostRequestOptions {
    * A 403 `step_up_required`: the host confirms the person again; true retries the call once. By default the step-up
    * dialog `AbpProvider` draws asks (`requestStepUp`), and without one the call fails as the server answered.
    */
-  stepUp?: () => Promise<boolean>;
+  stepUp?: (need: StepUpNeed) => Promise<boolean>;
   /** More headers on every call (a development user, a tenant). */
   headers?: () => Record<string, string>;
   fetch?: typeof fetch;
@@ -80,12 +82,12 @@ export function createHostRequest(options: HostRequestOptions = {}): HostRequest
 
   return async function request<T>(path: string, init: HostRequestInit = {}): Promise<T> {
     let res = await send(path, init);
-    if (!res.ok) {
+    // A step-up, and again when the server then asks for more: a strong factor set up, then the strong step-up with it.
+    for (let asked = 0; !res.ok; asked++) {
       const error = await readAbpError(res.clone());
       if (res.status === 401) options.onUnauthorized?.();
-      if (isStepUp(error) && (await stepUp())) res = await send(path, init);
+      if (asked < 3 && init.stepUp !== false && needsStepUp(error) && (await stepUp(stepUpNeedOf(error.code!, error.data)))) res = await send(path, init);
       else throw error;
-      if (!res.ok) throw await readAbpError(res);
     }
     if (init.as === 'file') return { blob: await res.blob(), name: fileNameOf(res.headers.get('Content-Disposition')) } as T;
     if (res.status === 204) return undefined as T;
