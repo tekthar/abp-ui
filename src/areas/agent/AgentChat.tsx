@@ -54,6 +54,9 @@ export function useAgentChat(): { open: (target?: AgentChatOpen) => void; close:
 /** How often an open chat asks how its run is going when it can't follow the run's events. */
 const EVERY_MS = 2000;
 
+/** Streams in a row that end with nothing in them before an open chat asks every EVERY_MS instead. */
+const EMPTY_STREAMS = 3;
+
 /** A step of the going run, as its events say: the tool, its target, and how it went (null while it runs). */
 type LiveStep = { step: number; tool: string; target: string | null; outcome: string | null };
 
@@ -81,9 +84,14 @@ function useLiveRun(chatId: string, going: boolean, reload: () => Promise<void>)
     }
     void (async () => {
       setLive(NO_LIVE); // a new run: nothing shown of it yet
-      for (let tries = 0; tries < 30 && !abort.signal.aborted; tries++) {
+      // A stream that gives nothing (a run stuck as going, a proxy that closes it at once) waits longer before the next;
+      // after EMPTY_STREAMS in a row the chat is asked every EVERY_MS instead.
+      let empty = 0;
+      while (!abort.signal.aborted) {
+        const heard = { any: false };
         try {
           last = await events(`/chats/${chatId}/events`, (name, data) => {
+            if (name !== 'ping') heard.any = true;
             const run = typeof data.run === 'string' ? data.run : null;
             const turn = typeof data.turn === 'number' ? data.turn : 0;
             switch (name) {
@@ -105,13 +113,18 @@ function useLiveRun(chatId: string, going: boolean, reload: () => Promise<void>)
                 break;
             }
           }, { lastEventId: last, signal: abort.signal });
-          await reload();
-          await new Promise((r) => setTimeout(r, 300));
         } catch {
           if (abort.signal.aborted) return;
           timer = setInterval(() => void reload(), EVERY_MS);
           return;
         }
+        await reload();
+        empty = heard.any ? 0 : empty + 1;
+        if (empty >= EMPTY_STREAMS) {
+          if (!abort.signal.aborted) timer = setInterval(() => void reload(), EVERY_MS);
+          return;
+        }
+        await new Promise((r) => setTimeout(r, heard.any ? 300 : 1000 * 2 ** empty));
       }
     })();
     return () => {
