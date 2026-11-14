@@ -47,6 +47,11 @@ export interface AbpHost {
   languages?: HostLanguage[];
   /** The host's words for any area's text, by area then language then key: `{ ai: { en: { 'models.title': 'AI models' } } }`. */
   texts?: Record<string, Record<string, Record<string, string>>>;
+  /**
+   * Whether `AbpProvider` draws the step-up dialog (on `paths.guard`), which `createHostRequest` asks by default. On
+   * when the host gives `paths.guard`; false for a host that has its own dialog.
+   */
+  stepUpDialog?: boolean;
   /** What the host draws in a screen's named places (`guard.account.panels`, `guard.directory.panel`). */
   slots?: Record<string, ComponentType<Record<string, unknown>>>;
 }

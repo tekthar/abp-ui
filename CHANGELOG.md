@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- `StepUpDialog`: the password again before a sensitive action, plus a code when the person has a second factor (their
+  app, a recovery code, or one the site sends), on AbpGuard's `session/step-up` and `me/second-factors`. `AbpProvider`
+  draws it when the host gives `paths.guard`. A host with its own dialog sets `stepUpDialog: false`. Its English and
+  Arabic texts can be overridden through `AbpHost.texts.stepUp`.
+- `createHostRequest` asks that dialog by default (`requestStepUp`, once however many calls wait). With no dialog, the
+  call fails as the server answered. `setStepUpHandler` lets a host register its own.
+
 ## 0.2.0-next.1
 
 A prerelease under npm's `next` tag: the foundation and the first area, `ai`. More areas (`guard`, `agent`) follow in

@@ -6,6 +6,7 @@ import { formatMessage } from '../src/texts/format.ts';
 import { createHostRequest, fileNameOf } from '../src/host/request.ts';
 import { AbpApiError } from '../src/host/errors.ts';
 import { createHostEvents } from '../src/host/events.ts';
+import { requestStepUp, setStepUpHandler } from '../src/host/step-up.ts';
 
 test('a text fills its values and keeps a missing one as it was', () => {
   assert.equal(formatMessage('en', 'Hello {name}', { name: 'Lama' }), 'Hello Lama');
@@ -55,6 +56,30 @@ test('a 401 tells the host; a step-up is asked once and the call retried', async
   assert.deepEqual(await request('/b', { method: 'DELETE' }), { ok: true });
   assert.equal(asked, 1);
   assert.equal(s.calls.length, 3);
+});
+
+test('by default the step-up dialog asks: none registered fails as the server said; calls waiting together ask once', async () => {
+  const refuse = () => [403, { error: { code: 'step_up_required', message: 'Confirm' } }];
+  const none = server([refuse()]);
+  await assert.rejects(createHostRequest({ fetch: none.fetch })('/a', { method: 'POST' }), (e) => e instanceof AbpApiError && e.code === 'step_up_required');
+  let asked = 0;
+  let confirm;
+  setStepUpHandler(() => (asked++, new Promise((resolve) => (confirm = resolve))));
+  try {
+    const s = server([refuse(), refuse(), [200, { n: 1 }], [200, { n: 2 }]]);
+    const request = createHostRequest({ fetch: s.fetch });
+    const both = Promise.all([request('/a', { method: 'POST' }), request('/b', { method: 'POST' })]);
+    await new Promise((r) => setTimeout(r, 0));
+    confirm(true);
+    assert.deepEqual((await both).map((r) => r.n).sort(), [1, 2]);
+    assert.equal(asked, 1);
+    const later = requestStepUp();
+    assert.equal(asked, 2, 'a later step-up asks again');
+    confirm(false);
+    assert.equal(await later, false);
+  } finally {
+    setStepUpHandler(null);
+  }
 });
 
 test('a file comes back with the name the server gives', async () => {

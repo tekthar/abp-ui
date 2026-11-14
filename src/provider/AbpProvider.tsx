@@ -9,6 +9,7 @@ import { createAbpSystem } from '../theme/system';
 import { ColorModeProvider } from './color-mode';
 import { LabelsProvider, type AbpLabels } from './labels';
 import { HostProvider, type AbpHost } from '../host/HostContext';
+import { StepUpDialog } from '../host/StepUpDialog';
 import { LinkComponentProvider, type LinkComponent } from './link';
 import { PluginTextsProvider } from './texts';
 
@@ -59,6 +60,7 @@ export function AbpProvider({ children, system = defaultSystem, host, locale = '
                 <MotionProvider setting={motion}>
                   <ConfirmProvider>
                     {children}
+                    {host?.paths.guard !== undefined && host.stepUpDialog !== false && <StepUpDialog />}
                     <Toaster />
                   </ConfirmProvider>
                 </MotionProvider>

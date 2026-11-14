@@ -129,6 +129,8 @@ export {
   type HostScope,
 } from './host/HostContext';
 export { useSlotSaves, type RegisterSlotSave, type SlotSave } from './host/slot-saves';
+export { requestStepUp, setStepUpHandler, type StepUpHandler } from './host/step-up';
+export { looksLikeCode, StepUpDialog } from './host/StepUpDialog';
 export { formatMessage } from './texts/format';
 export { createAreaTexts, type AreaTexts } from './texts/area';
 export { FormDialog, type FormDialogProps } from './components/FormDialog';
