@@ -85,7 +85,7 @@ export function ModelsPanel({ scopeId, connections, rows, loading, hostKeeps, on
           {
             id: 'can',
             header: t('can'),
-            cell: (m) => hostSaysCan ? <HostSlot name="ai.models.can" context={{ connectionId: m.connectionId, modelId: m.modelId }} /> : (
+            cell: (m) => hostSaysCan ? <HostSlot name="ai.models.can" context={{ connectionId: m.connectionId, modelId: m.modelId, scopeId }} /> : (
               <HStack gap="1" flexWrap="wrap">
                 {m.tools && <StatusPill tone="neutral" dot={false}>{t('tools')}</StatusPill>}
                 {m.images && <StatusPill tone="neutral" dot={false}>{t('images')}</StatusPill>}

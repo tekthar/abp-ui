@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- ai: `ai.models.can`'s context names the scope too (`scopeId`), so a host that keeps the connections reads that
+  scope's own record of what its models can do on a scope's screen.
+- ai: `AiScopeScreen` takes the host's page `header`, drawn first in its own column, so a host's page keeps one column.
+
 ## 0.2.0-next.3
 
 A prerelease under npm's `next` tag. The `ai` area now needs **AbpAi.HttpApi 0.8.0** on the server: stay on next.2

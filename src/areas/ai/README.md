@@ -37,7 +37,7 @@ They only shape what's shown; AbpAi.HttpApi's answers decide.
 |---|---|---|
 | `ai.models.edit` | `{ connectionId, modelId, scopeId, onSaved }` | each model row where the host keeps the connections: the host's own way to edit it |
 | `ai.models.actions` | `{ scopeId, onChanged }` | the models panel's actions where the host keeps the connections (its own "find models") |
-| `ai.models.can` | `{ connectionId, modelId }` | what a model can do, where the host keeps the connections and has its own record of it (a gateway that's told every model takes everything). **Temporary:** it goes once AbpAi reports a host's own record of what its models can do (0.8.0 doesn't yet) |
+| `ai.models.can` | `{ connectionId, modelId, scopeId }` | what a model can do, where the host keeps the connections and has its own record of it (a gateway that's told every model takes everything). **Temporary:** it goes once AbpAi reports a host's own record of what its models can do (0.8.0 doesn't yet) |
 | `ai.access.cell` | `{ scopeId }` | a column of the host's in the access list, headed by the `ownSkills` text (override it) |
 | `ai.access.editor` | `{ scopeId, register }` | more settings in a scope's access dialog: `register(save)` (`useSlotSaves`) adds a save the dialog runs after its own on Save |
 

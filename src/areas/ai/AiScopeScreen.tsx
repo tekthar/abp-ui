@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { Stack, Text } from '@chakra-ui/react';
 import { InlineAlert, Loading, Panel, StatusPill, TextBone, TextSlot, useApiQuery, useNames } from '@abpjs/ui';
 import { useHostKeepsConnections } from './AiAdmin';
@@ -15,9 +15,10 @@ import { UsagePanel } from './UsagePanel';
  * A scope's AI, for a host's own scope settings page (its header is the host's), from the scope's view (AbpAi.HttpApi
  * 0.8.0, for whoever administers the scope): what the site and the scopes above open to it, its own connections'
  * models while it may have them, its aliases over the ones from above, its limits inside theirs, its usage, and a
- * quick call through an alias.
+ * quick call through an alias. `header` is the host's page header, drawn first in the screen's own column (and with
+ * the error when there's one), so the page reads as one column.
  */
-export function AiScopeScreen({ scopeId }: { scopeId: string }) {
+export function AiScopeScreen({ scopeId, header }: { scopeId: string; header?: ReactNode }) {
   const t = useAiTexts();
   const limitText = useLimitText();
   const id = encodeURIComponent(scopeId);
@@ -46,7 +47,9 @@ export function AiScopeScreen({ scopeId }: { scopeId: string }) {
   // Its own aliases first, then the ones from above it doesn't replace.
   const aliasNames = useMemo(() => [...new Set([...(aliases.data ?? []), ...(v?.aliasesFromAbove ?? [])].map((x) => x.name))], [aliases.data, v]);
 
-  if ((view.error && !v) || (access.error && !a)) return <InlineAlert tone="danger">{view.error ?? access.error}</InlineAlert>;
+  if ((view.error && !v) || (access.error && !a)) {
+    return <Stack gap="section">{header}<InlineAlert tone="danger">{view.error ?? access.error}</InlineAlert></Stack>;
+  }
   const opened = a && (a.allSiteModels ? t('allModels') : a.siteModels.length ? t('someModels', { count: a.siteModels.length }) : t('noModelsOpen'));
   const lines = (list: AiLimit[] | undefined) =>
     !list ? <Text textStyle="sm"><TextBone width={24} /></Text>
@@ -55,6 +58,7 @@ export function AiScopeScreen({ scopeId }: { scopeId: string }) {
   return (
     <Loading when={!v || !a}>
       <Stack gap="section">
+        {header}
         <Panel title={t('projectAccessTitle')} description={t('projectAccessHint')} data-testid="ai-project-access">
           <Stack gap="2">
             <Text><StatusPill tone={a?.allSiteModels || a?.siteModels.length ? 'success' : 'neutral'}>{opened}</StatusPill></Text>
