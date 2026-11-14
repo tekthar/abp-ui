@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0-next.7
+
+A prerelease under npm's `next` tag.
+
+- Exports the passkey helpers next.5 described and didn't export: `createPasskey`, `getPasskey`, `passkeysSupported`.
+
 ## 0.2.0-next.6
 
 A prerelease under npm's `next` tag.

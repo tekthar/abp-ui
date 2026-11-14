@@ -131,6 +131,7 @@ export {
 export { useSlotSaves, type RegisterSlotSave, type SlotSave } from './host/slot-saves';
 export { requestStepUp, setStepUpHandler, stepUpNeedOf, type StepUpHandler, type StepUpNeed } from './host/step-up';
 export { looksLikeCode, StepUpDialog } from './host/StepUpDialog';
+export { createPasskey, getPasskey, passkeysSupported } from './host/webauthn';
 export { formatMessage } from './texts/format';
 export { createAreaTexts, type AreaTexts } from './texts/area';
 export { FormDialog, type FormDialogProps } from './components/FormDialog';
