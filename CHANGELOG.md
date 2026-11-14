@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.0-next.9
+
+A prerelease under npm's `next` tag, from moving the first host's agent pages onto `agent` with no visible change.
+
+- agent: a slot `agent.names` (`{ label, value, onChange, placeholder, fallback, kind }`) for a host's own field for
+  names by language; `ToolGroupsProvider` (`ToolGroupOf`) for the host's own groups of tools (its skills, an outside
+  server's tools), after the host's and plugins' and before the sandbox's; `agent.tools.extra` gets `listed` and
+  `loading`.
+- agent: a read-only opt-in tool is Off/On; `AgentEditor variant="scope"` (a scope's own agent, its settings alone),
+  used by `ScopeAgentsScreen`; a scope's key in the agents list sits at the cell's start in right-to-left pages, and
+  `ItemLink` keeps the page's direction when it wraps words (a bare key stays left to right).
+
 ## 0.2.0-next.8
 
 A prerelease under npm's `next` tag: the third area, `agent`.
