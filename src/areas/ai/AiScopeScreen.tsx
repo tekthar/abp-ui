@@ -3,7 +3,7 @@ import { Stack, Text } from '@chakra-ui/react';
 import { InlineAlert, Loading, Panel, StatusPill, TextBone, TextSlot, useApiQuery, useNames } from '@abpjs/ui';
 import { useHostKeepsConnections } from './AiAdmin';
 import { AliasesPanel } from './AliasesPanel';
-import { useLimitText } from './LimitsEditor';
+import { namedLimit, useLimitText } from './LimitsEditor';
 import { ModelsPanel } from './ModelsPanel';
 import { scopeModelRows } from './models';
 import { useAiTexts } from './texts';
@@ -51,9 +51,20 @@ export function AiScopeScreen({ scopeId, header }: { scopeId: string; header?: R
     return <Stack gap="section">{header}<InlineAlert tone="danger">{view.error ?? access.error}</InlineAlert></Stack>;
   }
   const opened = a && (a.allSiteModels ? t('allModels') : a.siteModels.length ? t('someModels', { count: a.siteModels.length }) : t('noModelsOpen'));
-  const lines = (list: AiLimit[] | undefined) =>
-    !list ? <Text textStyle="sm"><TextBone width={24} /></Text>
-      : list.length ? list.map((l) => <Text key={l.id} textStyle="sm">{limitText(l)}</Text>) : <Text textStyle="sm" color="fg.muted">{t('noLimits')}</Text>;
+  // The scope's (or one above's) own limits, line by line; the ones of named accounts and groups (an agent's own, say) as
+  // one count, so they don't read as the scope's and a site with many agents doesn't list each.
+  const lines = (list: AiLimit[] | undefined) => {
+    if (!list) return <Text textStyle="sm"><TextBone width={24} /></Text>;
+    const own = list.filter((l) => !namedLimit(l));
+    const named = new Set(list.filter(namedLimit).map((l) => l.accountId ?? l.groupId ?? l.id)).size;
+    if (!own.length && !named) return <Text textStyle="sm" color="fg.muted">{t('noLimits')}</Text>;
+    return (
+      <>
+        {own.map((l) => <Text key={l.id} textStyle="sm">{limitText(l)}</Text>)}
+        {named > 0 && <Text textStyle="sm" color="fg.muted">{t('limitsOfTheirOwn', { count: named })}</Text>}
+      </>
+    );
+  };
 
   return (
     <Loading when={!v || !a}>

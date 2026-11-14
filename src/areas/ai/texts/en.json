@@ -92,6 +92,8 @@
   "periods.month": "month",
   "limitText": "{kind} per {period}: {amount}",
   "limitCallTokens": "Tokens per reply: {amount}",
+  "limitEachPerson": "{kind} per {period} for each person: {amount}",
+  "limitsOfTheirOwn": "{count, plural, one {One account or group has a limit of its own.} other {# accounts and groups have limits of their own.}}",
   "usageTitle": "Usage",
   "usageTotal": "Total cost: {cost}",
   "by": "Sum by",

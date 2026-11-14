@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- ai: a scope's page (`AiScopeScreen`) no longer shows a named account's or group's limit (an agent's own, say) as
+  the site's or the scope's: those are counted on one line ("3 accounts and groups have limits of their own."), and a
+  person's default reads "Cost per day for each person: 1". `namedLimit` tells them apart.
+
 ## 0.2.0-next.9
 
 A prerelease under npm's `next` tag, from moving the first host's agent pages onto `agent` with no visible change.

@@ -92,6 +92,8 @@
   "periods.month": "شهر",
   "limitText": "{kind} لكل {period}: {amount}",
   "limitCallTokens": "الرموز لكل رد: {amount}",
+  "limitEachPerson": "{kind} لكل {period} لكل شخص: {amount}",
+  "limitsOfTheirOwn": "{count, plural, zero {لا حسابات أو مجموعات لها حدود خاصة.} one {لحساب أو مجموعة واحدة حدّ خاص.} two {لحسابين أو مجموعتين حدود خاصة.} few {لـ# حسابات ومجموعات حدود خاصة.} many {لـ# حسابًا ومجموعة حدود خاصة.} other {لـ# حساب ومجموعة حدود خاصة.}}",
   "usageTitle": "الاستخدام",
   "usageTotal": "الكلفة الإجمالية: {cost}",
   "by": "التجميع حسب",

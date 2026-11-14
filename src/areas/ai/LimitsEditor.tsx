@@ -41,17 +41,20 @@ export async function saveLimits(request: HostRequest, scopeId: string | null | 
   for (const r of left) await request(`/limits${scopeQuery(scopeId)}`, { method: 'POST', body: limitInput(r) });
 }
 
-/** "Cost per day: 5", "Tokens per reply: 2,000". */
+/** "Cost per day: 5", "Tokens per reply: 2,000", and a person's default: "Cost per day for each person: 1". */
 export function useLimitText() {
   const t = useAiTexts();
   const fmt = useFormatters();
   return (l: AiLimit) => {
     const r = limitRow(l);
-    return r.kind === 'call-tokens'
-      ? t('limitCallTokens', { amount: fmt.number(num(l.amount)) })
-      : t('limitText', { kind: t(`kinds.${r.kind}`), period: t(`periods.${r.period}`), amount: fmt.number(num(l.amount), { maximumFractionDigits: 6 }) });
+    if (r.kind === 'call-tokens') return t('limitCallTokens', { amount: fmt.number(num(l.amount)) });
+    const values = { kind: t(`kinds.${r.kind}`), period: t(`periods.${r.period}`), amount: fmt.number(num(l.amount), { maximumFractionDigits: 6 }) };
+    return t(l.kind === 'person' ? 'limitEachPerson' : 'limitText', values);
   };
 }
+
+/** A limit of one named account (an agent's, a person's) or group, not the scope's own. */
+export const namedLimit = (l: AiLimit) => !!l.accountId || !!l.groupId || l.kind === 'account' || l.kind === 'group';
 
 /**
  * Limits on a scope or the site: cost, tokens or requests per minute, day or month, and tokens per reply. With `onSave`
