@@ -1,12 +1,18 @@
 # Changelog
 
-## Unreleased
+## 0.2.0-next.3
 
+A prerelease under npm's `next` tag. The `ai` area now needs **AbpAi.HttpApi 0.8.0** on the server: stay on next.2
+until the server moves.
+
+- Area requests stay the same across host objects: `useAreaRequest`, `useAreaEvents` and `useNames` read the host
+  through a ref, so a host built afresh on each render no longer makes every query ask again (a tab switch included).
+- `readAbpError` reads a refusal at the top level (`{ code, message, ... }`, AbpAi's 422s) with the rest as its data,
+  instead of showing the status.
 - `AppShell` on a phone: the drawer shows the place's card (name, detail, link) and the sidebar's `top` between the
   site's pages and the place's, as the sidebar does, instead of only the place's name as a heading. The drawer is
   named for screen readers (`labels.navigation`).
 - `StepUpDialog`: its explanation fits any protected action ("This action is protected…"), not only rights and secrets.
-
 - **ai on AbpAi.HttpApi 0.8.0** (its minimum now): a scope's screen reads the scope's view, so a scope's admin sees
   the models open to it and the aliases and limits from above; the quick call through an alias is the area's own
   (`TryPanel`, `POST try`), so the `ai.try` slot goes; whether the host keeps the connections comes from the server
