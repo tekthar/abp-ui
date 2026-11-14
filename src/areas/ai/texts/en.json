@@ -151,5 +151,6 @@
   "exportDownload": "Download",
   "exportDelete": "Delete",
   "exportDeleteTitle": "Delete this export?",
-  "exportDeleteHint": "Its file goes now, before its week is up."
+  "exportDeleteHint": "Its file goes now, before its week is up.",
+  "callThrough": "through {name}"
 }

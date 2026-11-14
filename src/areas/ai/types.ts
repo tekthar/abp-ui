@@ -18,6 +18,10 @@ export type AiUsageReport = Schemas['AiUsageReport'];
 export type AiUsageRow = Schemas['AiUsageRow'];
 export type AiCall = Schemas['AiCallRow'];
 export type AiExport = Schemas['AiExportInfo'];
+export type AiScopeView = Schemas['AiScopeView'];
+export type AiScopeModel = Schemas['AiScopeModel'];
+export type AiTryInput = Schemas['AiTryInput'];
+export type AiTryReply = Schemas['AiTryReply'];
 
 /** A number the API may give as a string (its decimals and 64-bit counts). */
 export const num = (value: number | string | null | undefined): number =>

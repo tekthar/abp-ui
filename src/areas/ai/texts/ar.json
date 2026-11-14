@@ -151,5 +151,6 @@
   "exportDownload": "تنزيل",
   "exportDelete": "حذف",
   "exportDeleteTitle": "أتحذف هذا التصدير؟",
-  "exportDeleteHint": "يُحذف ملفه الآن، قبل انقضاء أسبوعه."
+  "exportDeleteHint": "يُحذف ملفه الآن، قبل انقضاء أسبوعه.",
+  "callThrough": "عبر {name}"
 }

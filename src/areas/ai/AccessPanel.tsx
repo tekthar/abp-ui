@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Stack, Text } from '@chakra-ui/react';
 import { Button, CheckboxField, DataTable, FormDialog, HostSlot, InlineAlert, notify, Panel, SearchInput, StatusPill, SwitchField, useApiAction, useApiQuery, useAreaRequest, useFormatters, useHost, useNames, useOptionalHost, useSlotSaves, type HostScope } from '@abpjs/ui';
 import { LimitsEditor, saveLimits, type LimitRow } from './LimitsEditor';
@@ -49,6 +49,8 @@ export function AccessPanel({ models }: { models: AiModelRow[] }) {
     const more: AccessRow[] = unnamed.map((id) => ({ scopeId: id, name: names[id] ?? id, access: access.get(id) }));
     return [...listed, ...more];
   }, [list.data, scopes, unnamed, names]);
+  const { counts, refresh } = useLimitCounts(useMemo(() => (rows ?? []).map((r) => r.scopeId), [rows]));
+  const fmt = useFormatters();
   const needle = search.trim().toLowerCase();
   const shown = rows?.filter((p) => !needle || `${p.name} ${p.code ?? ''}`.toLowerCase().includes(needle));
 
@@ -78,20 +80,48 @@ export function AccessPanel({ models }: { models: AiModelRow[] }) {
           },
           { id: 'own', header: t('ownConnections'), cell: (p) => (p.access?.mayConnect ? t('allowed') : t('notAllowed')) },
           ...(extraCell ? [{ id: 'host', header: t('ownSkills'), cell: (p: AccessRow) => <HostSlot name="ai.access.cell" context={{ scopeId: p.scopeId }} /> }] : []),
-          { id: 'limits', header: t('tabs.limits'), numeric: true, cell: (p) => <LimitCount scopeId={p.scopeId} /> },
+          { id: 'limits', header: t('tabs.limits'), numeric: true, cell: (p) => (counts[p.scopeId] === undefined ? '' : fmt.number(counts[p.scopeId])) },
           { id: 'edit', header: <Text srOnly>{t('edit')}</Text>, align: 'end', cell: (p) => <Button size="sm" variant="ghost" onClick={() => setEditing(p)}>{t('edit')}</Button> },
         ]}
       />
-      {editing && <AccessEditor scope={editing} models={models} onClose={() => setEditing(null)} onSaved={async () => { setEditing(null); await list.reload(); }} />}
+      {editing && <AccessEditor scope={editing} models={models} onClose={() => setEditing(null)} onSaved={async () => { refresh(editing.scopeId); setEditing(null); await list.reload(); }} />}
     </Panel>
   );
 }
 
-/** How many limits a scope has. */
-function LimitCount({ scopeId }: { scopeId: string }) {
-  const fmt = useFormatters();
-  const limits = useApiQuery<AiLimit[]>('ai', `/limits${scopeQuery(scopeId)}`);
-  return <>{limits.data ? fmt.number(limits.data.length) : ''}</>;
+/**
+ * How many limits each listed scope has: asked once a scope, four at a time, however often the list draws or the host
+ * changes (and once in React's development mode too, which runs effects twice); again for a scope after its dialog saves.
+ */
+function useLimitCounts(scopeIds: readonly string[]) {
+  const request = useAreaRequest('ai');
+  const asked = useRef(new Set<string>());
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [round, setRound] = useState(0);
+  const key = scopeIds.join(',');
+  useEffect(() => {
+    const wanted = (key ? key.split(',') : []).filter((id) => !asked.current.has(id));
+    wanted.forEach((id) => asked.current.add(id));
+    // No cancelling: a count that arrives after the list moved on is still right for its scope.
+    void (async () => {
+      for (let i = 0; i < wanted.length; i += 4) {
+        const found = await Promise.all(wanted.slice(i, i + 4).map(async (id) => {
+          try {
+            return [id, (await request<AiLimit[]>(`/limits${scopeQuery(id)}`)).length] as const;
+          } catch {
+            asked.current.delete(id);
+            return null;
+          }
+        }));
+        setCounts((c) => ({ ...c, ...Object.fromEntries(found.filter((f) => f !== null)) }));
+      }
+    })();
+  }, [key, request, round]);
+  const refresh = useCallback((scopeId: string) => {
+    asked.current.delete(scopeId);
+    setRound((r) => r + 1);
+  }, []);
+  return { counts, refresh };
 }
 
 function AccessEditor({ scope, models, onClose, onSaved }: { scope: AccessRow; models: AiModelRow[]; onClose: () => void; onSaved: () => Promise<void> }) {

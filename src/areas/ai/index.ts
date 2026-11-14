@@ -9,8 +9,9 @@ export { AliasesPanel } from './AliasesPanel';
 export { ExportsPanel } from './ExportsPanel';
 export { editableLimit, LIMIT_KINDS, LIMIT_PERIODS, LimitsEditor, limitRow, saveLimits, useLimitText, type LimitRow } from './LimitsEditor';
 export { ModelsPanel } from './ModelsPanel';
-export { modelKey, modelRows, withModel, type AiModelRow } from './models';
+export { modelKey, modelRows, scopeModelRows, withModel, type AiModelRow } from './models';
 export { USAGE_BY, UsagePanel, type UsageBy } from './UsagePanel';
+export { TryPanel } from './TryPanel';
 export { useAiTexts } from './texts';
 export type {
   AiAlias,
@@ -24,7 +25,11 @@ export type {
   AiModelSettings,
   AiScopeAccess,
   AiScopeAccessInput,
+  AiScopeModel,
+  AiScopeView,
   AiSite,
+  AiTryInput,
+  AiTryReply,
   AiTypes,
   AiUsageReport,
   AiUsageRow,

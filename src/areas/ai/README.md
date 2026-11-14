@@ -1,7 +1,8 @@
 # The `ai` area: AbpAi's screens
 
 The admin screens of [AbpAi](https://github.com/tekthar/abp-ai)'s model gateway: models, aliases, what each scope may
-use, limits, usage and exports. They call **AbpAi.HttpApi 0.7.0** (or later). The types in `api.d.ts` come from that
+use, limits, usage, a quick call through an alias, and exports. They call **AbpAi.HttpApi 0.8.0** or later (the scope's
+view and the quick call are 0.8.0's; a 0.7.0 server answers them 404). The types in `api.d.ts` come from that
 version's document, `docs/openapi/abpai.json` in abp-ai, with
 `openapi-typescript docs/openapi/abpai.json --output src/areas/ai/api.d.ts`.
 
@@ -10,7 +11,8 @@ version's document, `docs/openapi/abpai.json` in abp-ai, with
 - `paths.ai`: where it serves AbpAi.HttpApi (`AiHttpOptions.RoutePrefix`), such as `/api/platform/ai` or `/api/ask/ai`.
 - `scopes`: its scopes (projects, departments). `search` fills the access list and pickers; `name` names the ids in
   usage, limits and access.
-- `names`: people's names for usage rows and calls (AbpAi 0.7.0 doesn't name people).
+- `names`: people's names for the usage rows and calls the server doesn't name (AbpAi 0.8.0 names them through the
+  host's `IAiAccounts.NamesOfAsync`).
 - `can(right, scopeId?)`: the rights below.
 - Words: any key in `texts/en.json` through `AbpHost.texts.ai`. The defaults call a scope a "project"; a host whose
   scopes are something else says so there.
@@ -35,13 +37,13 @@ They only shape what's shown; AbpAi.HttpApi's answers decide.
 |---|---|---|
 | `ai.models.edit` | `{ connectionId, modelId, scopeId, onSaved }` | each model row where the host keeps the connections: the host's own way to edit it |
 | `ai.models.actions` | `{ scopeId, onChanged }` | the models panel's actions where the host keeps the connections (its own "find models") |
-| `ai.models.can` | `{ connectionId, modelId }` | what a model can do, where the host keeps the connections and has its own record of it (a gateway that's told every model takes everything). **Temporary:** it goes once AbpAi 0.8.0 reports host-kept connections and the screens read their flags from the server |
+| `ai.models.can` | `{ connectionId, modelId }` | what a model can do, where the host keeps the connections and has its own record of it (a gateway that's told every model takes everything). **Temporary:** it goes once AbpAi reports a host's own record of what its models can do (0.8.0 doesn't yet) |
 | `ai.access.cell` | `{ scopeId }` | a column of the host's in the access list, headed by the `ownSkills` text (override it) |
 | `ai.access.editor` | `{ scopeId, register }` | more settings in a scope's access dialog: `register(save)` (`useSlotSaves`) adds a save the dialog runs after its own on Save |
-| `ai.try` | `{ scopeId, aliases }` | a quick call through an alias. **Temporary:** AbpAi.HttpApi 0.7.0 has no such route; when AbpAi has one, the area draws it and the slot goes |
 
-A scope's screen on AbpAi.HttpApi 0.7.0: a scope's admin can't read the site's connections, so the site's models it may
-use show only for someone who may (a site admin); its own connections' models show for everyone who administers it.
+A scope's screen reads the scope's view (`scopes/{id}/view`), which a scope's admin may: the models open to it from the
+site and the scopes above, the aliases and limits it gets from them, whether it may connect its own, and whether the
+host keeps the connections. Usage's latest calls name the person an agent acted for first, the agent beside them.
 
 ## Pages
 

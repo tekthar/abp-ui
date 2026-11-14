@@ -1,4 +1,4 @@
-import { num, type AiConnection, type AiConnectionInput, type AiModelSettings } from './types';
+import { num, type AiConnection, type AiConnectionInput, type AiModelSettings, type AiScopeView } from './types';
 
 /** One model of one connection, as the screens show it: its settings with AbpAi's defaults filled in. */
 export interface AiModelRow {
@@ -18,6 +18,8 @@ export interface AiModelRow {
   inputPrice: number | null;
   outputPrice: number | null;
   priceSetAt: string | null;
+  /** From a scope's view: the scope's own connection's model (true), or one the site or a scope above opens to it. */
+  own?: boolean;
 }
 
 export const modelKey = (connectionId: string, model: string | null | undefined) => `${connectionId}:${model ?? ''}`;
@@ -50,6 +52,33 @@ export function modelRows(connections: readonly AiConnection[]): AiModelRow[] {
       };
     }),
   );
+}
+
+/** The models a scope may use, as its view gives them (AbpAi.HttpApi 0.8.0): the ones opened to it, then its own. */
+export function scopeModelRows(view: AiScopeView): AiModelRow[] {
+  return view.models.map((m) => {
+    const s: AiModelSettings = m.settings ?? {};
+    const input = num(m.price?.input);
+    const output = num(m.price?.output);
+    const priced = input !== 0 || output !== 0;
+    return {
+      key: modelKey(m.connectionId, m.model),
+      connectionId: m.connectionId,
+      connection: m.connection,
+      scopeId: m.setOnScopeId ?? null,
+      modelId: m.model,
+      name: s.name || m.model,
+      enabled: s.enabled ?? true,
+      tools: s.tools ?? true,
+      images: s.images ?? false,
+      structuredOutput: s.structuredOutput ?? false,
+      contextTokens: s.contextTokens == null ? null : num(s.contextTokens),
+      inputPrice: priced ? input : null,
+      outputPrice: priced ? output : null,
+      priceSetAt: s.priceSetAt ?? null,
+      own: m.own,
+    };
+  });
 }
 
 /**

@@ -7,6 +7,13 @@
   named for screen readers (`labels.navigation`).
 - `StepUpDialog`: its explanation fits any protected action ("This action is protected…"), not only rights and secrets.
 
+- **ai on AbpAi.HttpApi 0.8.0** (its minimum now): a scope's screen reads the scope's view, so a scope's admin sees
+  the models open to it and the aliases and limits from above; the quick call through an alias is the area's own
+  (`TryPanel`, `POST try`), so the `ai.try` slot goes; whether the host keeps the connections comes from the server
+  (`connectionsKeptByHost`), the host's right only for a server that doesn't say; usage names people as the server
+  does, and a call an agent made for someone shows that person first, the agent beside them; the Projects tab asks each
+  scope's limits once.
+
 ## 0.2.0-next.2
 
 A prerelease under npm's `next` tag.

@@ -30,10 +30,15 @@ export function UsagePanel({ scopeId, by: byOptions }: { scopeId?: string; by: U
   const usage = usePostQuery<AiUsageReport>('/usage', { from, to, scopeId: scopeId ?? null, groupBy: USAGE_BY[by] });
   const recent = usePostQuery<AiCall[]>('/usage/recent', { from, to, scopeId: scopeId ?? null, count: 50 });
   const rows = usage.data?.rows;
+  // The server names people (AbpAi 0.8.0); the host names only the ones it didn't.
   const people = useNames('people', useMemo(() => [
     ...(by === 'account' ? (rows ?? []).filter((r) => !r.title && r.key).map((r) => r.key) : []),
-    ...(recent.data ?? []).flatMap((c) => (c.accountId ? [c.accountId] : [])),
+    ...(recent.data ?? []).flatMap((c) => [
+      ...(c.accountId && !c.accountName ? [c.accountId] : []),
+      ...(c.onBehalfOf && !c.onBehalfOfName ? [c.onBehalfOf] : []),
+    ]),
   ], [by, rows, recent.data]));
+  const nameOf = (id: string | null | undefined, name: string | null | undefined) => name || (id ? people[id] : undefined) || id || EMPTY_VALUE;
   const scopes = useNames('scopes', useMemo(() => (by === 'project' ? (rows ?? []).filter((r) => !r.title && r.key).map((r) => r.key) : []), [by, rows]));
   const months = [0, 1, 2, 3, 4, 5].map((m) => ({ value: String(m), label: fmt.dateTime(monthRange(m).from, { year: 'numeric', month: 'long', timeZone: 'UTC' }) }));
   const total = (rows ?? []).reduce((sum, r) => sum + num(r.cost), 0);
@@ -82,9 +87,11 @@ export function UsagePanel({ scopeId, by: byOptions }: { scopeId?: string; by: U
             {
               id: 'who',
               header: t('who'),
+              // An agent's call is the person's it acted for, the agent beside it.
               cell: (u) => (
                 <Stack gap="0">
-                  <Text>{(u.accountId && people[u.accountId]) || u.accountId || EMPTY_VALUE}</Text>
+                  <Text>{u.onBehalfOf ? nameOf(u.onBehalfOf, u.onBehalfOfName) : nameOf(u.accountId, u.accountName)}</Text>
+                  {u.onBehalfOf && <Text textStyle="caption" color="fg.muted">{t('callThrough', { name: nameOf(u.accountId, u.accountName) })}</Text>}
                   {u.scope && <Text textStyle="caption" color="fg.muted" dir="ltr">{u.scope}</Text>}
                 </Stack>
               ),

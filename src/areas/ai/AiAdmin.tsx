@@ -1,30 +1,30 @@
 import { useMemo } from 'react';
 import { Stack, Tabs } from '@chakra-ui/react';
-import { HostSlot, InlineAlert, notify, Panel, useApiAction, useApiQuery, useAreaRequest, useCan, useOptionalHost } from '@abpjs/ui';
+import { InlineAlert, notify, Panel, useApiAction, useApiQuery, useAreaRequest, useCan } from '@abpjs/ui';
 import { AccessPanel } from './AccessPanel';
 import { AliasesPanel } from './AliasesPanel';
 import { ExportsPanel } from './ExportsPanel';
 import { LimitsEditor, saveLimits, type LimitRow } from './LimitsEditor';
 import { ModelsPanel } from './ModelsPanel';
 import { modelRows } from './models';
+import { TryPanel } from './TryPanel';
 import { useAiTexts } from './texts';
 import type { AiAlias, AiConnection, AiLimit, AiSite } from './types';
 import { UsagePanel } from './UsagePanel';
 
 /**
- * Whether the host keeps the connections itself (AbpAi's `IAiConnectionSource`), so the screens don't change them:
- * the site's own word when the server gives it, else the host's `ai.connections.edit` right (AbpAi.HttpApi 0.7.0
- * doesn't say).
+ * Whether the host keeps the connections itself (AbpAi's `IAiConnectionSource`), so the screens don't change them: the
+ * server's word (`connectionsKeptByHost`, AbpAi.HttpApi 0.8.0, on the site's settings or a scope's view).
  */
-export function useHostKeepsConnections(site: AiSite | undefined, scopeId?: string): boolean {
+export function useHostKeepsConnections(told: boolean | null | undefined, scopeId?: string): boolean {
   const can = useCan();
-  const told = (site as (AiSite & { connectionsKeptByHost?: boolean }) | undefined)?.connectionsKeptByHost;
+  // A server that doesn't say (before 0.8.0): the host's right instead. Goes at @abpjs/ui 0.2.0.
   return told ?? !can('ai.connections.edit', scopeId);
 }
 
 /**
  * The site's AI in tabs: the models each connection offers, the site's aliases, what each scope may use and its
- * limits, the site's limits, the usage ledger, a quick call to try an alias (the host's `ai.try`), and exports of calls.
+ * limits, the site's limits, the usage ledger, a quick call to try an alias, and exports of calls.
  */
 export function AiAdmin() {
   const t = useAiTexts();
@@ -34,8 +34,7 @@ export function AiAdmin() {
   const aliases = useApiQuery<AiAlias[]>('ai', '/aliases');
   const limits = useApiQuery<AiLimit[]>('ai', '/limits');
   const saving = useApiAction();
-  const hostKeeps = useHostKeepsConnections(site.data);
-  const tryHere = Boolean(useOptionalHost()?.slots?.['ai.try']);
+  const hostKeeps = useHostKeepsConnections(site.data?.connectionsKeptByHost);
   const models = useMemo(() => modelRows(connections.data ?? []), [connections.data]);
 
   async function saveSiteLimits(rows: LimitRow[]) {
@@ -53,7 +52,7 @@ export function AiAdmin() {
         <Tabs.Trigger value="access">{t('tabs.access')}</Tabs.Trigger>
         <Tabs.Trigger value="limits">{t('tabs.limits')}</Tabs.Trigger>
         <Tabs.Trigger value="usage">{t('tabs.usage')}</Tabs.Trigger>
-        {tryHere && <Tabs.Trigger value="try">{t('tabs.try')}</Tabs.Trigger>}
+        <Tabs.Trigger value="try">{t('tabs.try')}</Tabs.Trigger>
         <Tabs.Trigger value="exports">{t('tabs.exports')}</Tabs.Trigger>
       </Tabs.List>
       <Tabs.Content value="models">
@@ -78,11 +77,9 @@ export function AiAdmin() {
       <Tabs.Content value="usage">
         <UsagePanel by={['project', 'model', 'purpose', 'account']} />
       </Tabs.Content>
-      {tryHere && (
-        <Tabs.Content value="try">
-          <HostSlot name="ai.try" context={{ scopeId: undefined, aliases: (aliases.data ?? []).map((a) => a.name) }} />
-        </Tabs.Content>
-      )}
+      <Tabs.Content value="try">
+        <TryPanel aliases={(aliases.data ?? []).map((a) => a.name)} />
+      </Tabs.Content>
       <Tabs.Content value="exports">
         <ExportsPanel />
       </Tabs.Content>

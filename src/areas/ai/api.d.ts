@@ -724,6 +724,99 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai/scopes/{scopeId}/view": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    scopeId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["AiScopeView"];
+                        "application/json": components["schemas"]["AiScopeView"];
+                        "text/json": components["schemas"]["AiScopeView"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/try": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AiTryInput"];
+                    "text/json": components["schemas"]["AiTryInput"];
+                    "application/*+json": components["schemas"]["AiTryInput"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["AiTryReply"];
+                        "application/json": components["schemas"]["AiTryReply"];
+                        "text/json": components["schemas"]["AiTryReply"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["AiRefusalAnswer"];
+                        "application/json": components["schemas"]["AiRefusalAnswer"];
+                        "text/json": components["schemas"]["AiRefusalAnswer"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ai/resolve/{alias}": {
         parameters: {
             query?: never;
@@ -1158,6 +1251,8 @@ export interface components {
             cost: number | string;
             /** Format: int32 */
             durationMs: null | number | string;
+            accountName?: null | string;
+            onBehalfOfName?: null | string;
         };
         AiConnectionInfo: {
             /** Format: uuid */
@@ -1298,6 +1393,23 @@ export interface components {
             groupId?: null | string;
             measure?: string;
         };
+        AiLimitRef: {
+            /** Format: uuid */
+            limitId: string;
+            kind: string;
+            /** Format: uuid */
+            scopeId: null | string;
+            /** Format: uuid */
+            accountId: null | string;
+            period: string;
+            /** Format: double */
+            amount: number | string;
+            /** Format: double */
+            spent: number | string;
+            /** Format: date-time */
+            freesAt: string;
+            measure?: string;
+        };
         AiModelRef: {
             /** Format: uuid */
             connectionId: string;
@@ -1339,6 +1451,11 @@ export interface components {
             count: number | string;
             states?: null | string[];
         };
+        AiRefusalAnswer: {
+            code: string;
+            message: string;
+            limit?: null | components["schemas"]["AiLimitRef"];
+        };
         AiScopeAccessInfo: {
             /** Format: uuid */
             scopeId: string;
@@ -1353,6 +1470,26 @@ export interface components {
             siteModels: null | components["schemas"]["AiModelRef"][];
             mayConnect: boolean;
         };
+        AiScopeModel: {
+            /** Format: uuid */
+            connectionId: string;
+            connection: string;
+            /** Format: uuid */
+            setOnScopeId: null | string;
+            model: string;
+            settings: components["schemas"]["AiModelSettings"];
+            price: components["schemas"]["AiPrice"];
+            own: boolean;
+        };
+        AiScopeView: {
+            /** Format: uuid */
+            scopeId: string;
+            models: components["schemas"]["AiScopeModel"][];
+            aliasesFromAbove: components["schemas"]["AiAliasInfo"][];
+            limitsFromAbove: components["schemas"]["AiLimitInfo"][];
+            mayConnect: boolean;
+            connectionsKeptByHost: boolean;
+        };
         AiSiteSettings: {
             scopesMayConnect: boolean;
             keepPrompts: boolean;
@@ -1361,6 +1498,32 @@ export interface components {
             scopeDataClasses: string[];
             dataClasses: string[];
             scopeAccess?: null | string;
+            connectionsKeptByHost?: boolean;
+        };
+        AiTryInput: {
+            alias: string;
+            prompt: string;
+            /** Format: uuid */
+            scopeId?: null | string;
+            dataClass?: null | string;
+        };
+        AiTryReply: {
+            text: string;
+            model: string;
+            connection: string;
+            usage: components["schemas"]["AiUsage"];
+        };
+        AiUsage: {
+            /** Format: int32 */
+            inputTokens: number | string;
+            /** Format: int32 */
+            outputTokens: number | string;
+            /** Format: double */
+            cost: number | string;
+            /** Format: int32 */
+            cacheWriteTokens?: number | string;
+            /** Format: int32 */
+            cacheReadTokens?: number | string;
         };
         AiUsageQuery: {
             /** Format: date-time */
