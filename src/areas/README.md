@@ -20,7 +20,12 @@ Each folder here is one server package's screens: `ai` (AbpAi.HttpApi), `guard` 
 - **Scopes and people:** a screen about one scope takes its `scopeId`; pickers use `AbpHost.scopes`; names a row lacks
   come from `useNames`.
 - **What stays the host's:** a named place, `<HostSlot name="<area>.<page>.<place>" context={...} />`, listed in the
-  README with its context.
+  README with its context. Inside a dialog, a slot joins the dialog's one Save through `useSlotSaves()`:
+  pass its `register` in the slot's context, save the area's own part, then `await run()`. A host's capability the
+  server reports (AbpAi 0.8.0's host-kept connections) is read from the server; a right stands in only for servers that
+  don't report it yet.
+- **Scopes in lists:** `scopes.search('')` gives every scope the host will list (it may cap them); scopes the server
+  knows that the host didn't list are named through `scopes.name` and shown too.
 - **Pages:** exported as `SettingsPage` entries (section, weight, `visible`, `component`), default titles specific
   ("AI models"), so a host files them under its own sections.
 - **Tests and checks:** every `data-testid` a host's checks select on is kept.

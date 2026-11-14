@@ -128,6 +128,7 @@ export {
   type HostLanguage,
   type HostScope,
 } from './host/HostContext';
+export { useSlotSaves, type RegisterSlotSave, type SlotSave } from './host/slot-saves';
 export { formatMessage } from './texts/format';
 export { createAreaTexts, type AreaTexts } from './texts/area';
 export { FormDialog, type FormDialogProps } from './components/FormDialog';
