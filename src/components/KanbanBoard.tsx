@@ -713,18 +713,16 @@ function FoldButton({ folded, label, onClick }: { folded: boolean; label: string
 /** Which columns are folded: kept in this browser under the board's key (when it has one), else for the page's life. */
 function useFolded(key: string | undefined): [ReadonlySet<string>, (column: string) => void] {
   const storage = key ? `board.folded.${key}` : null;
-  // Saved under the old name before ADR 0109; read once so nobody's folds are lost.
-  const before = key ? `toda.board.folded.${key}` : null;
   const [folded, setFolded] = useState<ReadonlySet<string>>(() => new Set());
   useEffect(() => {
     if (!storage) return;
     try {
-      const saved = JSON.parse(window.localStorage.getItem(storage) ?? (before ? window.localStorage.getItem(before) : null) ?? '[]');
+      const saved = JSON.parse(window.localStorage.getItem(storage) ?? '[]');
       if (Array.isArray(saved)) setFolded(new Set(saved.map(String)));
     } catch {
       // Storage off or unreadable: nothing folded.
     }
-  }, [storage, before]);
+  }, [storage]);
   const fold = (column: string) =>
     setFolded((current) => {
       const next = new Set(current);

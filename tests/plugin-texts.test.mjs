@@ -28,9 +28,9 @@ test('the site wins, then the language, then English, then the key', () => {
 
 test("{product} is the product's name in any file, unless the plugin gives a product of its own", () => {
   const bundles = bundlesFor({ en: { intro: 'Bring a project into {product}.', item: '{product} × {count}' } }, 'en');
-  assert.equal(translate(undefined, bundles, 'intro', withProductValue('Toda')), 'Bring a project into Toda.', 'a shipped text');
+  assert.equal(translate(undefined, bundles, 'intro', withProductValue('Acme')), 'Bring a project into Acme.', 'a shipped text');
   assert.equal(translate({ intro: 'Into {product}, now.' }, bundles, 'intro', withProductValue('أكمي')), 'Into أكمي, now.', "the site's text");
-  assert.equal(translate(undefined, bundles, 'item', withProductValue('Toda', { product: 'Widget', count: 2 })), 'Widget × 2', "the plugin's value wins");
-  // Neutral since ADR 0109: a host names its product (Toda's layer passes Toda).
+  assert.equal(translate(undefined, bundles, 'item', withProductValue('Acme', { product: 'Widget', count: 2 })), 'Widget × 2', "the plugin's value wins");
+  // Neutral since ADR 0109: a host names its product (Acme's layer passes Acme).
   assert.equal(DEFAULT_PRODUCT_NAME, 'the app');
 });

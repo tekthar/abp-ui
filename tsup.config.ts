@@ -17,8 +17,6 @@ export default defineConfig({
   splitting: false,
   // Charts, drag and drop and Motion stay external too: the host bundles them once, and pages that don't use them don't load them.
   external: ['react', 'react-dom', 'react/jsx-runtime', '@chakra-ui/react', '@emotion/react', 'next-themes', 'lucide-react', '@chakra-ui/charts', 'recharts', /^@dnd-kit\//, /^motion(\/|$)/],
-  // The colour scales (@todahq/tokens) are inlined: the shell and plugins keep one self-contained @todahq/ui.
-  noExternal: ['@todahq/tokens'],
   banner: { js: '"use client";' },
   define: { __ABP_UI_VERSION__: JSON.stringify(version) },
 });

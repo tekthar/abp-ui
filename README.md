@@ -1,41 +1,61 @@
-# @todahq/ui
+# @abpjs/ui
 
-The Toda design system ([ADR 0006](../../docs/adr/0006-design-system-chakra.md)): Chakra UI v3 tokens, recipes and components. The shell and every plugin use it, and the living reference is the shell's `/design` page.
+The design system for ABP applications on **Chakra UI v3 and React 19**: tokens, recipes, an app shell, tables and
+lists with filters and grouping, boards, timelines, calendars, forms, pickers, motion that respects reduced motion,
+skeletons, a command search, and a settings frame that packages and plugins add pages to. Right-to-left languages work
+throughout.
 
-## Build and consumption
+It is not `@abpjs/components` or `@abpjs/theme-shared`, which are ABP's own module components on React 18.
 
-- **Built with tsup** into one ESM file plus type declarations (`dist/index.js`, `dist/index.d.ts`). The bundle starts with `"use client"`, so Next.js server components can render `TodaProvider`.
-- **External dependencies.** React, Chakra, emotion, next-themes and lucide-react stay external. Chakra, emotion, React and next-themes are peer dependencies, so the host's single copy is used.
-- **Why it is built, not consumed as TypeScript source.** Next 16 (Turbopack) and the Vite Module Federation remotes then resolve the same plain ESM file. Type checking in a plugin doesn't compile the package with the plugin's `tsconfig`. Next needs no `transpilePackages`.
-- **In the workspace.** `pnpm -r build` builds it first, because `web` and the plugin depend on `@todahq/ui: workspace:*`. While developing, `pnpm dev` at the root runs `tsup --watch` beside `next dev`.
-- **In plugins.** A plugin lists `@todahq/ui`, `@chakra-ui/react` and `@emotion/react` as dev dependencies, for types only, and declares them in `vite.config.ts` as shared with `import: false`. At runtime it receives the shell's instances. See `plugins/Toda.Guard.Ldap/web/vite.config.ts` and `web/lib/federation.ts`.
+It names no product. The host gives its CSS variable prefix, its colours and its words.
 
-## Using it
+## Install
 
-```tsx
-// host (the shell)
-<html lang={locale} dir={dir} suppressHydrationWarning>
-  <TodaProvider locale={locale} labels={translatedLabels} linkComponent={NextLink}>…</TodaProvider>
+```bash
+npm install @abpjs/ui @chakra-ui/react @emotion/react next-themes react react-dom
 ```
 
-The host also loads the fonts and sets `--toda-font-sans`, `--toda-font-arabic` and `--toda-font-mono` (the shell uses `next/font/google` with IBM Plex Sans, IBM Plex Sans Arabic and IBM Plex Mono).
+Peers: React 19, Chakra UI 3.38 or later (3.x), emotion 11, next-themes.
 
-Plugins import components directly: `import { Panel, StatusPill, DataTable, useTodaLocale } from '@todahq/ui'`. They never render `TodaProvider`.
+## Use
 
-## Rules
+```tsx
+import { AbpProvider, createAbpSystem } from '@abpjs/ui';
 
-- Style with semantic tokens only: `bg.panel`, `fg.muted`, `border`, the `accent`/`success`/`warning`/`danger`/`info` palettes, and `statusCategory.*`. Use text styles (`heading.page`, `body`, `label`, `caption`, `key`, `code`) and spacing steps or names (`section`, `panel`, `field`, `stack`, `page.x`). Never raw colours or pixel sizes.
-- Variants belong in recipes, not in new components.
-- Use logical properties only (`ps`/`pe`, `ms`/`me`, `insetStart`, `borderInlineStartWidth`). Wrap icons that point in reading direction in `DirectionalIcon`.
-- No app code: no i18n library, router, auth or fetching. Strings come through `labels` and links through `linkComponent`.
+// Your prefix (the CSS variables are --acme-colors-bg and so on) and your colours; the package's own when left out.
+const system = createAbpSystem({ prefix: 'acme', brand: acmeBrand });
 
-## Contents
+export function Providers({ children, locale }: { children: React.ReactNode; locale: string }) {
+  return (
+    <AbpProvider system={system} locale={locale} productName="Acme" labels={translatedLabels}>
+      {children}
+    </AbpProvider>
+  );
+}
+```
 
-- `system`, `todaConfig`, `scales`
-- `TodaProvider`, `useTodaLocale`, `useTodaLabels`, `useColorMode`, `ColorModeToggle`, `AppLink`, `useFormatters`, `formatDateTime`, `formatNumber`
-- `AppShell` (ADR 0058: the site's pages in the top bar, a place's own menu in the sidebar, a drawer on small screens), `PageHeader`, `Breadcrumbs`, `Panel`, `PropertyList`
-- `Button`, `IconButton`, `Field`/`FormField`, `SelectField`, `CheckboxField`, `SwitchField`
-- `StatusPill` (status tones and status categories), `RecordKey`, `PathChips`
-- `DataTable`: typed columns, sortable headers with `aria-sort`, sticky header, loading, empty and error states, sub-rows, and `sortMode="manual"` for server-side sorting (the M2 QueryableList builds on it)
-- `InlineAlert`, `EmptyState`, `LoadingState`, `ConfirmDialog`/`useConfirm`, `toaster`/`notify`/`Toaster`, `Tooltip`, `DirectionalIcon`
-- Motion (ADR 0058, on Motion; never import it directly): `FadeIn`, `Reveal`/`RevealItem`, `Presence`, `PresenceList`/`PresenceItem`, `SlideList`/`SlideItem`, `Collapse`, `Swap`, `Counter`, `Indicator`, `Pressable`, `useCelebrate`. The person's motion setting (`useMotionSetting`) and their system's are respected for you; layout motion is a small FLIP helper on Web Animations, not Motion's; `RecordKey`'s `glide` moves a list's key into the record's page (the browser's view transitions); the design page's Motion tab shows each
+- **Words:** every component takes its words as props or from the provider's `labels`; the package has no
+  translations of its own and no i18n library.
+- **Brand:** six scales (`neutral`, `accent`, `green`, `amber`, `red`, `blue`), light to dark; components only use the
+  semantic tokens (`bg`, `fg`, `border`, `accent`...), which pick steps per colour mode.
+- **Fonts:** the host loads them and sets `--{prefix}-font-sans`, `--{prefix}-font-arabic` and `--{prefix}-font-mono`.
+- **Settings:** `settingsArea(sections, pages)` orders an area's sections and pages by weight, then title, and leaves
+  out pages the person can't see; `SettingsLayout` draws the area; `findSettingsPage` serves a catch-all route.
+- **Rules without React:** `@abpjs/ui/rules` has the query conditions, grouping, the breadcrumb fold and the settings
+  order, for code that can't load Chakra.
+
+## Develop
+
+```bash
+npm ci
+npm run typecheck
+npm test
+npm run build
+npm run check:names
+```
+
+Releases: a `v<version>` tag publishes to npm from CI. See [CHANGELOG.md](CHANGELOG.md).
+
+## Licence
+
+Apache-2.0. See [LICENSE](LICENSE).
