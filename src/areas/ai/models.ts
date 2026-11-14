@@ -14,7 +14,7 @@ export interface AiModelRow {
   images: boolean;
   structuredOutput: boolean;
   contextTokens: number | null;
-  /** Per million tokens; null when neither the model nor its connection has a price. */
+  /** Per million tokens; null when the model costs nothing in and nothing out. */
   inputPrice: number | null;
   outputPrice: number | null;
   priceSetAt: string | null;
@@ -30,7 +30,8 @@ export function modelRows(connections: readonly AiConnection[]): AiModelRow[] {
       const price = c.modelPrices?.[model];
       const input = price ? num(price.input) : num(c.inputPrice);
       const output = price ? num(price.output) : num(c.outputPrice);
-      const priced = price != null || input !== 0 || output !== 0;
+      // Nothing in and nothing out is no price: its calls count as free either way.
+      const priced = input !== 0 || output !== 0;
       return {
         key: modelKey(c.id, model),
         connectionId: c.id,

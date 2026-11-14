@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { HStack, Input, Stack, Text } from '@chakra-ui/react';
-import { Button, CheckboxField, DataTable, Field, FormDialog, HostSlot, notify, Panel, SelectField, StatusPill, SwitchField, errorText, useApiAction, useAreaRequest, useFormatters } from '@abpjs/ui';
+import { Button, CheckboxField, DataTable, Field, FormDialog, HostSlot, notify, Panel, SelectField, StatusPill, SwitchField, errorText, useApiAction, useAreaRequest, useFormatters, useOptionalHost } from '@abpjs/ui';
 import { modelRows, withModel, type AiModelRow } from './models';
 import { useAiTexts } from './texts';
 import type { AiConnection } from './types';
@@ -8,7 +8,8 @@ import type { AiConnection } from './types';
 /**
  * Models: each connection's, found by asking it, off until enabled, with what they can do and their prices per million
  * tokens. Where the host keeps the connections itself (`hostKeeps`), the screen doesn't change them: each row shows the
- * host's `ai.models.edit` and the panel its `ai.models.actions`.
+ * host's `ai.models.edit` and the panel its `ai.models.actions`; and what each model can do is the host's to say when
+ * it fills `ai.models.can` (its own record of it, where the gateway is told every model takes everything).
  */
 export function ModelsPanel({ scopeId, connections, rows, loading, hostKeeps, onChanged, title, description }: {
   scopeId?: string;
@@ -32,6 +33,7 @@ export function ModelsPanel({ scopeId, connections, rows, loading, hostKeeps, on
   const shown = rows ?? (connections ? modelRows(connections) : undefined);
   const source = list.find((c) => c.id === picked) ?? list[0];
   const own = (m: AiModelRow) => list.some((c) => c.id === m.connectionId);
+  const hostSaysCan = hostKeeps && Boolean(useOptionalHost()?.slots?.['ai.models.can']);
 
   async function discover(c: AiConnection) {
     setFinding(c.id);
@@ -82,7 +84,7 @@ export function ModelsPanel({ scopeId, connections, rows, loading, hostKeeps, on
           {
             id: 'can',
             header: t('can'),
-            cell: (m) => (
+            cell: (m) => hostSaysCan ? <HostSlot name="ai.models.can" context={{ connectionId: m.connectionId, modelId: m.modelId }} /> : (
               <HStack gap="1" flexWrap="wrap">
                 {m.tools && <StatusPill tone="neutral" dot={false}>{t('tools')}</StatusPill>}
                 {m.images && <StatusPill tone="neutral" dot={false}>{t('images')}</StatusPill>}
