@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased (0.2.0)
+## 0.2.0-next.1
+
+A prerelease under npm's `next` tag: the foundation and the first area, `ai`. More areas (`guard`, `agent`) follow in
+later prereleases before 0.2.0.
 
 The foundation for the screens (ADR 0109's amendment in the application it came from): areas under `src/areas`, each
 its own entry, moving to its own package later by import path alone.
