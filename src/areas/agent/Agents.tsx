@@ -47,7 +47,7 @@ export function AgentsTable({ rows, loading, onOpen, selected, extra = [] }: {
             </HStack>
           ),
         },
-        { id: 'where', header: t('where'), cell: (a) => (a.scopeKey ? <Text dir="ltr">{a.scopeKey}</Text> : t('site')) },
+        { id: 'where', header: t('where'), cell: (a) => (a.scopeKey ? <Text as="span" dir="ltr">{a.scopeKey}</Text> : t('site')) },
         { id: 'responsible', header: t('responsible'), cell: (a) => a.responsible?.displayName ?? '' },
         { id: 'state', header: t('state'), cell: (a) => <AgentState agent={a} /> },
         ...extra,
@@ -119,10 +119,10 @@ export function AgentForm({ agent, scope, roles, onSaved }: {
         )}
         <HStack gap="3" align="start" wrap="wrap">
           <Field label={t('name')} flex="1">
-            <NamesField label={t('name')} value={form.names} placeholder={form.key} onChange={(names) => setForm({ ...form, names })} />
+            <NamesField label={t('name')} value={form.names} placeholder={form.key} fallback={form.key} kind="name" onChange={(names) => setForm({ ...form, names })} />
           </Field>
           <Field label={t('whatItDoes')} flex="1">
-            <NamesField label={t('whatItDoes')} value={form.titles} placeholder={t('whatItDoesPlaceholder')} onChange={(titles) => setForm({ ...form, titles })} />
+            <NamesField label={t('whatItDoes')} value={form.titles} placeholder={t('whatItDoesPlaceholder')} kind="title" onChange={(titles) => setForm({ ...form, titles })} />
           </Field>
         </HStack>
         <Field label={t('instructions')} helperText={t('instructionsHint')}>

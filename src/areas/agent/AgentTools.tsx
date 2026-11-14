@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { Stack, Text } from '@chakra-ui/react';
 import { Button, DataTable, HostSlot, InlineAlert, notify, SelectField, StatusPill, useApiAction, useApiQuery, useAreaRequest } from '@abpjs/ui';
+import { useToolGroupOf } from './links';
 import { useAgentTexts } from './texts';
 import type { AgentInfo, AgentTool } from './types';
 
 /** The sandbox's tools (AbpSandbox), by their names: offered while a sandbox is available. */
 const isSandbox = (x: AgentTool) => x.name.startsWith('sandbox_');
 
-/** The settings a tool may have, and what leaving it as it is means. */
+/** The settings a tool may have, and what leaving it as it is means. An opt-in tool that only reads is simply on or off. */
 function optionsOf(x: AgentTool, t: (key: string) => string): { value: string; label: string }[] {
   if (x.alwaysAsks) return [{ value: '', label: t(x.optIn ? 'tools.defaultOff' : 'tools.defaultAsks') }, { value: 'ask', label: t('tools.askEveryTime') }, ...(x.optIn ? [] : [{ value: 'off', label: t('tools.off') }])];
+  if (x.optIn && x.readsOnly) return [{ value: '', label: t('tools.defaultOff') }, { value: 'run', label: t('tools.on') }];
   if (x.optIn) return [{ value: '', label: t('tools.defaultOff') }, { value: 'run', label: t('tools.run') }, { value: 'ask', label: t('tools.ask') }];
   return [
     { value: '', label: t(x.readsOnly ? 'tools.defaultReads' : 'tools.defaultAsks') },
@@ -38,11 +40,21 @@ export function AgentToolsPanel({ agent, onSaved, version = 0 }: {
   const action = useApiAction();
   const [settings, setSettings] = useState<Record<string, string>>(agent.tools ?? {});
   const changed = JSON.stringify(settings) !== JSON.stringify(agent.tools ?? {});
+  const groupOf = useToolGroupOf();
   const rows = tools.data ?? [];
+  // The host's own groups (its skills, an outside server's tools), in the order their first tools come.
+  const hostGroups = new Map<string, { id: string; title: string; rows: AgentTool[] }>();
+  const own: AgentTool[] = [];
+  for (const x of rows) {
+    const g = groupOf?.(x);
+    if (!g) own.push(x);
+    else (hostGroups.get(g.id) ?? hostGroups.set(g.id, { ...g, rows: [] }).get(g.id)!).rows.push(x);
+  }
   const groups: { id: string; title: string; rows: AgentTool[] }[] = [
-    { id: 'host', title: t('tools.groups.host'), rows: rows.filter((x) => !x.fromPlugin && !isSandbox(x)) },
-    { id: 'plugins', title: t('tools.groups.plugins'), rows: rows.filter((x) => x.fromPlugin && !isSandbox(x)) },
-    { id: 'sandbox', title: t('tools.groups.sandbox'), rows: rows.filter(isSandbox) },
+    { id: 'host', title: t('tools.groups.host'), rows: own.filter((x) => !x.fromPlugin && !isSandbox(x)) },
+    { id: 'plugins', title: t('tools.groups.plugins'), rows: own.filter((x) => x.fromPlugin && !isSandbox(x)) },
+    ...[...hostGroups.values()],
+    { id: 'sandbox', title: t('tools.groups.sandbox'), rows: own.filter(isSandbox) },
   ].filter((g) => g.rows.length > 0 || (g.id === 'host' && tools.loading));
 
   async function save() {
@@ -93,7 +105,7 @@ export function AgentToolsPanel({ agent, onSaved, version = 0 }: {
           />
         </Stack>
       ))}
-      <HostSlot name="agent.tools.extra" context={{ agent, settings, set }} />
+      <HostSlot name="agent.tools.extra" context={{ agent, settings, set, listed: rows.map((x) => x.name), loading: tools.loading }} />
       <InlineAlert tone="danger">{action.error ?? tools.error}</InlineAlert>
       <Button variant="primary" alignSelf="flex-start" onClick={() => void save()} loading={action.busy} disabled={!changed}>{t('tools.save')}</Button>
     </Stack>

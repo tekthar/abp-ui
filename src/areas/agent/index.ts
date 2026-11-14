@@ -14,7 +14,7 @@ export { AgentPermissionsPanel } from './AgentPermissions';
 export { AgentQuestionCard, AgentText, ItemAgentRuns } from './AgentRuns';
 export { AgentChatButton, AgentChatPanel, AgentChatProvider, AskAgentButton, useAgentChat, type AgentChatOpen } from './AgentChat';
 export { AgentBadge, AgentQuestionsPanel, AgentSelect } from './AgentPickers';
-export { ItemHrefProvider, ItemLink, type ItemHref } from './links';
+export { ItemHrefProvider, ItemLink, ToolGroupsProvider, type ItemHref, type ToolGroupOf } from './links';
 export { filledIn, NamesField, useNameOf, type Names } from './names';
 export { useAgentTexts } from './texts';
 export type {

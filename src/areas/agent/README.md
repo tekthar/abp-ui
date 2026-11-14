@@ -14,6 +14,8 @@ The types in `api.d.ts` come from that version's document, `docs/openapi/abpagen
   every two seconds while a run goes.
 - `scopes.name`: its scopes' names (projects, departments), for the chat's places; their keys show otherwise.
 - `languages`: the site's languages, for an agent's names by language.
+- Its own groups of tools, when it has some (its skills, an outside server's tools): `ToolGroupsProvider` with a
+  function from a tool to its group's id and heading, around the screens. They follow the host's and plugins' tools.
 - Where items open: `itemHref(kind, key)` on `AgentsAdmin`, `ScopeAgentsScreen`, `AgentQuestionsPanel` and
   `AgentChatPanel` (or `ItemHrefProvider` around them). Items show as their keys without it.
 - Words: any key in `texts/en.json` through `AbpHost.texts.agent`. The defaults call a scope a "project" and an item a
@@ -39,8 +41,9 @@ and the rights on items).
 | `agent.run.actions` | `{ run, onChanged }` | a run's actions after it ended, on an item's runs and in a chat after a run that changed something: "Undo this run", where the host keeps what a run changed |
 | `agent.picture` | `{ agent, onSaved }` | the agent's picture, which is its account's |
 | `agent.connections` | `{ agent, onChanged }` | the outside servers the agent may use; `onChanged` makes its tools ask again |
-| `agent.tools.extra` | `{ agent, settings, set }` | more groups of tools on the agent's tools tab (the host's skills, its outside servers' tools), with the same settings: `set(name, value)` changes one, saved with the tab |
+| `agent.tools.extra` | `{ agent, settings, set, listed, loading }` | more tools on the agent's tools tab that the API doesn't list (`listed` is what it did), with the same settings: `set(name, value)` changes one, saved with the tab |
 | `agent.limits.extra` | `{ agent, register }` | the agent's AI cost limits (a gateway's), on its limits tab: `register(save)` (`useSlotSaves`) joins the tab's Save |
+| `agent.names` | `{ label, value, onChange, placeholder, fallback, kind }` | the host's own field for names by language (an agent's name, or what it does: `kind` `title`), in place of the area's |
 | `agent.switch.extra` | `{ settings, register }` | more on the site's switch (a cost limit agents need first, a sandbox's state): `register(save)` runs before agents go on |
 
 ## Pages and screens

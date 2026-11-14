@@ -94,7 +94,7 @@ export function ScopeAgentsScreen({ scope, roles, header, itemHref, subtitle }: 
             <AgentForm scope={scope} roles={roles} onSaved={saved} />
           </Panel>
         )}
-        {selected && <AgentEditor key={selected.id} agent={selected} onSaved={saved} permissions={selected.scopeKey != null} />}
+        {selected && <AgentEditor key={selected.id} agent={selected} onSaved={saved} permissions={selected.scopeKey != null} variant="scope" />}
       </Stack>
     </ItemHrefProvider>
   );

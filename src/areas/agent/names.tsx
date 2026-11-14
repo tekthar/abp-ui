@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { HStack, Input, Stack, Text } from '@chakra-ui/react';
-import { Button, useAbpLocale, useHostLanguages } from '@abpjs/ui';
+import { Button, HostSlot, useAbpLocale, useHostLanguages, useOptionalHost } from '@abpjs/ui';
 import { useAgentTexts } from './texts';
 
 /** Names by language, as an agent's are kept: `{ en: 'Triage', ar: 'الفرز' }`. */
@@ -30,14 +30,24 @@ export const filledIn = (names: Names): Names =>
 
 /**
  * A name in every language the site offers: the reader's inline, the others behind "Other languages". A host that
- * names no languages gets one field, in the reader's.
+ * names no languages gets one field, in the reader's. A host with its own field for names by language puts it in the
+ * slot `agent.names` (`{ label, value, onChange, placeholder, fallback, kind }`).
  */
-export function NamesField({ value, onChange, label, placeholder }: {
+export function NamesField(props: {
   value: Names;
   onChange: (value: Names) => void;
   label: string;
   placeholder?: string;
+  /** What shows where no language has a name (an agent's key). */
+  fallback?: string;
+  /** Which name it is: an agent's name, or what it does (`title`). */
+  kind?: 'name' | 'title';
 }) {
+  const own = Boolean(useOptionalHost()?.slots?.['agent.names']);
+  return own ? <HostSlot name="agent.names" context={props} /> : <OwnNamesField {...props} />;
+}
+
+function OwnNamesField({ value, onChange, label, placeholder }: { value: Names; onChange: (value: Names) => void; label: string; placeholder?: string }) {
   const t = useAgentTexts();
   const { locale } = useAbpLocale();
   const languages = useHostLanguages();
