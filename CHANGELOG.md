@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.0-next.8
+
+A prerelease under npm's `next` tag: the third area, `agent`.
+
+- **`@abpjs/ui/agent`** on AbpAgent.HttpApi 0.6.1: the site's switch and agents (`agentPages`, `AgentsAdmin`), a scope's
+  own agents (`ScopeAgentsScreen`), one agent's settings (form, tools, run limits, memories, its graph), standing
+  permissions, an item's runs and their questions, the questions waiting for the person, and the chat beside any page
+  (`AgentChatProvider`, `AgentChatPanel`, `useAgentChat().open(...)`), live through the host's events or polling every
+  2 s. Rights `agent.site.admin`, `agent.scope.admin`. Slots for what stays the host's: `agent.markdown`,
+  `agent.run.actions`, `agent.picture`, `agent.connections`, `agent.tools.extra`, `agent.limits.extra`,
+  `agent.switch.extra`. Items open where the host says (`itemHref`, `ItemHrefProvider`). The graph uses React Flow
+  (`@xyflow/react`, `@dagrejs/dagre`): a host that shows it imports `@xyflow/react/dist/style.css` once.
+
 ## 0.2.0-next.7
 
 A prerelease under npm's `next` tag.
