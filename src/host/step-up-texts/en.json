@@ -1,6 +1,6 @@
 {
   "title": "Confirm it's you",
-  "why": "This changes who may do what, or reveals or replaces a secret. Enter your password to go on.",
+  "why": "This action is protected. Enter your password to go on.",
   "codeWhy": "Your account has two-factor sign-in: enter a code too.",
   "password": "Password",
   "confirm": "Confirm",

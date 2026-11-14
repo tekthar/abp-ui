@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- `AppShell` on a phone: the drawer shows the place's card (name, detail, link) and the sidebar's `top` between the
+  site's pages and the place's, as the sidebar does, instead of only the place's name as a heading. The drawer is
+  named for screen readers (`labels.navigation`).
+- `StepUpDialog`: its explanation fits any protected action ("This action is protected…"), not only rights and secrets.
+
 ## 0.2.0-next.2
 
 A prerelease under npm's `next` tag.

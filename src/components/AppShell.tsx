@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from 'react';
+import { Fragment, useCallback, useState, type ReactNode } from 'react';
 import { chakra, Drawer, Portal, SkipNavContent, SkipNavLink, useSlotRecipe, type SystemStyleObject } from '@chakra-ui/react';
 import { ChevronDown, Menu as MenuIcon, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
 import { ArriveOnChange, Collapse, FadeIn, Indicator, Swap } from '../motion/components';
@@ -197,7 +197,7 @@ export function AppShell({
         <Portal>
           <Drawer.Backdrop />
           <Drawer.Positioner>
-            <Drawer.Content>
+            <Drawer.Content aria-label={labels.navigation}>
               <chakra.div
                 css={mobileStyles.sidebar}
                 data-mobile=""
@@ -216,22 +216,18 @@ export function AppShell({
                 </chakra.div>
                 <SidebarContents
                   styles={mobileStyles}
-                  // The site's pages first, then the place's, headed by its name.
+                  // The site's pages first, then the place's card (its name, detail and link, as the sidebar shows it) and its pages.
                   sidebar={{
                     id: `drawer-${sidebar?.id ?? 'site'}`,
+                    place: hasSidebar ? sidebar.place : undefined,
                     top: hasSidebar ? sidebar.top : undefined,
                     loading: hasSidebar && sidebar.loading,
                     skeletonItems: hasSidebar ? sidebar.skeletonItems : undefined,
-                    sections: [
-                      { id: 'site', items: topNav },
-                      ...(hasSidebar
-                        ? sidebar.sections.map((s, i) => (i === 0 && !s.title && sidebar.place ? { ...s, title: sidebar.place.name } : s))
-                        : []),
-                    ],
+                    sections: [{ id: 'site', items: topNav }, ...(hasSidebar ? sidebar.sections : [])],
                   }}
+                  placeAfter={hasSidebar ? 'site' : undefined}
                   navFooter={navFooter}
                   collapsed={false}
-                  drawer
                 />
               </chakra.div>
             </Drawer.Content>
@@ -262,14 +258,14 @@ function SidebarContents({
   sidebar,
   navFooter,
   collapsed,
-  drawer = false,
+  placeAfter,
 }: {
   styles: ShellStyles;
   sidebar: AppShellSidebar;
   navFooter?: ReactNode;
   collapsed: boolean;
-  /** In the drawer, where the place's name heads its pages instead of a card. */
-  drawer?: boolean;
+  /** The place's card and the sidebar's top go after this section (the drawer's site pages) instead of first. */
+  placeAfter?: string;
 }) {
   const Link = useLinkComponent();
   const labels = useAbpLabels();
@@ -289,10 +285,12 @@ function SidebarContents({
       </chakra.span>
     </>
   );
-  return (
+  // In the drawer the card sits in the menu, whose own padding stands in for the header's.
+  const headerCss = placeAfter === undefined ? styles.placeHeader : { ...styles.placeHeader, px: '0' };
+  const placeBlock = (
     <>
       {place ? (
-        <chakra.div css={[styles.placeHeader, arrive]}>
+        <chakra.div css={[headerCss, arrive]}>
           {place.href ? (
             <chakra.span asChild css={styles.place}>
               <Link href={place.href}>{placeInner}</Link>
@@ -302,10 +300,9 @@ function SidebarContents({
           )}
         </chakra.div>
       ) : (
-        loading &&
-        !drawer && (
+        loading && (
           // The place's card, its name and key coming: the same elements, so it's as tall as the real one.
-          <chakra.div css={styles.placeHeader} aria-hidden="true">
+          <chakra.div css={headerCss} aria-hidden="true">
             <chakra.span css={styles.place} pointerEvents="none">
               <chakra.span css={[styles.placeMark, ghostCss]}>&nbsp;</chakra.span>
               <chakra.span css={styles.placeText}>
@@ -328,11 +325,19 @@ function SidebarContents({
           </chakra.div>
         </chakra.div>
       )}
+    </>
+  );
+  return (
+    <>
+      {placeAfter === undefined && placeBlock}
       <chakra.nav css={[styles.nav, arrive]} aria-label={place?.name ?? labels.navigation}>
         {sidebar.sections
           .filter((section) => section.items.length > 0)
           .map((section) => (
-            <NavSection key={section.id} section={section} styles={styles} collapsed={collapsed} group={sidebar.id} />
+            <Fragment key={section.id}>
+              <NavSection section={section} styles={styles} collapsed={collapsed} group={sidebar.id} />
+              {section.id === placeAfter && placeBlock}
+            </Fragment>
           ))}
         {loading && (
           // The place's pages, coming: rows of the nav's own items, the same in the rail and out of it (ADR 0061).
