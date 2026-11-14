@@ -15,7 +15,7 @@ export { defaultLabels, defaultQueryListLabels, useAbpLabels, type AbpLabels, ty
 export { AppLink, useLinkComponent, type AppLinkProps, type LinkComponent } from './provider/link';
 export { directionOf, useAbpLocale, type Direction } from './provider/locale';
 export { useAbpTimeZone } from './provider/time-zone';
-export { PluginTextsProvider, usePluginTexts } from './provider/texts';
+export { PluginTextsProvider, usePluginTexts, useProductName } from './provider/texts';
 export { composeTitle, PageTitleProvider, partsOf, TITLE_SEPARATOR, usePageTitle, usePageTitleParts, usePageTitleSite, type TitleParts } from './provider/title';
 export { compareOrdinal } from './utils/compare';
 export { EMPTY_VALUE, formatDateTime, formatNumber, useFormatters } from './utils/format';

@@ -16,6 +16,11 @@ export function PluginTextsProvider({ value, product, children }: { value?: Reco
   return <PluginTextsContext.Provider value={texts}>{children}</PluginTextsContext.Provider>;
 }
 
+/** The product's name in the current language, as the host gives it (`AbpProvider`'s `productName`). */
+export function useProductName(): string {
+  return useContext(PluginTextsContext).product;
+}
+
 /**
  * A plugin's translate function (ADR 0026). The plugin ships its texts as `messages/{language}.json` in its package
  * and passes the same files here as `bundled`; the shell supplies the site's version (an admin may have translated
