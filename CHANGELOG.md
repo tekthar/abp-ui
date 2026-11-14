@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.2.0-next.2
+
+A prerelease under npm's `next` tag.
 
 - `StepUpDialog`: the password again before a sensitive action, plus a code when the person has a second factor (their
   app, a recovery code, or one the site sends), on AbpGuard's `session/step-up` and `me/second-factors`. `AbpProvider`
@@ -8,6 +10,9 @@
   Arabic texts can be overridden through `AbpHost.texts.stepUp`.
 - `createHostRequest` asks that dialog by default (`requestStepUp`, once however many calls wait). With no dialog, the
   call fails as the server answered. `setStepUpHandler` lets a host register its own.
+- `ai`: a model priced 0 in and 0 out reads as "No price" (AbpAi's prices aren't nullable, and the calls are free
+  either way). A new slot, `ai.models.can` `{ connectionId, modelId }`, lets a host that keeps the connections say
+  what each model can do. It is temporary, until AbpAi 0.8.0.
 
 ## 0.2.0-next.1
 

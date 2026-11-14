@@ -33,7 +33,8 @@ export function ModelsPanel({ scopeId, connections, rows, loading, hostKeeps, on
   const shown = rows ?? (connections ? modelRows(connections) : undefined);
   const source = list.find((c) => c.id === picked) ?? list[0];
   const own = (m: AiModelRow) => list.some((c) => c.id === m.connectionId);
-  const hostSaysCan = hostKeeps && Boolean(useOptionalHost()?.slots?.['ai.models.can']);
+  const host = useOptionalHost();
+  const hostSaysCan = hostKeeps && Boolean(host?.slots?.['ai.models.can']);
 
   async function discover(c: AiConnection) {
     setFinding(c.id);
