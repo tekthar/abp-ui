@@ -6,3 +6,4 @@
 export { foldBreadcrumbs } from './breadcrumbs';
 export { LIST_OPS, NO_VALUE_OPS, mergeSameField, parseValue, valueText, type QueryConditionJson, type QueryField } from './conditions';
 export { groupKey, inGroups, periodName } from './grouping';
+export { findSettingsPage, heavierFirst, inSections, settingsArea, type MaybeVisible, type SettingsPageLike, type SettingsSectionLike } from './settings';

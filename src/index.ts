@@ -103,7 +103,11 @@ export { IconTile, type IconTileProps } from './components/IconTile';
 export { PersonChip, type PersonChipProps } from './components/PersonChip';
 export { PriorityMark, type PriorityMarkProps } from './components/PriorityMark';
 export { priorityLevel } from './components/priority-level';
-export { groupKey } from './rules';
+export { groupKey, heavierFirst, inSections } from './rules';
+
+// Settings areas (ADR 0095, ADR 0109): sections and pages by weight, static and loaded, and their frame
+export { findSettingsPage, settingsArea, type SettingsArea, type SettingsPage, type SettingsSection } from './settings/registry';
+export { SettingsLayout, type SettingsLayoutProps } from './settings/SettingsLayout';
 export { SegmentedControl, type SegmentedControlProps, type SegmentedItem } from './components/SegmentedControl';
 export {
   CheckboxField,
