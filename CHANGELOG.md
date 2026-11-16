@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.0-next.12
+
+A prerelease under npm's `next` tag: lists served a page at a time.
+
+- `useListState(source)`: a list's page, page size, sort, search (asked once typing settles) and filters, from a
+  `ListSource` (`{ key, load(query, signal) }`); a change goes back to the first page, only the latest answer counts,
+  and the previous rows stay while the next page comes (`refreshing`). `table` and `pagination` are the props for
+  `DataTable` (manual sort) and `Pagination`; `onQueryChange` for a screen that keeps the list's place in its address.
+- `abpListSource(request, path, options)` and `useAreaListSource(area, path, options)`: a list in ABP's shape
+  (`skipCount`, `maxResultCount`, `sorting`, `filter` in; `{ totalCount, items }` out), with `abpListParams`. A host
+  gives an area its own source (a query engine, saved views) in place of the package's.
+
 ## 0.2.0-next.11
 
 A prerelease under npm's `next` tag: the first of the `guard` area's building blocks.
