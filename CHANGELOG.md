@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.2.0-next.13
+
+A prerelease under npm's `next` tag: pickers and names by language, for the `guard` area and the hosts.
+
+- `SearchPicker`: one item picked from a searchable list (an ARIA combobox): a search as the person types, items
+  already known, an empty choice, making one from the text typed, every match bold (`Highlight`). `PersonPicker` (name
+  and @username, a `badge` for an agent's account) and `GroupPicker` take their `search` from the area or the host.
+  Their words are the labels' new `picker` group.
+- `TranslatedInput`: a name in every language the host offers (`AbpHost.languages`, which gains `englishName`), the
+  reader's inline and the others behind a button counting them, each typed in its direction. Where the host has
+  `suggestNames(text, signal)` (`NameSuggestion`), names already translated are offered while typing. Its words are the
+  labels' new `translations` group.
+- `@abpjs/ui/rules`: `toNamesValue(name, names, written)` and `fromNamesValue(value, written)` between a written name
+  with its other languages and the one map `TranslatedInput` edits.
+
 ## 0.2.0-next.12
 
 A prerelease under npm's `next` tag: lists served a page at a time.

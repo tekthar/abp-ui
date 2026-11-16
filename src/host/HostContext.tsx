@@ -15,8 +15,18 @@ export interface HostScope {
 /** One of the site's languages, for names by language. */
 export interface HostLanguage {
   code: string;
+  /** Its name in itself ("العربية"). */
   name: string;
+  /** Its name in English, shown beside `name` where they differ. */
+  englishName?: string;
   direction?: 'ltr' | 'rtl';
+}
+
+/** A name someone already translated (a text of the host's, a setting's name): every language at once. */
+export interface NameSuggestion {
+  names: Record<string, string>;
+  /** Where it comes from, as the host words it ("Status · FIN"). */
+  source?: string;
 }
 
 /**
@@ -45,6 +55,8 @@ export interface AbpHost {
   names?: (accountIds: string[]) => Promise<Record<string, string>>;
   /** The site's languages, the first the default. */
   languages?: HostLanguage[];
+  /** Names already translated that start with what's typed, so a name is translated the same way everywhere. */
+  suggestNames?: (text: string, signal: AbortSignal) => Promise<NameSuggestion[]>;
   /** The host's words for any area's text, by area then language then key: `{ ai: { en: { 'models.title': 'AI models' } } }`. */
   texts?: Record<string, Record<string, Record<string, string>>>;
   /**

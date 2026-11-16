@@ -19,6 +19,8 @@ const WITHOUT = {
   'IconTile.tsx': 'an icon on a tile: drawn as it is wherever it sits',
   'InlineAlert.tsx': 'shown for a result or an error, so after it',
   'LoadingState.tsx': 'a placeholder itself',
+  'SearchPicker.tsx': 'an input that is there at once; its list says it is searching while results come',
+  'TranslatedInput.tsx': 'an input with the value it is given; suggestions come while typing, after the page has loaded',
   'Pagination.tsx': 'its pages come with the result it pages through; before that there are none to show',
   'Toaster.tsx': 'toasts come after something happened',
   'Tooltip.tsx': 'shown on hover, around what it describes',

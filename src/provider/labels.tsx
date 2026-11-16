@@ -30,7 +30,66 @@ export interface AbpLabels {
   /** Above a form with wrong fields, `{count}` of them (ICU plural). */
   formFix: string;
   queryList: QueryListLabels;
+  translations: TranslationsLabels;
+  picker: PickerLabels;
 }
+
+/** Strings of SearchPicker, PersonPicker and GroupPicker. `{count}` is filled in (ICU plural). */
+export interface PickerLabels {
+  placeholder: string;
+  searching: string;
+  noMatches: string;
+  /** Nothing to offer when nothing can be searched. */
+  noKnown: string;
+  /** Above the options: how many match what's typed. */
+  matches: string;
+  /** Above the options when there are more than shown. */
+  firstMatches: string;
+  searchPeople: string;
+  /** A person picker with no search: the people on the page. */
+  choosePerson: string;
+  noPeople: string;
+  noKnownPeople: string;
+  searchGroups: string;
+  noGroups: string;
+}
+
+export const defaultPickerLabels: PickerLabels = {
+  placeholder: 'Search…',
+  searching: 'Searching…',
+  noMatches: 'Nothing matches',
+  noKnown: 'Nothing to choose from',
+  matches: '{count, plural, one {# match} other {# matches}}',
+  firstMatches: 'The first {count} matches',
+  searchPeople: 'Search people…',
+  choosePerson: 'Choose someone…',
+  noPeople: 'No one matches.',
+  noKnownPeople: 'No one to choose from.',
+  searchGroups: 'Search groups…',
+  noGroups: 'No groups match',
+};
+
+/** Strings of TranslatedInput. {name}, {filled}, {total}, {shown} are filled in by the component. */
+export interface TranslationsLabels {
+  /** Above the other languages' fields. */
+  title: string;
+  /** The button that opens them, for a screen reader. */
+  open: string;
+  /** The button's tooltip. */
+  count: string;
+  /** Under a language left empty: which name shows instead. */
+  missing: string;
+  /** The list of names already translated. */
+  suggestions: string;
+}
+
+export const defaultTranslationsLabels: TranslationsLabels = {
+  title: 'Name in other languages',
+  open: 'Translations of “{name}”: {filled} of {total} languages',
+  count: '{filled} of {total} other languages filled in',
+  missing: 'Not given: shows “{shown}”',
+  suggestions: 'Translations already made',
+};
 
 /** Strings of QueryableList. {name} placeholders are filled in by the component. */
 export interface QueryListLabels {
@@ -255,12 +314,20 @@ export const defaultLabels: AbpLabels = {
   formRequired: 'Fill this in',
   formFix: '{count, plural, one {Fix this field before saving} other {Fix these # fields before saving}}',
   queryList: defaultQueryListLabels,
+  translations: defaultTranslationsLabels,
+  picker: defaultPickerLabels,
 };
 
 const LabelsContext = createContext<AbpLabels>(defaultLabels);
 
 export function LabelsProvider({ value, children }: { value?: Partial<AbpLabels>; children: ReactNode }) {
-  const merged = { ...defaultLabels, ...value, queryList: { ...defaultQueryListLabels, ...value?.queryList } };
+  const merged = {
+    ...defaultLabels,
+    ...value,
+    queryList: { ...defaultQueryListLabels, ...value?.queryList },
+    translations: { ...defaultTranslationsLabels, ...value?.translations },
+    picker: { ...defaultPickerLabels, ...value?.picker },
+  };
   return <LabelsContext.Provider value={merged}>{children}</LabelsContext.Provider>;
 }
 

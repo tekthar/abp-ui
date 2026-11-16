@@ -7,5 +7,5 @@
 export { foldBreadcrumbs } from './breadcrumbs';
 export { LIST_OPS, NO_VALUE_OPS, mergeSameField, parseValue, valueText, type QueryConditionJson, type QueryField } from './conditions';
 export { groupKey, inGroups, periodName } from './grouping';
-export { languageChain, pickName, splitList, type Names } from './names';
+export { fromNamesValue, languageChain, pickName, splitList, toNamesValue, type Names } from './names';
 export { findSettingsPage, heavierFirst, inSections, settingsArea, type MaybeVisible, type SettingsPageLike, type SettingsSectionLike } from './settings';
