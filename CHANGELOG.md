@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0-next.16
+
+A prerelease under npm's `next` tag.
+
+- guard: `CreateAccountPanel` and `CreateGroupPanel` exported, for a host that keeps its own accounts or groups list
+  (saved views, column choice) and takes the rest of the area.
+
 ## 0.2.0-next.15
 
 A prerelease under npm's `next` tag.
