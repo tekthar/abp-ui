@@ -17,8 +17,11 @@ export { GroupTree, type GroupTreeProps } from './GroupTree';
 export { GroupTwoFactorPanel, TWO_FACTOR_MODES } from './GroupTwoFactorPanel';
 export { CountList, MergesPanel, useCountLabel, usePartLabel, type MergesPanelProps } from './MergeParts';
 export { MergeScreen, type MergeScreenProps } from './MergeScreen';
+export { MySecondFactorsPanel, type MySecondFactorsPanelProps } from './MySecondFactorsPanel';
 export { useWrittenName } from './names';
+export { AppSetup, CodeInput, groupedKey, RecoveryCodes, useSenderName, type AppSetupProps } from './SecondFactorParts';
 export { SignUpScreen } from './SignUpScreen';
+export { StrongFactorBanner, type StrongFactorState } from './StrongFactorBanner';
 export { guardRoutes, type GuardRoutes } from './routes';
 export { AccountStatusPill, FlagPill, PassFail, PluginStatePill, SyncResultPill, SyncStatus } from './status';
 export { useGuardNs, useGuardTexts, withParts, type GuardText } from './texts';
@@ -33,6 +36,7 @@ export type {
   AccountStatus,
   AccountSummaryDto,
   AnonymousGrantDto,
+  AppEnrolmentDto,
   ConnectionTestResult,
   DirectoryDto,
   DirectoryInput,
@@ -52,6 +56,7 @@ export type {
   MySecondFactorsDto,
   PluginState,
   SecondFactorDto,
+  SecondFactorSenderDto,
   SignUpSettingsDto,
   SignUpSettingsInput,
   SyncRunDto,

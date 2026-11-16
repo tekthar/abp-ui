@@ -1,7 +1,8 @@
 # The `guard` area: AbpGuard's screens
 
 The admin screens of [AbpGuard](https://github.com/tekthar/abp-guard)'s people and sign-in: accounts (their names,
-addresses, second factors, duplicates and merges), groups, directories, sign-up and anonymous access. They call
+addresses, second factors, duplicates and merges), groups, directories, sign-up and anonymous access; and a person's own
+second factors and passkeys. They call
 **AbpGuard.HttpApi 0.7.1** or later (the paged lists are 0.6.0's, passkeys and the strong step-up 0.7.0's, the step-up's
 app code alone 0.7.1's). From **0.8.2** an account's detail says what the person looking may do to it (`can`); against an
 older server the account page falls back to `guard.site.admin`.
@@ -13,8 +14,6 @@ The types in `api.d.ts` are generated from abp-guard's own document (`docs/opena
 npx openapi-typescript@7.10.1 ../abp-guard/docs/openapi/abpguard.json -o src/areas/guard/api.d.ts
 ```
 
-**Still to come:** a person's own second factors and passkeys (the `/me` screens).
-
 ## What the host gives
 
 - `paths.guard`: where it serves AbpGuard.HttpApi, such as `/api/guard`.
@@ -23,7 +22,10 @@ npx openapi-typescript@7.10.1 ../abp-guard/docs/openapi/abpguard.json -o src/are
 - `languages`: the site's languages, for names by language (a person's, a group's, a directory's).
 - Words: any key in `texts/en.json` through `AbpHost.texts.guard`. A merge's parts and counts from the host's own modules
   are the host's words: `merge.part.{key}` and `merge.count.{key}` (dots as underscores: `records.reporter` is
-  `merge.count.records_reporter`); without them, a part shows its key and a count its label.
+  `merge.count.records_reporter`); without them, a part shows its key and a count its label. So are the names of the
+  host's own ways to send a code: `secondFactor.sender.{method}`, its non-word characters as underscores
+  (`acme.messaging:sms` is `secondFactor.sender.acme_messaging_sms`); without one, email is named and any other way
+  shows the name it gives itself.
 - Where its pages open, for the links between them: `routes` on the screens, `guardRoutes(base)` by default
   (`/admin/accounts`, `/admin/accounts/{id}`, `/admin/accounts/{id}/merge`, `/admin/groups`, `/admin/groups/{id}`,
   `/admin/directories`, `/admin/directories/{id}`).
@@ -67,11 +69,20 @@ the foundation's step-up dialog).
 | `SignUpScreen` | | sign-up's settings |
 | `AnonymousScreen` | `roleName` | what anonymous visitors are given; `roleName` names a role the host ships in the reader's language |
 
+A person's own, for the host's page about them:
+
+| Screen | Props | For |
+|---|---|---|
+| `MySecondFactorsPanel` | `setUpNow`, `onSetUpChosen`, `onChange` | their passkeys and authenticator apps, recovery codes; adding a passkey (the foundation's `createPasskey`), setting up an app, removing one, renaming a passkey. Each change is a step-up the foundation's dialog asks. `setUpNow` starts the app's setup at once (signing in sent them there); `onChange` tells the host their factors changed |
+| `StrongFactorBanner` | `strongFactor`, `setUpHref` | a site admin required to have a strong factor who has none yet: by when, and a link to set one up |
+
+`AppSetup`, `RecoveryCodes` and `CodeInput` are exported for a host's sign-in, which sets up a factor the same way.
+
 The panels the pages are made of are exported too, for a host's own pages: `AccountEmailsPanel` (`base` is `/accounts/{id}`
 for an admin or `/me` for the person), `AccountNameEditor`, `AccountSecondFactorPanel`, `MergesPanel`, `GroupTree`,
 `GroupTwoFactorPanel`, `DirectoryForm`.
 
 ## Exports
 
-The screens and panels above, `guardRoutes`, `useAccountCan`, `useWrittenName`, `useGuardTexts`, and the API's types
+The screens and panels above, `guardRoutes`, `useAccountCan`, `useWrittenName`, `useSenderName`, `useGuardTexts`, and the API's types
 (`GuardTypes`).
