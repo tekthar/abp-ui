@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0-next.15
+
+A prerelease under npm's `next` tag.
+
+- guard: a person's own second factors (`MySecondFactorsPanel`): passkeys added, renamed and removed, the authenticator
+  app set up, factors removed, new recovery codes; the step-ups through the foundation's dialog. `StrongFactorBanner`
+  for a site admin's strong-factor deadline, from the host's `me`. A host names its own code senders through
+  `secondFactor.sender.{method}`. The area uses the foundation's `ListFooter` and `useSettledValue`.
+
 ## 0.2.0-next.14
 
 A prerelease under npm's `next` tag: the third area, `guard`.
