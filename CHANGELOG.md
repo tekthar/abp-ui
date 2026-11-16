@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0-next.20
+
+A prerelease under npm's `next` tag.
+
+- guard: `guardPages` weighs its pages so the menu reads accounts, groups, directories, sign-up, anonymous access
+  (settings sort heavier first); next.19 read them the other way round.
+
 ## 0.2.0-next.19
 
 A prerelease under npm's `next` tag.
