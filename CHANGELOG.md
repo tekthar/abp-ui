@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0-next.11
+
+A prerelease under npm's `next` tag: the first of the `guard` area's building blocks.
+
+- `@abpjs/ui/rules`: names by language (`Names`, `languageChain(locale, default)`, `pickName(chain, names, fallback)`)
+  and `splitList` (a comma- or line-separated list, trimmed).
+
 ## 0.2.0-next.10
 
 A prerelease under npm's `next` tag.
