@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.0-next.18
+
+A prerelease under npm's `next` tag.
+
+- `AbpProvider`'s `useServerInsertedHTML`: a framework's hook for HTML in the page's head while it streams (Next's).
+  With it, Emotion's styles go to the head on the server (`EmotionRegistry`), so the first render hydrates without a
+  mismatch where Chakra's global styles met next-themes' script. Without it, nothing changes. `@emotion/cache` is a
+  dependency.
+- `AbpLabelsInput`, what `AbpProvider`'s `labels` takes: any label, and any of a group's (`queryList`,
+  `translations`, `picker`), the rest the defaults, so a group the package adds needs nothing from a host that doesn't
+  use it.
+
 ## 0.2.0-next.17
 
 A prerelease under npm's `next` tag.

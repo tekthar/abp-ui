@@ -7,7 +7,8 @@ import type { MotionSetting } from '../motion/setting';
 import { Toaster } from '../components/Toaster';
 import { createAbpSystem } from '../theme/system';
 import { ColorModeProvider } from './color-mode';
-import { LabelsProvider, type AbpLabels } from './labels';
+import { LabelsProvider, type AbpLabelsInput } from './labels';
+import { EmotionRegistry, type ServerInsertedHTML } from './emotion-registry';
 import { HostProvider, type AbpHost } from '../host/HostContext';
 import { StepUpDialog } from '../host/StepUpDialog';
 import { LinkComponentProvider, type LinkComponent } from './link';
@@ -25,7 +26,7 @@ export interface AbpProviderProps {
   /** BCP 47 locale ("en", "ar"). Sets direction for every component, portals included. */
   locale?: string;
   /** Translated strings for the components' own text (close, cancel, sort ...). */
-  labels?: Partial<AbpLabels>;
+  labels?: AbpLabelsInput;
   /** The host router's link component (next/link in the shell). */
   linkComponent?: LinkComponent;
   /** Initial colour mode when the user has not chosen one. */
@@ -38,6 +39,12 @@ export interface AbpProviderProps {
   timeZone?: string;
   /** How much the interface moves for the person (ADR 0058); as their system says when it's not given. */
   motion?: MotionSetting;
+  /**
+   * The framework's hook for HTML in the page's head while it streams (Next's `useServerInsertedHTML`): with it, Emotion's
+   * styles go there on the server, so the first render hydrates without a mismatch. A host that renders on the client
+   * only leaves it out.
+   */
+  useServerInsertedHTML?: ServerInsertedHTML;
 }
 
 /**
@@ -47,7 +54,12 @@ export interface AbpProviderProps {
  *
  * The host must also set `<html lang dir>` and `suppressHydrationWarning` on <html>.
  */
-export function AbpProvider({ children, system = defaultSystem, host, locale = 'en', labels, linkComponent, defaultColorMode = 'system', pluginTexts, productName, timeZone, motion }: AbpProviderProps) {
+export function AbpProvider({ children, useServerInsertedHTML, ...props }: AbpProviderProps) {
+  const tree = <AbpTree {...props}>{children}</AbpTree>;
+  return useServerInsertedHTML ? <EmotionRegistry useServerInsertedHTML={useServerInsertedHTML}>{tree}</EmotionRegistry> : tree;
+}
+
+function AbpTree({ children, system = defaultSystem, host, locale = 'en', labels, linkComponent, defaultColorMode = 'system', pluginTexts, productName, timeZone, motion }: Omit<AbpProviderProps, 'useServerInsertedHTML'>) {
   return (
     <ChakraProvider value={system}>
       <ColorModeProvider defaultTheme={defaultColorMode}>

@@ -320,7 +320,17 @@ export const defaultLabels: AbpLabels = {
 
 const LabelsContext = createContext<AbpLabels>(defaultLabels);
 
-export function LabelsProvider({ value, children }: { value?: Partial<AbpLabels>; children: ReactNode }) {
+/**
+ * The labels a host gives: any of them, and any of a group's (the query list's, the pickers', the translations'); the
+ * rest are the defaults, so a group the package adds later needs nothing from a host that doesn't use it.
+ */
+export type AbpLabelsInput = Partial<Omit<AbpLabels, 'queryList' | 'translations' | 'picker'>> & {
+  queryList?: Partial<QueryListLabels>;
+  translations?: Partial<TranslationsLabels>;
+  picker?: Partial<PickerLabels>;
+};
+
+export function LabelsProvider({ value, children }: { value?: AbpLabelsInput; children: ReactNode }) {
   const merged = {
     ...defaultLabels,
     ...value,

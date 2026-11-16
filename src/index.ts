@@ -11,7 +11,8 @@ export { ABP_UI_VERSION } from './version';
 // Providers and hooks
 export { AbpProvider, type AbpProviderProps } from './provider/AbpProvider';
 export { ColorModeProvider, ColorModeToggle, useColorMode, type ColorMode } from './provider/color-mode';
-export { defaultLabels, defaultPickerLabels, defaultQueryListLabels, defaultTranslationsLabels, useAbpLabels, type AbpLabels, type PickerLabels, type QueryListLabels, type TranslationsLabels } from './provider/labels';
+export { EmotionRegistry, type ServerInsertedHTML } from './provider/emotion-registry';
+export { defaultLabels, defaultPickerLabels, defaultQueryListLabels, defaultTranslationsLabels, useAbpLabels, type AbpLabels, type AbpLabelsInput, type PickerLabels, type QueryListLabels, type TranslationsLabels } from './provider/labels';
 export { TranslatedInput, type NamesValue, type TranslatedInputProps } from './components/TranslatedInput';
 export { ListFooter } from './components/ListFooter';
 export { useSettledValue } from './utils/settled';
