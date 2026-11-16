@@ -80,7 +80,8 @@ A person's own, for the host's page about them:
 
 The panels the pages are made of are exported too, for a host's own pages: `AccountEmailsPanel` (`base` is `/accounts/{id}`
 for an admin or `/me` for the person), `AccountNameEditor`, `AccountSecondFactorPanel`, `MergesPanel`, `GroupTree`,
-`GroupTwoFactorPanel`, `DirectoryForm`.
+`GroupTwoFactorPanel`, `DirectoryForm`, and the create forms `CreateAccountPanel` and `CreateGroupPanel` (for a host that
+keeps its own lists, such as one with saved views).
 
 ## Exports
 

@@ -105,7 +105,7 @@ export function GroupsScreen({ routes = guardRoutes(), source }: GroupsScreenPro
       />
       <Stack gap="section">
         {creating && (
-          <CreateGroup
+          <CreateGroupPanel
             directories={dirs.data ?? []}
             onCancel={() => setCreating(false)}
             onDone={(created) => {
@@ -150,7 +150,11 @@ export function GroupsScreen({ routes = guardRoutes(), source }: GroupsScreenPro
   );
 }
 
-function CreateGroup({ directories, onDone, onCancel }: { directories: DirectoryDto[]; onDone: (created: GroupDto) => void; onCancel: () => void }) {
+/**
+ * Creating a group: its name by language, a description, the directory it's in (the internal one by default), and its
+ * kind; an organization takes the email domains whose people join it. For a host's own groups page too.
+ */
+export function CreateGroupPanel({ directories, onDone, onCancel }: { directories: DirectoryDto[]; onDone: (created: GroupDto) => void; onCancel: () => void }) {
   const t = useGuardNs('groups');
   const tc = useGuardNs('common');
   const request = useAreaRequest('guard');

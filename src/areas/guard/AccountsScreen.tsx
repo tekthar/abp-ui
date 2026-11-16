@@ -103,7 +103,7 @@ export function AccountsScreen({ routes = guardRoutes(), source }: AccountsScree
       />
       <Stack gap="section">
         {creating && (
-          <CreateAccount
+          <CreateAccountPanel
             onDone={(created) => {
               setCreating(false);
               notify.success(t('created', { username: created.username }));
@@ -140,7 +140,11 @@ export function AccountsScreen({ routes = guardRoutes(), source }: AccountsScree
   );
 }
 
-function CreateAccount({ onDone, onCancel }: { onDone: (created: AccountDto) => void; onCancel: () => void }) {
+/**
+ * Creating an internal account: username, display name, an optional address and a password, in AbpGuard's own internal
+ * directory or another internal one when there are several. For a host's own accounts page too.
+ */
+export function CreateAccountPanel({ onDone, onCancel }: { onDone: (created: AccountDto) => void; onCancel: () => void }) {
   const t = useGuardNs('accounts');
   const tc = useGuardNs('common');
   const request = useAreaRequest('guard');
