@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0-next.17
+
+A prerelease under npm's `next` tag.
+
+- guard: a second slot in an account's header, `guard.account.actions.end` (`{ account, detail, reload }`), after the
+  area's merge and lock, so a host's destructive action (an erasure) stays last.
+
 ## 0.2.0-next.16
 
 A prerelease under npm's `next` tag.
