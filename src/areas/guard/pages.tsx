@@ -57,10 +57,11 @@ export function guardPages(options: {
   const directories = options.directories ?? true;
   const visible = options.visible ?? (options.host?.can ? () => options.host!.can!('guard.site.admin') : undefined);
   const weight = options.weight ?? 100;
+  // Settings sort heavier first: accounts the heaviest, anonymous access the lightest, in the order the menu reads.
   const page = (key: GuardPageKey, at: number, component: ComponentType<{ path: string[] }>): SettingsPage => ({
     id: `guard.${key}`,
     section: options.section,
-    weight: weight + at,
+    weight: weight + 4 - at,
     title: options.titles?.[key] ?? en[`nav.${key}`],
     href: `${base}/${key}`,
     about: options.about?.[key],
