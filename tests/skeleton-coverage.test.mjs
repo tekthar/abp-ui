@@ -18,6 +18,7 @@ const WITHOUT = {
   'FileDrop.tsx': 'a frame around its children (an Upload button), which draw their own; its hint shows on a drag',
   'IconTile.tsx': 'an icon on a tile: drawn as it is wherever it sits',
   'InlineAlert.tsx': 'shown for a result or an error, so after it',
+  'ListFooter.tsx': 'drawn once the first page has come, with the rows it counts; nothing before',
   'LoadingState.tsx': 'a placeholder itself',
   'SearchPicker.tsx': 'an input that is there at once; its list says it is searching while results come',
   'TranslatedInput.tsx': 'an input with the value it is given; suggestions come while typing, after the page has loaded',

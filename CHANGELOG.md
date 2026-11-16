@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.0-next.14
+
+A prerelease under npm's `next` tag: the third area, `guard`.
+
+- **`@abpjs/ui/guard`** on AbpGuard.HttpApi 0.7.1: accounts (searched, filtered and sorted a page at a time; an
+  account's name, addresses, second factor, identities, groups and merges; lock, unlock, merge with its preview),
+  accounts that share an address, groups (names by language, members, parents, nested groups, second factor,
+  organizations), directories (their order, settings, connection and sign-in tests, syncs), sign-up and anonymous
+  access. Right `guard.site.admin`; an account's own actions follow its `can` (AbpGuard 0.8.2), the right until then.
+  Slots: `guard.account.actions`, `guard.account.notices`, `guard.account.panels`, `guard.directory.panel`,
+  `guard.directory.presets`. Types from abp-guard's own document. A person's own second factors and passkeys come later.
+- `ListFooter({ list })`: a paged list's pages and its "26–50 of 112", in the `queryList` labels.
+- `useSettledValue(value, ms)`: a value once it has stood still (what's typed, before a search).
+
 ## 0.2.0-next.13
 
 A prerelease under npm's `next` tag: pickers and names by language, for the `guard` area and the hosts.
