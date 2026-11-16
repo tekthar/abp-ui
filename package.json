@@ -44,6 +44,11 @@
       "import": "./dist/agent.js",
       "default": "./dist/agent.js"
     },
+    "./guard": {
+      "types": "./dist/guard.d.ts",
+      "import": "./dist/guard.js",
+      "default": "./dist/guard.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
