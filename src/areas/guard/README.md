@@ -47,7 +47,8 @@ the foundation's step-up dialog).
 
 | Slot | Context | For |
 |---|---|---|
-| `guard.account.actions` | `{ account, detail, reload }` | the host's buttons in an account's header (a data export, an erasure) |
+| `guard.account.actions` | `{ account, detail, reload }` | the host's buttons in an account's header, before the area's merge and lock (a data export) |
+| `guard.account.actions.end` | `{ account, detail, reload }` | the host's buttons after them, last in the header (an erasure) |
 | `guard.account.notices` | `{ account, detail, reload }` | the host's notices above an account's panels (an erased person's) |
 | `guard.account.panels` | `{ account, detail, reload }` | the host's panels below an account's addresses |
 | `guard.directory.panel` | `{ directoryId, directoryType }` | panels for a directory of a type, below its settings (a connector's own) |

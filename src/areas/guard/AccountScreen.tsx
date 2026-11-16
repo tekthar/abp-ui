@@ -56,9 +56,10 @@ export interface AccountScreenProps {
 /**
  * An account: its name, addresses and second factor, the directories it comes from and which one wins, the groups it's
  * in (directly or through others), and the merges it was in. Lock, unlock and merge are shown only where AbpGuard allows
- * them for this very account (a helpdesk scoped to one directory, say). A host adds its own buttons through the
- * `guard.account.actions` slot, notices above the panels through `guard.account.notices`, and panels below the account's
- * through `guard.account.panels`; each gets `{ account, detail, reload }`.
+ * them for this very account (a helpdesk scoped to one directory, say). A host adds its own buttons before the area's
+ * through the `guard.account.actions` slot and after them through `guard.account.actions.end` (a destructive one last),
+ * notices above the panels through `guard.account.notices`, and panels below the account's through
+ * `guard.account.panels`; each gets `{ account, detail, reload }`.
  */
 export function AccountScreen({ id, routes = guardRoutes() }: AccountScreenProps) {
   const t = useGuardNs('accountDetail');
@@ -188,6 +189,7 @@ export function AccountScreen({ id, routes = guardRoutes() }: AccountScreenProps
                       {t('lock')}
                     </Button>
                   )}
+              {account && <HostSlot name="guard.account.actions.end" context={slotContext} />}
             </HStack>
           )
         }
