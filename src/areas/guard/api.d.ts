@@ -6026,6 +6026,7 @@ export interface components {
             names?: {
                 [key: string]: string;
             };
+            system?: boolean;
         };
         GroupMemberDto: {
             memberType: string;
@@ -6653,6 +6654,11 @@ export interface components {
         SessionTicketInput: {
             ticket: null | string;
         };
+        SignUpDirectoryDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+        };
         SignUpInfoDto: {
             enabled: boolean;
             emailDomains: string[];
@@ -6671,6 +6677,7 @@ export interface components {
             directoryId: null | string;
             directoryName: null | string;
             emailDomains: string[];
+            directories?: components["schemas"]["SignUpDirectoryDto"][];
         };
         SignUpSettingsInput: {
             enabled: boolean;

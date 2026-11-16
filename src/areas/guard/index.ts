@@ -11,7 +11,7 @@ export { DirectoriesScreen } from './DirectoriesScreen';
 export { DirectoryForm, DirectoryWarnings, type DirectoryFormProps } from './DirectoryForm';
 export { DirectoryScreen } from './DirectoryScreen';
 export { DuplicatesPanel } from './DuplicatesPanel';
-export { GroupScreen, type GroupScreenProps } from './GroupScreen';
+export { GroupScreen, isSystemGroup, type GroupScreenProps } from './GroupScreen';
 export { CreateGroupPanel, GroupsScreen, type GroupsScreenProps } from './GroupsScreen';
 export { GroupTree, type GroupTreeProps } from './GroupTree';
 export { GroupTwoFactorPanel, TWO_FACTOR_MODES } from './GroupTwoFactorPanel';
@@ -19,8 +19,9 @@ export { CountList, MergesPanel, useCountLabel, usePartLabel, type MergesPanelPr
 export { MergeScreen, type MergeScreenProps } from './MergeScreen';
 export { MySecondFactorsPanel, type MySecondFactorsPanelProps } from './MySecondFactorsPanel';
 export { useWrittenName } from './names';
+export { guardPages, type GuardPageKey } from './pages';
 export { AppSetup, CodeInput, groupedKey, RecoveryCodes, useSenderName, type AppSetupProps } from './SecondFactorParts';
-export { SignUpScreen } from './SignUpScreen';
+export { SignUpScreen, type SignUpScreenProps } from './SignUpScreen';
 export { StrongFactorBanner, type StrongFactorState } from './StrongFactorBanner';
 export { guardRoutes, type GuardRoutes } from './routes';
 export { AccountStatusPill, FlagPill, PassFail, PluginStatePill, SyncResultPill, SyncStatus } from './status';
@@ -58,6 +59,7 @@ export type {
   SecondFactorDto,
   SecondFactorSenderDto,
   SignUpSettingsDto,
+  SignUpDirectoryDto,
   SignUpSettingsInput,
   SyncRunDto,
   TestLoginResult,

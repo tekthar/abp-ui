@@ -5,7 +5,10 @@ addresses, second factors, duplicates and merges), groups, directories, sign-up 
 second factors and passkeys. They call
 **AbpGuard.HttpApi 0.7.1** or later (the paged lists are 0.6.0's, passkeys and the strong step-up 0.7.0's, the step-up's
 app code alone 0.7.1's). From **0.8.2** an account's detail says what the person looking may do to it (`can`); against an
-older server the account page falls back to `guard.site.admin`.
+older server the account page falls back to `guard.site.admin`. From **0.8.3** sign-up's settings list the directories
+it may use, so sign-up works with AbpGuard's Directories feature off, and a group says whether it's AbpGuard's own
+(`system`: admins, everyone), which can't be deleted; against an older server the area reads the directories' list and
+knows those two groups by their ids.
 
 The types in `api.d.ts` are generated from abp-guard's own document (`docs/openapi/abpguard.json`, every feature on) with
 `openapi-typescript`:
@@ -56,6 +59,16 @@ the foundation's step-up dialog).
 
 `detail.can.erase` and `detail.can.exportData` say whether the person looking may erase the account or export its data.
 
+## Pages for a settings area
+
+`guardPages({ section, base, weight, titles, about, directories, visible, host })` gives the area's pages for a host to
+file under its sections, as `aiPages` and `agentPages` do: `guard.accounts`, `guard.groups`, `guard.directories`,
+`guard.signup` and `guard.anonymous`, under `base` (`/admin` by default). Each is drawn by the host's catch-all route
+with the path after its address (a list, then one item: `/admin/accounts/{id}`, `/admin/accounts/{id}/merge`), so its
+links are `guardRoutes(base)`'s. `host` gives who sees them (`guard.site.admin`); `directories: false`, for a server with
+the Directories feature off, leaves the directories page out and sign-up's hint about it. The titles are the area's
+English words unless `titles` gives the host's.
+
 ## Pages and screens
 
 | Screen | Props | Page |
@@ -67,7 +80,7 @@ the foundation's step-up dialog).
 | `GroupScreen` | `id`, `routes` | a group: names, members, parents, nested groups (`GroupTree`), second factor, organization, everyone in it |
 | `DirectoriesScreen` | `routes` | the directories in order: adding, reordering, syncing |
 | `DirectoryScreen` | `id`, `routes` | a directory: its settings, a connection test and a test sign-in, syncs |
-| `SignUpScreen` | | sign-up's settings |
+| `SignUpScreen` | `directoriesPage` | sign-up's settings; `directoriesPage: false` when the host has no Directories page, so the hint doesn't send people there |
 | `AnonymousScreen` | `roleName` | what anonymous visitors are given; `roleName` names a role the host ships in the reader's language |
 
 A person's own, for the host's page about them:
@@ -86,5 +99,5 @@ keeps its own lists, such as one with saved views).
 
 ## Exports
 
-The screens and panels above, `guardRoutes`, `useAccountCan`, `useWrittenName`, `useSenderName`, `useGuardTexts`, and the API's types
-(`GuardTypes`).
+The screens and panels above, `guardPages`, `guardRoutes`, `useAccountCan`, `isSystemGroup`, `useWrittenName`,
+`useSenderName`, `useGuardTexts`, and the API's types (`GuardTypes`).

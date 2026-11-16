@@ -34,6 +34,14 @@ import { guardRoutes, type GuardRoutes } from './routes';
 import { useGuardNs } from './texts';
 import type { AccountDto, EffectiveMemberDto, GroupDetailDto, GroupDto, GroupMemberDto } from './types';
 
+/** AbpGuard's own groups (admins, everyone), whose delete it refuses: from a server before 0.8.3, which doesn't say. */
+const SYSTEM_GROUPS = ['00000000-0000-0000-0000-00000000a001', '00000000-0000-0000-0000-00000000a002'];
+
+/** Whether a group is AbpGuard's own: the group says so (AbpGuard.HttpApi 0.8.3); the known ids before. Goes to `system` alone once 0.8.3 is the minimum. */
+export function isSystemGroup(group: GroupDto): boolean {
+  return group.system ?? SYSTEM_GROUPS.includes(group.id);
+}
+
 export interface GroupScreenProps {
   id: string;
   routes?: GuardRoutes;
@@ -194,7 +202,7 @@ export function GroupScreen({ id, routes = guardRoutes() }: GroupScreenProps) {
           </>
         }
         actions={
-          (!group || (group.isLocal && !group.computed)) && (
+          (!group || (group.isLocal && !group.computed && !isSystemGroup(group))) && (
             <Button danger onClick={deleteGroup} disabled={action.busy}>
               {t('delete')}
             </Button>

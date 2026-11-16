@@ -32,6 +32,7 @@ export type AppEnrolmentDto = Schemas['AppEnrolmentDto'];
 export type SecondFactorSenderDto = Schemas['SecondFactorSenderDto'];
 export type SignUpSettingsDto = Schemas['SignUpSettingsDto'];
 export type SignUpSettingsInput = Schemas['SignUpSettingsInput'];
+export type SignUpDirectoryDto = Schemas['SignUpDirectoryDto'];
 export type AnonymousGrantDto = Schemas['AnonymousGrantDto'];
 export type AccountPage = Schemas['PagedResultDtoOfAccountDto'];
 export type GroupPage = Schemas['PagedResultDtoOfGroupDto'];

@@ -193,6 +193,7 @@
   "signUpSettings.enabled": "يمكن للناس التسجيل",
   "signUpSettings.directory": "الدليل",
   "signUpSettings.directoryHint": "تُنشأ الحسابات في هذا الدليل الداخلي. أضف دليلًا مثل العملاء من الأدلة.",
+  "signUpSettings.directoryHintPlain": "تُنشأ الحسابات في هذا الدليل الداخلي.",
   "signUpSettings.chooseDirectory": "اختر دليلًا",
   "signUpSettings.domains": "نطاقات البريد",
   "signUpSettings.domainsHint": "لا يسجل إلا أصحاب هذه النطاقات؛ الفارغ يقبل أيًا منها. افصل بينها بفواصل.",

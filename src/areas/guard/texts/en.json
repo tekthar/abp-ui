@@ -193,6 +193,7 @@
   "signUpSettings.enabled": "People may sign up",
   "signUpSettings.directory": "Directory",
   "signUpSettings.directoryHint": "Sign-ups are created in this internal directory. Add one such as Customers under Directories.",
+  "signUpSettings.directoryHintPlain": "Sign-ups are created in this internal directory.",
   "signUpSettings.chooseDirectory": "Choose a directory",
   "signUpSettings.domains": "Email domains",
   "signUpSettings.domainsHint": "Only these domains may sign up; empty takes any. Separate them with commas.",

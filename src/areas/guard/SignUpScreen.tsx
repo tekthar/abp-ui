@@ -5,16 +5,28 @@ import { splitList } from '@abpjs/ui/rules';
 import { useGuardNs } from './texts';
 import type { DirectoryDto, SignUpSettingsDto } from './types';
 
+export interface SignUpScreenProps {
+  /**
+   * Whether the host shows AbpGuard's Directories page (its Directories feature on), so the hint may point to it for
+   * adding an internal directory; true by default.
+   */
+  directoriesPage?: boolean;
+}
+
 /**
  * Sign-up, for site admins: off by default. On, people create their own accounts in the internal directory chosen
  * here, optionally only with an email in some domains; an account is active once its email is confirmed. Which places
- * they may use is a grant like any other, to that directory's "everyone" group.
+ * they may use is a grant like any other, to that directory's "everyone" group. The directories to choose from come
+ * with the settings (AbpGuard.HttpApi 0.8.3), so the page works with the Directories feature off; from an older
+ * server, from the directories' list.
  */
-export function SignUpScreen() {
+export function SignUpScreen({ directoriesPage = true }: SignUpScreenProps = {}) {
   const t = useGuardNs('signUpSettings');
   const request = useAreaRequest('guard');
   const settings = useApiQuery<SignUpSettingsDto>('guard', '/signup/settings');
-  const directories = useApiQuery<DirectoryDto[]>('guard', '/directories');
+  // A server before 0.8.3 doesn't list them with the settings. Goes once AbpGuard.HttpApi 0.8.3 is the minimum.
+  const older = settings.data != null && settings.data.directories == null;
+  const directories = useApiQuery<DirectoryDto[]>('guard', older ? '/directories' : null);
   const action = useApiAction();
   const [form, setForm] = useState({ enabled: false, directoryId: '', domains: '' });
 
@@ -24,7 +36,13 @@ export function SignUpScreen() {
   }, [settings.data]);
 
   if (settings.error) return <InlineAlert tone="danger">{settings.error}</InlineAlert>;
-  const internal = (directories.data ?? []).filter((d) => d.type === 'internal');
+  const listed: { id: string; name: string }[] = settings.data?.directories
+    ?? (directories.data ?? []).filter((d) => d.type === 'internal').map((d) => ({ id: d.id, name: d.name }));
+  // The directory chosen before may since have been switched off: still named, so the choice shows as it is.
+  const current = settings.data?.directoryId;
+  const internal = current && !listed.some((d) => d.id === current) && settings.data?.directoryName
+    ? [...listed, { id: current, name: settings.data.directoryName }]
+    : listed;
   const chosen = internal.find((d) => d.id === form.directoryId);
 
   async function save() {
@@ -47,7 +65,7 @@ export function SignUpScreen() {
       <Panel data-testid="signup-settings" loading={!settings.data}>
         <Stack gap="field" maxW="2xl">
           <SwitchField label={t('enabled')} checked={form.enabled} onCheckedChange={(c) => setForm({ ...form, enabled: c })} />
-          <Field label={t('directory')} helperText={t('directoryHint')}>
+          <Field label={t('directory')} helperText={directoriesPage ? t('directoryHint') : t('directoryHintPlain')}>
             <SelectField
               value={form.directoryId}
               onChange={(e) => setForm({ ...form, directoryId: e.target.value })}

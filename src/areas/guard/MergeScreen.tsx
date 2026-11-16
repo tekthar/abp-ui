@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { HStack, Input, SimpleGrid, Stack, Text } from '@chakra-ui/react';
 import {
   boneWidth,
@@ -31,7 +31,10 @@ import type { AccountDetailDto, AccountDto, AccountMergeDto, AccountSummaryDto, 
 export interface MergeScreenProps {
   /** The account to merge into another. */
   id: string;
-  /** The account to merge it into, when the link names one (the duplicates list's): picked already. */
+  /**
+   * The account to merge it into, when the link names one (the duplicates list's): picked already. It may come after the
+   * first render (a host reading the address in the browser only); it's picked then, unless the person picked someone.
+   */
   into?: string | null;
   routes?: GuardRoutes;
 }
@@ -49,18 +52,26 @@ export function MergeScreen({ id, into, routes = guardRoutes() }: MergeScreenPro
   const request = useAreaRequest('guard');
   const source = useApiQuery<AccountDetailDto>('guard', `/accounts/${id}`);
   const [survivor, setSurvivor] = useState<AccountDto | null>(null);
+  // Once the person picks, a survivor named by the link (arriving late) doesn't replace their choice.
+  const pickedByHand = useRef(false);
   const [preview, setPreview] = useState<MergePreviewDto | null>(null);
   const [confirm, setConfirm] = useState('');
   const loading = useApiAction();
   const merging = useApiAction();
 
-  // A survivor named in the link is picked already.
+  // A survivor named in the link is picked already, when it comes, unless the person has picked one.
   useEffect(() => {
     if (!into) return;
+    let live = true;
     request<AccountDetailDto>(`/accounts/${into}`).then(
-      (d) => setSurvivor(d.account),
+      (d) => {
+        if (live && !pickedByHand.current) setSurvivor(d.account);
+      },
       () => undefined,
     );
+    return () => {
+      live = false;
+    };
   }, [into, request]);
 
   useEffect(() => {
@@ -118,7 +129,10 @@ export function MergeScreen({ id, into, routes = guardRoutes() }: MergeScreenPro
               <SearchPicker<AccountDto>
                 aria-label={t('survivor')}
                 value={survivor}
-                onChange={setSurvivor}
+                onChange={(picked) => {
+                  pickedByHand.current = true;
+                  setSurvivor(picked);
+                }}
                 search={search}
                 known={[]}
                 getId={(a) => a.id}
