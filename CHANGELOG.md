@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0-next.19
+
+A prerelease under npm's `next` tag.
+
+- guard: `guardPages(options)`, the five `SettingsPage` entries (accounts, groups, directories, sign-up, anonymous
+  access) on a base path, each drawing its list or item from the catch-all's path; `directories: false` for a server
+  with Guard's directories off. Sign-up reads its directories from its settings (AbpGuard 0.8.3; `/directories` before
+  it), and `directoriesPage` drops the hint about a page the host doesn't have. No Delete on the system groups
+  (`isSystemGroup`). A merge's `?into=` is read so the server and the browser render it alike.
+
 ## 0.2.0-next.18
 
 A prerelease under npm's `next` tag.
