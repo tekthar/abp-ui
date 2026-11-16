@@ -8,6 +8,7 @@ import {
   errorText,
   Field,
   InlineAlert,
+  ListFooter,
   notify,
   PageHeader,
   Panel,
@@ -24,7 +25,6 @@ import {
   type ListSource,
 } from '@abpjs/ui';
 import { fromNamesValue, splitList } from '@abpjs/ui/rules';
-import { ListFooter } from './ListFooter';
 import { useWrittenName } from './names';
 import { guardRoutes, type GuardRoutes } from './routes';
 import { useGuardNs } from './texts';

@@ -15,7 +15,6 @@ export { GroupScreen, type GroupScreenProps } from './GroupScreen';
 export { GroupsScreen, type GroupsScreenProps } from './GroupsScreen';
 export { GroupTree, type GroupTreeProps } from './GroupTree';
 export { GroupTwoFactorPanel, TWO_FACTOR_MODES } from './GroupTwoFactorPanel';
-export { ListFooter } from './ListFooter';
 export { CountList, MergesPanel, useCountLabel, usePartLabel, type MergesPanelProps } from './MergeParts';
 export { MergeScreen, type MergeScreenProps } from './MergeScreen';
 export { useWrittenName } from './names';

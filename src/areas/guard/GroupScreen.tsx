@@ -23,6 +23,7 @@ import {
   useAreaRequest,
   useConfirm,
   useNavigate,
+  useSettledValue,
   type DataTableColumn,
 } from '@abpjs/ui';
 import { fromNamesValue, splitList, toNamesValue } from '@abpjs/ui/rules';
@@ -334,22 +335,12 @@ function OrganizationPanel({ group, onSaved }: { group: GroupDto; onSaved: () =>
   );
 }
 
-/** What's typed, once typing has paused for `delay` ms. */
-function useSettled(value: string, delay = 250): string {
-  const [settled, setSettled] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setSettled(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-  return settled;
-}
-
 function AddMember({ groupId, existing, onAdded }: { groupId: string; existing: GroupMemberDto[]; onAdded: () => Promise<void> }) {
   const t = useGuardNs('groupDetail');
   const tc = useGuardNs('common');
   const request = useAreaRequest('guard');
   const [query, setQuery] = useState('');
-  const settled = useSettled(query.trim());
+  const settled = useSettledValue(query.trim());
   const [accounts, setAccounts] = useState<AccountDto[]>([]);
   const [groups, setGroups] = useState<GroupDto[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);

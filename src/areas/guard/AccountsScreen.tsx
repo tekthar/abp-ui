@@ -7,6 +7,7 @@ import {
   errorText,
   Field,
   InlineAlert,
+  ListFooter,
   notify,
   PageHeader,
   Panel,
@@ -23,7 +24,6 @@ import {
   type ListSource,
 } from '@abpjs/ui';
 import { DuplicatesPanel } from './DuplicatesPanel';
-import { ListFooter } from './ListFooter';
 import { guardRoutes, type GuardRoutes } from './routes';
 import { AccountStatusPill } from './status';
 import { useGuardNs } from './texts';
