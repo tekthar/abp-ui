@@ -17,7 +17,6 @@ import {
   useApiAction,
   useApiQuery,
   useAreaRequest,
-  useCan,
   useFormatters,
   useMe,
   useNavigate,
@@ -32,17 +31,15 @@ import { AccountStatusPill } from './status';
 import { useGuardNs, withParts } from './texts';
 import type { AccountCanDto, AccountDetailDto, AccountDto, AccountEmailsDto, EffectiveGroupDto, IdentityDto } from './types';
 
-/** What the person looking may do to this account, as AbpGuard.HttpApi answers it with the account (from 0.8.2). */
+/** What the person looking may do to this account, as AbpGuard.HttpApi answers it with the account. */
 export type AccountAction = keyof AccountCanDto;
 
 /**
  * Whether the person looking may do `action` to the account: the account's own `can` flags, the server's answer for this
- * person and this account; from a server before them, whether they administer people and sign-in.
+ * person and this account. While the account loads, nothing.
  */
 export function useAccountCan(detail: AccountDetailDto | undefined): (action: AccountAction) => boolean {
-  const can = useCan();
-  // A server that doesn't say (before 0.8.2): the site-admin right instead. Goes once AbpGuard.HttpApi 0.8.2 is the minimum.
-  return (action) => detail?.can?.[action] ?? can('guard.site.admin');
+  return (action) => detail?.can?.[action] ?? false;
 }
 
 /** The addresses panel while the account loads: its rows are placeholders until they come. */

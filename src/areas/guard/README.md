@@ -3,12 +3,10 @@
 The admin screens of [AbpGuard](https://github.com/tekthar/abp-guard)'s people and sign-in: accounts (their names,
 addresses, second factors, duplicates and merges), groups, directories, sign-up and anonymous access; and a person's own
 second factors and passkeys. They call
-**AbpGuard.HttpApi 0.7.1** or later (the paged lists are 0.6.0's, passkeys and the strong step-up 0.7.0's, the step-up's
-app code alone 0.7.1's). From **0.8.2** an account's detail says what the person looking may do to it (`can`); against an
-older server the account page falls back to `guard.site.admin`. From **0.8.3** sign-up's settings list the directories
-it may use, so sign-up works with AbpGuard's Directories feature off, and a group says whether it's AbpGuard's own
-(`system`: admins, everyone), which can't be deleted; against an older server the area reads the directories' list and
-knows those two groups by their ids.
+**AbpGuard.HttpApi 0.8.3** or later, the minimum, for three answers older servers don't give: `GET /accounts/{id}`'s
+`can`, what the person looking may do to that account; `GET /signup/settings`'s `directories`, the internal directories
+sign-up may use (so sign-up works with AbpGuard's Directories feature off); and a group's `system` (`GET /groups/page`,
+`GET /groups/{id}`), true for AbpGuard's own admins and everyone groups, which can't be deleted.
 
 The types in `api.d.ts` are generated from abp-guard's own document (`docs/openapi/abpguard.json`, every feature on) with
 `openapi-typescript`:
@@ -42,7 +40,7 @@ npx openapi-typescript@7.10.1 ../abp-guard/docs/openapi/abpguard.json -o src/are
 | `guard.site.admin` | administers people and sign-in | directories, groups, sign-up, anonymous access; creating accounts; accounts that share an address |
 
 What a person may do to one account (change it, lock or unlock it, merge it, reset its second factor) is the server's
-answer on the account itself, `can` (0.8.2), which covers a helpdesk scoped to one directory. The rights only shape
+answer on the account itself, `can`, which covers a helpdesk scoped to one directory. The rights only shape
 what's shown; AbpGuard.HttpApi's answers decide (a change to someone's account is a strong step-up from 0.7.0, asked by
 the foundation's step-up dialog).
 
