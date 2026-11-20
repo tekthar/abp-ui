@@ -173,6 +173,8 @@ export interface QueryListLabels {
   /** The pagination's name, and a page button's: "Page {page}". */
   pages: string;
   page: string;
+  /** The compact pagination's "Page {page} of {pages}". */
+  pageOf: string;
   empty: string;
   export: string;
   exportCsv: string;
@@ -262,6 +264,7 @@ export const defaultQueryListLabels: QueryListLabels = {
   next: 'Next page',
   pages: 'Pages',
   page: 'Page {page}',
+  pageOf: 'Page {page} of {pages}',
   empty: 'Nothing matches this query.',
   export: 'Export',
   exportCsv: 'CSV (.csv)',

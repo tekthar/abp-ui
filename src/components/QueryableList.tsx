@@ -14,6 +14,7 @@ import { SegmentedControl } from './SegmentedControl';
 import { DataTable, type DataTableColumn, type DataTableSelection, type DataTableSort, parentFoldKey } from './DataTable';
 import { FilterBuilderDialog } from './query/FilterBuilder';
 import { Pagination } from './Pagination';
+import type { PaginationForm } from './pageList';
 import { SelectField } from './Field';
 import { InlineAlert } from './InlineAlert';
 import { Panel } from './Panel';
@@ -151,6 +152,11 @@ export interface QueryableListProps {
   skip: number;
   take: number;
   onSkipChange: (skip: number) => void;
+  /**
+   * How its pages read (`Pagination`'s form): `simple` when left out (the range, then previous and next, centred);
+   * `numbered` for a long report people page through; `compact` for a narrow place.
+   */
+  pagination?: PaginationForm;
   views?: QueryableListView[];
   activeViewId?: string | null;
   onSelectView?: (id: string | null) => void;
@@ -253,6 +259,7 @@ export function QueryableList({
   skip,
   take,
   onSkipChange,
+  pagination = 'simple',
   views,
   activeViewId,
   onSelectView,
@@ -594,7 +601,8 @@ export function QueryableList({
       <Panel
         flush
         footer={
-          // Expand and collapse at the start, the pages in the middle (the canvas's v12, UI round 9 step 67), the range at the end.
+          // Expand and collapse at the start, the pages in the middle (the canvas's v12, UI round 9 step 67, round 10 step 73),
+          // the range at the end, or with the arrows in the simple form.
           <chakra.div display="grid" w="full" gridTemplateColumns={{ base: '1fr', md: '1fr auto 1fr' }} alignItems="center" gap="3">
             <HStack gap="3">
               {grouped && (
@@ -610,9 +618,12 @@ export function QueryableList({
             </HStack>
             <Pagination page={Math.floor(skip / take) + 1} pages={Math.max(1, Math.ceil(total / take))} disabled={Boolean(loading)}
               onPage={(n) => onSkipChange((n - 1) * take)} label={labels.pages} previous={labels.previous} next={labels.next}
-              pageLabel={(n) => fill(labels.page, { page: fmt.number(n) })} />
+              pageLabel={(n) => fill(labels.page, { page: fmt.number(n) })} form={pagination}
+              range={result ? fill(labels.range, { from: fmt.number(from), to: fmt.number(to), total: fmt.number(total) }) : undefined}
+              pageOf={fill(labels.pageOf, { page: fmt.number(Math.floor(skip / take) + 1), pages: fmt.number(Math.max(1, Math.ceil(total / take))) })} />
+            {/* The simple form carries the range itself; the others keep it at the end. */}
             <Text textStyle="caption" color="fg.muted" textAlign={{ md: 'end' }} fontVariantNumeric="tabular-nums" aria-live="polite">
-              {result ? fill(labels.range, { from: fmt.number(from), to: fmt.number(to), total: fmt.number(total) }) : ' '}
+              {result && pagination !== 'simple' ? fill(labels.range, { from: fmt.number(from), to: fmt.number(to), total: fmt.number(total) }) : ' '}
             </Text>
           </chakra.div>
         }

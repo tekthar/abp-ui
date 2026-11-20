@@ -1,7 +1,7 @@
-import { chakra, HStack } from '@chakra-ui/react';
+import { chakra, HStack, Text } from '@chakra-ui/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { DirectionalIcon } from './DirectionalIcon';
-import { pageList } from './pageList';
+import { pagesShown, type PaginationForm } from './pageList';
 
 export interface PaginationProps {
   /** The current page, from 1. */
@@ -15,6 +15,12 @@ export interface PaginationProps {
   /** A page button's name: "Page 4". */
   pageLabel: (page: number) => string;
   disabled?: boolean;
+  /** How it reads; `numbered` when left out (step 67's pages). */
+  form?: PaginationForm;
+  /** Which rows of how many ("26–50 of 112"), drawn before the arrows in the simple form. */
+  range?: string;
+  /** "Page 3 of 200", drawn between the arrows in the compact form. */
+  pageOf?: string;
 }
 
 const button = {
@@ -39,21 +45,37 @@ const button = {
 } as const;
 
 /**
- * Pages of a list, centred under it (the canvas's v12, UI round 9 step 67): previous, the first and last pages and the
- * ones around the current one (gaps as "…"), next. The current page is filled. One page: nothing to show.
+ * Pages of a list, centred under it (the canvas's v12). Numbered (UI round 9 step 67): previous, the first and last pages
+ * and the ones around the current one (gaps as "…"), next, the current page filled. Simple (round 10 step 73): the
+ * range, then previous and next. Compact: "Page 3 of 200" between them. One page: only the simple form's range, if any.
  */
-export function Pagination({ page, pages, onPage, label, previous, next, pageLabel, disabled }: PaginationProps) {
-  if (pages <= 1) return null;
+export function Pagination({ page, pages, onPage, label, previous, next, pageLabel, disabled, form = 'numbered', range, pageOf }: PaginationProps) {
+  const rangeText = form === 'simple' && range ? (
+    <Text as="span" textStyle="caption" color="fg.muted" fontVariantNumeric="tabular-nums" whiteSpace="nowrap" aria-live="polite">
+      {range}
+    </Text>
+  ) : null;
+  if (pages <= 1) return rangeText ? <chakra.nav aria-label={label} display="flex" justifyContent="center">{rangeText}</chakra.nav> : null;
   const go = (n: number) => onPage(Math.min(pages, Math.max(1, n)));
   return (
     <chakra.nav aria-label={label}>
       <HStack gap="1" justify="center" wrap="wrap">
+        {rangeText && (
+          <chakra.span marginEnd="3" display="inline-flex">
+            {rangeText}
+          </chakra.span>
+        )}
         <chakra.button type="button" css={button} aria-label={previous} title={previous} disabled={disabled || page <= 1} onClick={() => go(page - 1)}>
           <DirectionalIcon>
             <ChevronLeft />
           </DirectionalIcon>
         </chakra.button>
-        {pageList(page, pages).map((n, i) =>
+        {form === 'compact' && pageOf && (
+          <Text as="span" textStyle="sm" px="1" fontVariantNumeric="tabular-nums" whiteSpace="nowrap">
+            {pageOf}
+          </Text>
+        )}
+        {pagesShown(form, page, pages).map((n, i) =>
           n === 'gap' ? (
             <chakra.span key={`gap-${i}`} minW="5" textAlign="center" color="fg.muted" aria-hidden="true">
               …
