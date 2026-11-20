@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0-next.21
+
+A prerelease under npm's `next` tag.
+
+- agent: the default texts name no host's things: a scope is a "project", as in `ai`, and what a run or a note is about
+  is an "item". A host with other words gives them through `AbpHost.texts.agent`. 17 texts the area never used are gone.
+
 ## 0.2.0-next.20
 
 A prerelease under npm's `next` tag.
