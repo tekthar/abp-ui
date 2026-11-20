@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0-next.22
+
+A prerelease under npm's `next` tag.
+
+- guard: AbpGuard.HttpApi 0.8.3 is the minimum. An account's actions follow its `can` alone (no `guard.site.admin`
+  fallback), sign-up's directories come only from its settings (no `/directories` call), and `isSystemGroup` reads
+  `system` alone.
+
 ## 0.2.0-next.21
 
 A prerelease under npm's `next` tag.
