@@ -18,8 +18,8 @@ The types in `api.d.ts` come from that version's document, `docs/openapi/abpagen
   function from a tool to its group's id and heading, around the screens. They follow the host's and plugins' tools.
 - Where items open: `itemHref(kind, key)` on `AgentsAdmin`, `ScopeAgentsScreen`, `AgentQuestionsPanel` and
   `AgentChatPanel` (or `ItemHrefProvider` around them). Items show as their keys without it.
-- Words: any key in `texts/en.json` through `AbpHost.texts.agent`. The defaults call a scope a "project" and an item a
-  "record"; a host whose are something else says so there.
+- Words: any key in `texts/en.json` through `AbpHost.texts.agent`. The defaults call a scope a "project" and what a run
+  or a note is about an "item"; a host names its own there (its records, its assets, the keys it offers agents to).
 - The graph is drawn with React Flow: a host that shows it imports `@xyflow/react/dist/style.css` once. The area
   imports no CSS.
 
