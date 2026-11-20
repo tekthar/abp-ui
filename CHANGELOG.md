@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0-next.23
+
+A prerelease under npm's `next` tag.
+
+- `Pagination` takes a `form`. `simple` reads as which rows of how many ("26–50 of 112"), then previous and next.
+  `numbered` shows the pages, as before, and `compact` shows "Page 3 of 200" between the arrows (`queryList.pageOf`).
+  The simple form draws the range from a new `range` prop, and the compact form takes a new `pageOf` prop.
+  `pagesShown` and `PaginationForm` are exported.
+- `QueryableList` (`pagination`) and `ListFooter` (`form`) default to `simple`, centred under the list: people narrow a
+  long list with search and filters rather than jump to a page. A list that wants its pages says `numbered`.
+
 ## 0.2.0-next.22
 
 A prerelease under npm's `next` tag.
