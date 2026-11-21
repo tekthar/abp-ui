@@ -386,7 +386,7 @@ function ChatView({ id, onBack, onMissing }: { id: string; onBack: () => void; o
             )}
           </Stack>
           {c && !going && (
-            <IconButton aria-label={t('chat.delete')} size="sm" onClick={() => void remove()} data-testid="agent-chat-delete">
+            <IconButton danger aria-label={t('chat.delete')} size="sm" onClick={() => void remove()} data-testid="agent-chat-delete">
               <Trash2 size={16} />
             </IconButton>
           )}
