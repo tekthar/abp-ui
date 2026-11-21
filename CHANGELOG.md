@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0-next.28
+
+A prerelease under npm's `next` tag.
+
+- agent: an empty chat list and an empty "mine" list draw `art="agent"`.
+
 ## 0.2.0-next.27
 
 A prerelease under npm's `next` tag. (0.2.0-next.26 was tagged but never published: a test list was malformed.)
@@ -17,6 +23,8 @@ A prerelease under npm's `next` tag. (0.2.0-next.26 was tagged but never publish
   (`aria-hidden`). A `no-results` or `no-filter-match` empty state is a polite live region, and an `error` one is an
   alert.
 - `PageIllustration`, `EmptyArtDrawing`, `EmptyIllustration` and `EmptyArt` are exported.
+- agent: the chat panel spans the page, not the window (its positioner is 100% wide, not 100vw), so the page's
+  scrollbar no longer pushes it past the screen's edge.
 
 ## 0.2.0-next.25
 
