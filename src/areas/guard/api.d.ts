@@ -83,6 +83,8 @@ export interface paths {
                 query?: {
                     Filter?: string;
                     Status?: string;
+                    DirectoryId?: string;
+                    GroupBy?: string;
                     Sorting?: string;
                     SkipCount?: number | string;
                     MaxResultCount?: number | string;
@@ -99,10 +101,51 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["PagedResultDtoOfAccountDto"];
-                        "application/json": components["schemas"]["PagedResultDtoOfAccountDto"];
-                        "text/json": components["schemas"]["PagedResultDtoOfAccountDto"];
+                        "text/plain": components["schemas"]["GuardPagedResultDtoOfAccountDto"];
+                        "application/json": components["schemas"]["GuardPagedResultDtoOfAccountDto"];
+                        "text/json": components["schemas"]["GuardPagedResultDtoOfAccountDto"];
                     };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/guard/accounts/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    Filter?: string;
+                    Status?: string;
+                    DirectoryId?: string;
+                    GroupBy?: string;
+                    Sorting?: string;
+                    SkipCount?: number | string;
+                    MaxResultCount?: number | string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
                 };
             };
         };
@@ -147,7 +190,26 @@ export interface paths {
         };
         put?: never;
         post?: never;
-        delete?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -193,6 +255,84 @@ export interface paths {
         trace?: never;
     };
     "/api/guard/accounts/{id}/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["AccountDto"];
+                        "application/json": components["schemas"]["AccountDto"];
+                        "text/json": components["schemas"]["AccountDto"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/guard/accounts/{id}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["AccountDto"];
+                        "application/json": components["schemas"]["AccountDto"];
+                        "text/json": components["schemas"]["AccountDto"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/guard/accounts/{id}/activate": {
         parameters: {
             query?: never;
             header?: never;
@@ -320,6 +460,119 @@ export interface paths {
                 };
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/guard/accounts/{id}/password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/guard/accounts/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["InvitationInput"];
+                    "text/json": components["schemas"]["InvitationInput"];
+                    "application/*+json": components["schemas"]["InvitationInput"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["InvitationResultDto"];
+                        "application/json": components["schemas"]["InvitationResultDto"];
+                        "text/json": components["schemas"]["InvitationResultDto"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/guard/accounts/{id}/invitation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1075,6 +1328,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/guard/anonymous/places": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["AnonymousPlaceDto"][];
+                        "application/json": components["schemas"]["AnonymousPlaceDto"][];
+                        "text/json": components["schemas"]["AnonymousPlaceDto"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/guard/anonymous": {
         parameters: {
             query?: never;
@@ -1105,7 +1395,34 @@ export interface paths {
             };
         };
         put?: never;
-        post?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["GiveAnonymousRoleInput"];
+                    "text/json": components["schemas"]["GiveAnonymousRoleInput"];
+                    "application/*+json": components["schemas"]["GiveAnonymousRoleInput"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["AnonymousGrantDto"];
+                        "application/json": components["schemas"]["AnonymousGrantDto"];
+                        "text/json": components["schemas"]["AnonymousGrantDto"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -1120,7 +1437,36 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    grantId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ChangeAnonymousRoleInput"];
+                    "text/json": components["schemas"]["ChangeAnonymousRoleInput"];
+                    "application/*+json": components["schemas"]["ChangeAnonymousRoleInput"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["AnonymousGrantDto"];
+                        "application/json": components["schemas"]["AnonymousGrantDto"];
+                        "text/json": components["schemas"]["AnonymousGrantDto"];
+                    };
+                };
+            };
+        };
         post?: never;
         delete: {
             parameters: {
@@ -2330,6 +2676,7 @@ export interface paths {
                     Filter?: string;
                     DirectoryId?: string;
                     Kind?: string;
+                    GroupBy?: string;
                     Sorting?: string;
                     SkipCount?: number | string;
                     MaxResultCount?: number | string;
@@ -2346,10 +2693,51 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["PagedResultDtoOfGroupDto"];
-                        "application/json": components["schemas"]["PagedResultDtoOfGroupDto"];
-                        "text/json": components["schemas"]["PagedResultDtoOfGroupDto"];
+                        "text/plain": components["schemas"]["GuardPagedResultDtoOfGroupDto"];
+                        "application/json": components["schemas"]["GuardPagedResultDtoOfGroupDto"];
+                        "text/json": components["schemas"]["GuardPagedResultDtoOfGroupDto"];
                     };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/guard/groups/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    Filter?: string;
+                    DirectoryId?: string;
+                    Kind?: string;
+                    GroupBy?: string;
+                    Sorting?: string;
+                    SkipCount?: number | string;
+                    MaxResultCount?: number | string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
                 };
             };
         };
@@ -4661,6 +5049,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/guard/password/policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["PasswordPolicyDto"];
+                        "application/json": components["schemas"]["PasswordPolicyDto"];
+                        "text/json": components["schemas"]["PasswordPolicyDto"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/guard/password/forgot": {
         parameters: {
             query?: never;
@@ -5612,6 +6037,10 @@ export interface components {
             resetSecondFactor: boolean;
             erase: boolean;
             exportData: boolean;
+            deactivate?: boolean;
+            activate?: boolean;
+            resetPassword?: boolean;
+            delete?: boolean;
         };
         AccountDetailDto: {
             account: components["schemas"]["AccountDto"];
@@ -5641,6 +6070,9 @@ export interface components {
             /** @default false */
             isService: boolean;
             isAgent?: boolean;
+            invited?: boolean;
+            /** Format: date-time */
+            createdAt?: string;
             displayNames?: {
                 [key: string]: string;
             };
@@ -5751,11 +6183,38 @@ export interface components {
             validUntil: null | string;
             /** Format: date-time */
             createdAt: string;
+            code?: null | string;
+            /** Format: uuid */
+            roleId?: string;
+        };
+        AnonymousPlaceDto: {
+            scopeKey: string;
+            label: string;
+            code: null | string;
+            href: null | string;
+            roles: components["schemas"]["AnonymousRoleDto"][];
+        };
+        AnonymousRoleDto: {
+            /** Format: uuid */
+            id: string;
+            key: string;
+            name: string;
+            description: null | string;
+            names: {
+                [key: string]: string;
+            };
+            descriptions: {
+                [key: string]: string;
+            };
         };
         AppEnrolmentDto: {
             secret: string;
             address: string;
             qr: string;
+        };
+        ChangeAnonymousRoleInput: {
+            /** Format: uuid */
+            roleId: string;
         };
         CodeSentDto: {
             method: string;
@@ -5974,6 +6433,11 @@ export interface components {
         ForgotPasswordInput: {
             email: string;
         };
+        GiveAnonymousRoleInput: {
+            /** Format: uuid */
+            roleId: string;
+            scopeKey: string;
+        };
         GrantDto: {
             /** Format: uuid */
             id: string;
@@ -6041,6 +6505,18 @@ export interface components {
         GroupTwoFactorInput: {
             mode: null | string;
         };
+        GuardPagedResultDtoOfAccountDto: {
+            groups?: null | components["schemas"]["ListGroupDto"][];
+            /** Format: int64 */
+            totalCount?: number | string;
+            items?: components["schemas"]["AccountDto"][];
+        };
+        GuardPagedResultDtoOfGroupDto: {
+            groups?: null | components["schemas"]["ListGroupDto"][];
+            /** Format: int64 */
+            totalCount?: number | string;
+            items?: components["schemas"]["GroupDto"][];
+        };
         IdentityDto: {
             /** Format: uuid */
             directoryId: string;
@@ -6064,6 +6540,23 @@ export interface components {
             /** Format: date-time */
             removedAt: null | string;
             personalData: components["schemas"]["PluginPersonalData"];
+        };
+        InvitationInput: {
+            people: components["schemas"]["InvitePersonInput"][];
+            /** Format: uuid */
+            directoryId?: null | string;
+        };
+        InvitationRefusedDto: {
+            email: string;
+            reason: string;
+        };
+        InvitationResultDto: {
+            invited: components["schemas"]["AccountDto"][];
+            refused: components["schemas"]["InvitationRefusedDto"][];
+        };
+        InvitePersonInput: {
+            email: string;
+            displayName?: null | string;
         };
         JsonElement: unknown;
         JsonNode: unknown;
@@ -6092,6 +6585,12 @@ export interface components {
             reason: string;
             /** Format: date-time */
             until: null | string;
+        };
+        ListGroupDto: {
+            key: string;
+            label: string;
+            /** Format: int32 */
+            count: number | string;
         };
         LocalizedText: {
             en: string;
@@ -6211,16 +6710,6 @@ export interface components {
             email: null | string;
             phone: null | string;
         };
-        PagedResultDtoOfAccountDto: {
-            /** Format: int64 */
-            totalCount?: number | string;
-            items?: components["schemas"]["AccountDto"][];
-        };
-        PagedResultDtoOfGroupDto: {
-            /** Format: int64 */
-            totalCount?: number | string;
-            items?: components["schemas"]["GroupDto"][];
-        };
         PasskeyAddedDto: {
             /** Format: uuid */
             id: string;
@@ -6246,6 +6735,12 @@ export interface components {
         };
         PasskeyNameInput: {
             name: null | string;
+        };
+        PasswordPolicyDto: {
+            /** Format: int32 */
+            minLength: number | string;
+            /** Format: int32 */
+            maxLength: number | string;
         };
         PersonalDataField: {
             on: string;

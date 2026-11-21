@@ -34,8 +34,19 @@ export type SignUpSettingsDto = Schemas['SignUpSettingsDto'];
 export type SignUpSettingsInput = Schemas['SignUpSettingsInput'];
 export type SignUpDirectoryDto = Schemas['SignUpDirectoryDto'];
 export type AnonymousGrantDto = Schemas['AnonymousGrantDto'];
-export type AccountPage = Schemas['PagedResultDtoOfAccountDto'];
-export type GroupPage = Schemas['PagedResultDtoOfGroupDto'];
+export type AccountPage = Schemas['GuardPagedResultDtoOfAccountDto'];
+export type GroupPage = Schemas['GuardPagedResultDtoOfGroupDto'];
+/** A grouped list's group with its total under the same filters (0.9.0). */
+export type ListGroupDto = Schemas['ListGroupDto'];
+export type AnonymousPlaceDto = Schemas['AnonymousPlaceDto'];
+export type AnonymousRoleDto = Schemas['AnonymousRoleDto'];
+export type GiveAnonymousRoleInput = Schemas['GiveAnonymousRoleInput'];
+export type ChangeAnonymousRoleInput = Schemas['ChangeAnonymousRoleInput'];
+export type InvitationInput = Schemas['InvitationInput'];
+export type InvitePersonInput = Schemas['InvitePersonInput'];
+export type InvitationResultDto = Schemas['InvitationResultDto'];
+export type InvitationRefusedDto = Schemas['InvitationRefusedDto'];
+export type PasswordPolicyDto = Schemas['PasswordPolicyDto'];
 
 /** A directory's sign-in test, step by step (POST directories/{id}/test-login: its document names no answer). */
 export type TestLoginStepName = 'Connection' | 'FindUser' | 'Authenticate' | 'Precedence';
