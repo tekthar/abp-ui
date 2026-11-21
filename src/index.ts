@@ -100,6 +100,7 @@ export { compactLayout, DashboardGrid, placeItem, type DashboardGridProps, type 
 export { CategoryProgress, type CategoryProgressProps } from './components/CategoryProgress';
 export { DirectionalIcon } from './components/DirectionalIcon';
 export { EmptyState, type EmptyStateProps } from './components/EmptyState';
+export { EmptyArtDrawing, PageIllustration, type EmptyArt, type EmptyIllustration } from './components/empty-art';
 export { AttentionChip, type AttentionChipProps } from './components/AttentionChip';
 export { CountBadge, type CountBadgeProps } from './components/CountBadge';
 export { IconTile, type IconTileProps } from './components/IconTile';

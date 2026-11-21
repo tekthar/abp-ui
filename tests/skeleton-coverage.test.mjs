@@ -15,6 +15,7 @@ const WITHOUT = {
   'FormDialog.tsx': 'a dialog opens on an action, with fields the person fills; the form it holds loads nothing',
   'DirectionalIcon.tsx': 'an icon: drawn as it is wherever it sits',
   'EmptyState.tsx': 'shown when the data says there is nothing, so after it loads',
+  'empty-art.tsx': 'EmptyState'"'"'s drawings, shown with it after the data says there is nothing',
   'FileDrop.tsx': 'a frame around its children (an Upload button), which draw their own; its hint shows on a drag',
   'IconTile.tsx': 'an icon on a tile: drawn as it is wherever it sits',
   'InlineAlert.tsx': 'shown for a result or an error, so after it',
