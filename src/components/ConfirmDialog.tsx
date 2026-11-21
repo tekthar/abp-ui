@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useId, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { chakra, CloseButton, Dialog, Input, Portal, Stack } from '@chakra-ui/react';
 import { defaultLabels, useAbpLabels } from '../provider/labels';
 import { Button } from './Button';
@@ -43,6 +43,10 @@ export function ConfirmDialog({
   const [typed, setTyped] = useState('');
   const typedId = useId();
   const locked = typeToConfirm != null && typed.trim() !== typeToConfirm;
+  // Each opening starts empty, however the last one closed (confirmed, cancelled, or for another word).
+  useEffect(() => {
+    if (open) setTyped('');
+  }, [open, typeToConfirm]);
   return (
     <Dialog.Root
       role="alertdialog"
