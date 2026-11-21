@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.2.0-next.31
+
+A prerelease under npm's `next` tag.
 
 - `SaveBar`: a page edited in place with unsaved changes. A bar on the selected tint floats at the foot of the window,
   centred, with the question, how many changes wait (`count`, or the host's `message`), Discard and Save (`busy`,
@@ -11,6 +13,7 @@
   - the allowed domains are a list, with Add domain and Remove, each checked as a domain and listed once;
   - with sign-up on, the directory is required, and the field says so;
   - the save bar replaces the Save button, and Discard puts back what's saved;
+  - a domain typed but not added counts as a change and is added on Save; one that isn't a domain stops the save;
   - never set up, the page is its empty state, with Turn on sign-up.
 
   Words: `off`, `directoryRequired`, `anyDomain`, `addDomain`, `add`, `removeDomain`, `domainInvalid`, `domainTwice`,
