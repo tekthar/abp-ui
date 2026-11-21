@@ -18,6 +18,7 @@ import {
   useApiQuery,
   useAreaRequest,
 } from '@abpjs/ui';
+import { normalDomain, signUpChanges, type SignUpForm } from './signUpRules';
 import { useGuardNs } from './texts';
 import type { SignUpSettingsDto } from './types';
 
@@ -29,34 +30,8 @@ export interface SignUpScreenProps {
   directoriesPage?: boolean;
 }
 
-interface SignUpForm {
-  enabled: boolean;
-  directoryId: string;
-  domains: string[];
-}
-
-const DOMAIN = /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,61}[a-z0-9]$/;
-
 function fromSettings(s: SignUpSettingsDto): SignUpForm {
   return { enabled: s.enabled, directoryId: s.directoryId ?? '', domains: [...s.emailDomains] };
-}
-
-/** How many changes the form holds over what's saved: the switch, the directory, and each domain added or taken out. */
-export function signUpChanges(saved: SignUpForm, form: SignUpForm): number {
-  const was = new Set(saved.domains);
-  const now = new Set(form.domains);
-  return (
-    Number(saved.enabled !== form.enabled) +
-    Number(saved.directoryId !== form.directoryId) +
-    form.domains.filter((d) => !was.has(d)).length +
-    saved.domains.filter((d) => !now.has(d)).length
-  );
-}
-
-/** A domain as typed ("@Acme.com ") as it's kept ("acme.com"), or null when it isn't one. */
-export function normalDomain(typed: string): string | null {
-  const d = typed.trim().replace(/^@/, '').replace(/\.$/, '').toLowerCase();
-  return DOMAIN.test(d) ? d : null;
 }
 
 /**
@@ -85,7 +60,8 @@ export function SignUpScreen({ directoriesPage = true }: SignUpScreenProps = {})
   }, [settings.data]);
 
   const saved = useMemo(() => (settings.data ? fromSettings(settings.data) : form), [settings.data, form]);
-  const changes = settings.data ? signUpChanges(saved, form) : 0;
+  // A domain typed but not added yet is a change too: it's added on Save, and Discard drops it.
+  const changes = settings.data ? signUpChanges(saved, form) + Number(draft.trim() !== '') : 0;
 
   if (settings.error) return <InlineAlert tone="danger">{settings.error}</InlineAlert>;
   const listed: { id: string; name: string }[] = settings.data?.directories ?? [];
@@ -144,6 +120,17 @@ export function SignUpScreen({ directoriesPage = true }: SignUpScreenProps = {})
   }
 
   async function save() {
+    // A domain still in the box is added first; one that isn't a domain stops the save and says so.
+    let domains = form.domains;
+    if (draft.trim()) {
+      const domain = normalDomain(draft);
+      if (!domain) {
+        setDraftError(t('domainInvalid'));
+        draftInput.current?.focus();
+        return;
+      }
+      if (!domains.includes(domain)) domains = [...domains, domain];
+    }
     if (form.enabled && !form.directoryId) {
       setDirectoryError(t('directoryRequired'));
       return;
@@ -151,7 +138,7 @@ export function SignUpScreen({ directoriesPage = true }: SignUpScreenProps = {})
     const result = await action.run(() =>
       request<SignUpSettingsDto>('/signup/settings', {
         method: 'PUT',
-        body: { enabled: form.enabled, directoryId: form.directoryId || null, emailDomains: form.domains },
+        body: { enabled: form.enabled, directoryId: form.directoryId || null, emailDomains: domains },
       }),
     );
     if (result) {
