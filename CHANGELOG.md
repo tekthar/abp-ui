@@ -1,8 +1,8 @@
 # Changelog
 
-## 0.2.0-next.26
+## 0.2.0-next.27
 
-A prerelease under npm's `next` tag.
+A prerelease under npm's `next` tag. (0.2.0-next.26 was tagged but never published: a test list was malformed.)
 
 - `EmptyState variant="page"`: for a page whose whole main content is empty. In place of the icon it draws
   `illustration`, the feature the page is about: `records`, `board`, `views`, `dashboards`, `dashboard`, `reports`,
