@@ -1,6 +1,6 @@
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
-import { CloseButton, Dialog, Portal } from '@chakra-ui/react';
-import { useAbpLabels } from '../provider/labels';
+import { createContext, useCallback, useContext, useId, useRef, useState, type ReactNode } from 'react';
+import { chakra, CloseButton, Dialog, Input, Portal, Stack } from '@chakra-ui/react';
+import { defaultLabels, useAbpLabels } from '../provider/labels';
 import { Button } from './Button';
 
 export interface ConfirmOptions {
@@ -10,6 +10,11 @@ export interface ConfirmOptions {
   cancelLabel?: ReactNode;
   /** Red confirm button for destructive actions. */
   danger?: boolean;
+  /**
+   * A word the person types before the confirm turns on (a project's key, to delete it): for acts that can't be taken
+   * back and reach a lot. Matched exactly, ignoring spaces around it.
+   */
+  typeToConfirm?: string;
 }
 
 export interface ConfirmDialogProps extends ConfirmOptions {
@@ -31,14 +36,21 @@ export function ConfirmDialog({
   confirmLabel,
   cancelLabel,
   danger,
+  typeToConfirm,
 }: ConfirmDialogProps) {
   const labels = useAbpLabels();
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const [typed, setTyped] = useState('');
+  const typedId = useId();
+  const locked = typeToConfirm != null && typed.trim() !== typeToConfirm;
   return (
     <Dialog.Root
       role="alertdialog"
       open={open}
-      onOpenChange={(e) => onOpenChange(e.open)}
+      onOpenChange={(e) => {
+        if (!e.open) setTyped('');
+        onOpenChange(e.open);
+      }}
       initialFocusEl={() => cancelRef.current}
       size="sm"
       placement="center"
@@ -50,18 +62,29 @@ export function ConfirmDialog({
             <Dialog.Header>
               <Dialog.Title>{title}</Dialog.Title>
             </Dialog.Header>
-            {description != null && (
+            {(description != null || typeToConfirm != null) && (
               <Dialog.Body>
-                <Dialog.Description>{description}</Dialog.Description>
+                <Stack gap="3">
+                  {description != null && <Dialog.Description>{description}</Dialog.Description>}
+                  {typeToConfirm != null && (
+                    <Stack gap="1.5">
+                      <chakra.label htmlFor={typedId} textStyle="sm" fontWeight="medium">
+                        {fill(labels.typeToConfirm ?? defaultLabels.typeToConfirm!, { value: typeToConfirm })}
+                      </chakra.label>
+                      <Input id={typedId} value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" spellCheck={false} dir="ltr"
+                        fontFamily="mono" data-type-to-confirm="" />
+                    </Stack>
+                  )}
+                </Stack>
               </Dialog.Body>
             )}
             <Dialog.Footer>
               <Dialog.ActionTrigger asChild>
-                <Button ref={cancelRef} variant="secondary">
+                <Button ref={cancelRef} variant="cancel">
                   {cancelLabel ?? labels.cancel}
                 </Button>
               </Dialog.ActionTrigger>
-              <Button variant="primary" danger={danger} loading={busy} onClick={() => void onConfirm()}>
+              <Button variant="primary" danger={danger} loading={busy} disabled={locked} onClick={() => void onConfirm()}>
                 {confirmLabel ?? labels.confirm}
               </Button>
             </Dialog.Footer>
@@ -74,6 +97,9 @@ export function ConfirmDialog({
     </Dialog.Root>
   );
 }
+
+/** `{name}` placeholders filled in. */
+const fill = (template: string, values: Record<string, string>) => template.replace(/\{(\w+)\}/g, (m, k: string) => values[k] ?? m);
 
 type ConfirmFn = (options: ConfirmOptions) => Promise<boolean>;
 

@@ -15,9 +15,10 @@ import { ghostCss } from '../skeleton/bones';
  *   secondary  every other action (outlined neutral); the default
  *   ghost      low-emphasis actions in toolbars and table rows
  *   link       inline text action
+ *   cancel     every Cancel (a dialog's, a form's, a composer's): one quiet gray fill, no border
  * `danger` turns any of them red for destructive actions.
  */
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'link';
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'link' | 'cancel';
 export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg';
 
 interface AbpButtonProps {
@@ -26,7 +27,16 @@ interface AbpButtonProps {
   danger?: boolean;
 }
 
-const chakraVariant = { primary: 'solid', secondary: 'outline', ghost: 'ghost', link: 'plain' } as const;
+const chakraVariant = { primary: 'solid', secondary: 'outline', ghost: 'ghost', link: 'plain', cancel: 'ghost' } as const;
+
+/** The canvas's one Cancel look: a gray fill a step above the surface in either mode, no border, darker on hover. */
+const cancelLook = {
+  bg: { base: 'neutral.100', _dark: 'neutral.700' },
+  color: { base: 'neutral.700', _dark: 'neutral.100' },
+  _hover: { bg: { base: 'neutral.200', _dark: 'neutral.600' } },
+  _active: { bg: { base: 'neutral.300', _dark: 'neutral.800' } },
+  _disabled: { bg: { base: 'neutral.100', _dark: 'neutral.800' }, color: 'fg.subtle' },
+} as const;
 
 function palette(variant: ButtonVariant, danger: boolean | undefined): string {
   if (danger) return 'danger';
@@ -51,9 +61,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       size={size}
       variant={chakraVariant[variant]}
       colorPalette={palette(variant, danger)}
+      {...(variant === 'cancel' && !danger ? cancelLook : {})}
       css={skeleton ? [ghostCss, css] : css}
       tabIndex={skeleton ? -1 : undefined}
       aria-hidden={skeleton || undefined}
+      data-variant={variant === 'cancel' ? 'cancel' : undefined}
       {...rest}
     />
   );

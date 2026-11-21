@@ -17,6 +17,7 @@ import { Pagination } from './Pagination';
 import type { PaginationForm } from './pageList';
 import { SelectField } from './Field';
 import { InlineAlert } from './InlineAlert';
+import { EmptyState } from './EmptyState';
 import { Panel } from './Panel';
 import { useLoading } from '../skeleton/loading';
 
@@ -143,6 +144,14 @@ export interface QueryableListProps {
   countMatches?: (conditions: QueryConditionJson[]) => Promise<number>;
   /** A column before the fields' (the checkboxes of rows picked for a change, UI round 9 step 56). */
   leadingColumn?: DataTableColumn<QueryRow>;
+  /** A column after the fields' (a row's ⋯ menu). */
+  trailingColumn?: DataTableColumn<QueryRow>;
+  /**
+   * The rows as cards in a grid instead of a table (a projects directory's Cards view): `layout="cards"` draws each row
+   * with `cards.render`. Filters, sort, saved views and pages work the same; grouping and the tree apply to the table.
+   */
+  cards?: { render: (row: QueryRow) => ReactNode; minWidth?: string };
+  layout?: 'list' | 'cards';
   /** A row under the toolbar, across it (picking rows, changing them). */
   toolbarFooter?: ReactNode;
   /** RQL autocomplete at the caret; without it the RQL box is a plain input. */
@@ -252,6 +261,9 @@ export function QueryableList({
   renderRow,
   selection,
   leadingColumn,
+  trailingColumn,
+  cards,
+  layout = 'list',
   toolbarFooter,
   countMatches,
   suggest,
@@ -316,7 +328,7 @@ export function QueryableList({
     nowrap: id !== 'title',
     skeleton: placeholderOf(id, byId.get(id)?.kind),
   }));
-  const columns = leadingColumn ? [leadingColumn, ...fieldColumns] : fieldColumns;
+  const columns = [...(leadingColumn ? [leadingColumn] : []), ...fieldColumns, ...(trailingColumn ? [trailingColumn] : [])];
 
   const total = result?.total ?? 0;
   const from = total === 0 ? 0 : skip + 1;
@@ -627,6 +639,17 @@ export function QueryableList({
           </chakra.div>
         }
       >
+        {layout === 'cards' && cards ? (
+          <CardGrid
+            aria-label={ariaLabel}
+            rows={error && !result ? [] : result?.items}
+            loading={loading}
+            count={take}
+            minWidth={cards.minWidth ?? '18.75rem'}
+            render={cards.render}
+            empty={loadFailed != null && error?.failed && !result ? loadFailed : (empty ?? labels.empty)}
+          />
+        ) : (
         <DataTable
           aria-label={ariaLabel}
           columns={columns}
@@ -761,6 +784,7 @@ export function QueryableList({
               : undefined
           }
         />
+        )}
       </Panel>
     </Stack>
   );
@@ -1032,5 +1056,28 @@ function RqlBox({
         </InlineAlert>
       )}
     </Stack>
+  );
+}
+
+/** The rows as cards (QueryableList's Cards view): a grid that fills the row, placeholders while the first page loads. */
+function CardGrid({ rows, loading, count, minWidth, render, empty, 'aria-label': label }: {
+  rows: QueryRow[] | undefined;
+  loading?: boolean;
+  count: number;
+  minWidth: string;
+  render: (row: QueryRow) => ReactNode;
+  empty: ReactNode;
+  'aria-label'?: string;
+}) {
+  if (rows && rows.length === 0 && !loading) return typeof empty === 'string' ? <EmptyState title={empty} /> : <>{empty}</>;
+  return (
+    <chakra.ul role="list" aria-label={label} aria-busy={loading || undefined} listStyleType="none" m="0" p="3" display="grid" gap="3"
+      gridTemplateColumns={`repeat(auto-fill, minmax(min(${minWidth}, 100%), 1fr))`} data-layout="cards">
+      {rows
+        ? rows.map((row) => <chakra.li key={row.id} display="flex" minW="0">{render(row)}</chakra.li>)
+        : Array.from({ length: Math.min(count, 9) }, (_, i) => (
+            <chakra.li key={i} h="9.5rem" rounded="lg" bg="bg.subtle" aria-hidden />
+          ))}
+    </chakra.ul>
   );
 }
