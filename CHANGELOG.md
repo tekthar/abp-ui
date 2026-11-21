@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.2.0-next.26
+
+A prerelease under npm's `next` tag.
+
+- `EmptyState variant="page"`: for a page whose whole main content is empty. In place of the icon it draws
+  `illustration`, the feature the page is about: `records`, `board`, `views`, `dashboards`, `dashboard`, `reports`,
+  `calendar`, `timeline`, `gantt`, `backlog`, `queue`, `comments` or `files`. The drawing is a clear card with softer
+  cards either side that fade into the surface. A search that finds nothing (`no-results`, `no-filter-match`) adds a
+  small search mark. Errors never get the drawing.
+- `EmptyState art`: a small flat drawing in place of the icon, for an empty list in a panel or a settings card:
+  `records`, `search`, `done`, `bell`, `handover`, `agent` or `error`.
+- `EmptyState layout="inline"`: the drawing, the words and the action on one line, on a quiet surface. The action
+  wraps under the words when there's no room.
+- The drawings use only the theme's tokens (neutral, accent, amber, green) in light and dark, and are decorative
+  (`aria-hidden`). A `no-results` or `no-filter-match` empty state is a polite live region, and an `error` one is an
+  alert.
+- `PageIllustration`, `EmptyArtDrawing`, `EmptyIllustration` and `EmptyArt` are exported.
+
 ## 0.2.0-next.25
 
 A prerelease under npm's `next` tag.
