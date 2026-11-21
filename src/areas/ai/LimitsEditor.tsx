@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { HStack, Input, Stack, Text } from '@chakra-ui/react';
 import { Trash2 } from 'lucide-react';
-import { Button, Field, IconButton, InlineAlert, SelectField, useFormatters, type HostRequest } from '@abpjs/ui';
+import { AddButton, Button, Field, IconButton, InlineAlert, SelectField, useFormatters, type HostRequest } from '@abpjs/ui';
 import { useAiTexts } from './texts';
 import { num, scopeQuery, type AiLimit, type AiLimitInput } from './types';
 
@@ -101,14 +101,14 @@ export function LimitsEditor({ limits, onSave, onChange, busy, error }: {
           <Field label={i === 0 ? t('limitAmount') : undefined} flex="1">
             <Input type="number" min={0} step="any" value={r.amount} dir="ltr" aria-label={t('limitAmount')} onChange={(e) => set(i, { amount: e.target.value })} />
           </Field>
-          <IconButton aria-label={t('removeLimit')} size="sm" onClick={() => setDraft(rows.filter((_, j) => j !== i))}>
+          <IconButton remove aria-label={t('removeLimit')} size="sm" onClick={() => setDraft(rows.filter((_, j) => j !== i))}>
             <Trash2 />
           </IconButton>
         </HStack>
       ))}
       {rows.length === 0 && <Text textStyle="sm" color="fg.muted">{t('noLimits')}</Text>}
       <HStack>
-        <Button size="sm" variant="secondary" onClick={() => setDraft([...rows, { kind: 'cost', period: 'day', amount: '' }])}>{t('addLimit')}</Button>
+        <AddButton onClick={() => setDraft([...rows, { kind: 'cost', period: 'day', amount: '' }])}>{t('addLimit')}</AddButton>
         {onSave && <Button size="sm" loading={busy} disabled={draft === null} onClick={() => void save()}>{t('save')}</Button>}
       </HStack>
     </Stack>

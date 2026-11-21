@@ -5,6 +5,7 @@ import {
   type ButtonProps as ChakraButtonProps,
   type IconButtonProps as ChakraIconButtonProps,
 } from '@chakra-ui/react';
+import { Plus } from 'lucide-react';
 import { useLoading } from '../skeleton/loading';
 import { ghostCss } from '../skeleton/bones';
 
@@ -58,12 +59,50 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   );
 });
 
-export type IconButtonProps = Omit<ChakraIconButtonProps, 'variant' | 'size' | 'colorPalette'> &
-  AbpButtonProps & { 'aria-label': string };
+export type AddButtonProps = Omit<ButtonProps, 'variant' | 'danger'>;
 
-/** Square icon-only button. `aria-label` is required; it is also shown as the native tooltip. */
+/**
+ * The one look for every add action (Add filter, Add column, Add condition, Add member, a create row): link-coloured
+ * bold text after a plus, no fill, no border, no chevron, underlined on hover. A page's one main action stays a
+ * `primary` Button; this is for the adds inside a page, a panel or a dialog.
+ */
+export const AddButton = forwardRef<HTMLButtonElement, AddButtonProps>(function AddButton(
+  { size = 'sm', children, ...rest },
+  ref,
+) {
+  return (
+    <Button
+      ref={ref}
+      variant="link"
+      size={size}
+      color="fg.link"
+      fontWeight="bold"
+      px="2"
+      minH="8"
+      textStyle="sm"
+      _icon={{ width: '4', height: '4' }}
+      data-add=""
+      {...rest}
+    >
+      <Plus aria-hidden />
+      {children}
+    </Button>
+  );
+});
+
+export type IconButtonProps = Omit<ChakraIconButtonProps, 'variant' | 'size' | 'colorPalette'> &
+  AbpButtonProps & {
+    'aria-label': string;
+    /** Removing something from a list or a form (not deleting it): gray at rest, red only on hover. */
+    remove?: boolean;
+  };
+
+/**
+ * Square icon-only button. `aria-label` is required; it is also shown as the native tooltip. A delete (trash) icon is
+ * `danger`, red at all times; taking a row out of a list is `remove`, gray until hovered.
+ */
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
-  { variant = 'ghost', size = 'md', danger, type = 'button', title, css, ...rest },
+  { variant = 'ghost', size = 'md', danger, remove, type = 'button', title, css, ...rest },
   ref,
 ) {
   const skeleton = useLoading();
@@ -73,7 +112,8 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       type={type}
       size={size}
       variant={chakraVariant[variant]}
-      colorPalette={palette(variant, danger)}
+      colorPalette={palette(variant, danger || remove)}
+      {...(remove && { color: 'fg.muted', _hover: { bg: 'colorPalette.subtle', color: 'colorPalette.fg' } })}
       title={title ?? rest['aria-label']}
       css={skeleton ? [ghostCss, css] : css}
       tabIndex={skeleton ? -1 : undefined}

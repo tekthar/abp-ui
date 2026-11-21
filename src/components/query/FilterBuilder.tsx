@@ -1,8 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { CloseButton, Dialog, HStack, Input, Portal, Stack, Text } from '@chakra-ui/react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { useAbpLabels } from '../../provider/labels';
-import { Button, IconButton } from '../Button';
+import { AddButton, Button, IconButton } from '../Button';
 import { SelectField } from '../Field';
 import type { QueryConditionJson, QueryField, QuerySuggestion, QuerySuggestions, QueryValueEditor } from '../QueryableList';
 import { LIST_OPS, mergeSameField, NO_VALUE_OPS, parseValue, valueText } from '../../rules';
@@ -118,10 +118,9 @@ export function FilterBuilderDialog({ fields, initial, suggest, renderValueEdito
                     onChange={(patch) => change(d.id, patch)} onRemove={() => setRows((r) => r.filter((x) => x.id !== d.id))} />
                 ))}
                 <HStack>
-                  <Button size="sm" variant="secondary" onClick={add} disabled={fields.length === 0}>
-                    <Plus />
+                  <AddButton onClick={add} disabled={fields.length === 0}>
                     {labels.addCondition}
-                  </Button>
+                  </AddButton>
                 </HStack>
                 <Stack gap="1" borderTopWidth="1px" borderColor="border.muted" pt="3">
                   <Text textStyle="xs" fontWeight="bold" color="fg.muted">{labels.activeFilters}</Text>
@@ -220,7 +219,7 @@ function ConditionRow({ draft, fields, suggest, renderValueEditor, warn, onChang
             </datalist>
           </>
         )}
-        <IconButton size="sm" variant="ghost" aria-label={fill(labels.removeFilter, { field: field?.label ?? draft.field })} onClick={onRemove}>
+        <IconButton size="sm" variant="ghost" remove aria-label={fill(labels.removeFilter, { field: field?.label ?? draft.field })} onClick={onRemove}>
           <Trash2 />
         </IconButton>
       </HStack>

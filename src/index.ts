@@ -78,7 +78,7 @@ export { Pagination, type PaginationProps } from './components/Pagination';
 export { CommandPalette, HighlightText, type CommandGroup, type CommandItem, type CommandPaletteProps } from './components/CommandPalette';
 export { pageList, pagesShown, type PaginationForm } from './components/pageList';
 export { AvatarStack, avatarPalette, type AvatarPerson, type AvatarStackProps } from './components/AvatarStack';
-export { Button, IconButton, type ButtonProps, type ButtonSize, type ButtonVariant, type IconButtonProps } from './components/Button';
+export { AddButton, Button, IconButton, type AddButtonProps, type ButtonProps, type ButtonSize, type ButtonVariant, type IconButtonProps } from './components/Button';
 export {
   ConfirmDialog,
   ConfirmProvider,

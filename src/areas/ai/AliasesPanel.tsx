@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { HStack, Input, Stack, Text } from '@chakra-ui/react';
 import { Trash2 } from 'lucide-react';
-import { Button, Field, IconButton, InlineAlert, notify, Panel, SelectField, useApiAction, useAreaRequest } from '@abpjs/ui';
+import { AddButton, Button, Field, IconButton, InlineAlert, notify, Panel, SelectField, useApiAction, useAreaRequest } from '@abpjs/ui';
 import { modelKey, type AiModelRow } from './models';
 import { useAiTexts } from './texts';
 import { scopeQuery, type AiAlias, type AiAliasTarget } from './types';
@@ -75,14 +75,14 @@ export function AliasesPanel({ scopeId, aliases, inherited, models, onSaved }: {
               <SelectField value={r.key} options={options} aria-label={t('model')}
                 onChange={(e) => setDraft(rows.map((x, j) => (j === i ? { ...x, key: e.target.value } : x)))} />
             </Field>
-            <IconButton aria-label={t('removeAlias', { name: r.name || '…' })} size="sm" onClick={() => setDraft(rows.filter((_, j) => j !== i))}>
+            <IconButton remove aria-label={t('removeAlias', { name: r.name || '…' })} size="sm" onClick={() => setDraft(rows.filter((_, j) => j !== i))}>
               <Trash2 />
             </IconButton>
           </HStack>
         ))}
         {rows.length === 0 && <Text textStyle="sm" color="fg.muted">{t('noAliases')}</Text>}
         <HStack>
-          <Button size="sm" variant="secondary" onClick={() => setDraft([...rows, { name: '', key: usable[0]?.key ?? '', rest: [] }])} disabled={usable.length === 0}>{t('addAlias')}</Button>
+          <AddButton onClick={() => setDraft([...rows, { name: '', key: usable[0]?.key ?? '', rest: [] }])} disabled={usable.length === 0}>{t('addAlias')}</AddButton>
           {usable.length === 0 && <Text textStyle="sm" color="fg.muted">{t('noUsable')}</Text>}
         </HStack>
         {shownInherited.length > 0 && (

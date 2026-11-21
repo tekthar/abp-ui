@@ -1,10 +1,10 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Box, chakra, HStack, Input, Menu, Portal, Stack, Text } from '@chakra-ui/react';
-import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronDown, Download, Filter, Plus, Rows3, Save, Trash2, X } from 'lucide-react';
+import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronDown, Download, Filter, Rows3, Save, Trash2, X } from 'lucide-react';
 import { useAbpLabels } from '../provider/labels';
 import { useFormatters } from '../utils/format';
-import { Button, IconButton } from './Button';
+import { AddButton, Button, IconButton } from './Button';
 import { CountBadge } from './CountBadge';
 import { ColumnsPopover } from './query/ColumnsPopover';
 import { groupKey, NO_VALUE_OPS, periodName, valueText } from '../rules';
@@ -510,11 +510,10 @@ export function QueryableList({
             {mode === 'basic' && conditions !== null ? (
               <HStack gap="2" wrap="wrap" flex="1" minW="0">
                 {search && <QuickSearch key={searchText} initial={searchText} placeholder={search.placeholder ?? labels.searchPlaceholder} onRun={runSearch} />}
-                <Button size="sm" variant="secondary" onClick={() => setAdding(true)} disabled={!fields} data-add-filter="">
-                  <Plus />
+                <AddButton onClick={() => setAdding(true)} disabled={!fields} data-add-filter="">
                   {labels.addFilter}
                   {chips.length > 0 && <CountBadge value={chips.length} tone="accent" />}
-                </Button>
+                </AddButton>
                 {sortable.length > 0 && (
                   <HStack gap="1" flexShrink={0}>
                     <SelectField
