@@ -230,7 +230,7 @@ function ChatList({ onOpen, onNew }: { onOpen: (id: string) => void; onNew: () =
           <Button size="sm" variant="primary" onClick={onNew} data-testid="agent-chat-new">{t('chat.new')}</Button>
         </Box>
         {chats.error && <Box px="5"><InlineAlert tone="danger">{chats.error}</InlineAlert></Box>}
-        {chats.data?.length === 0 && <EmptyState size="sm" title={t('chat.none')} description={t('chat.noneHint')} />}
+        {chats.data?.length === 0 && <EmptyState size="sm" art="agent" title={t('chat.none')} description={t('chat.noneHint')} />}
         <Stack gap="0" as="ul" listStyleType="none" aria-label={t('chat.chats')}>
           {chats.data?.map((c) => (
             <Box as="li" key={c.id} borderTopWidth="1px" borderColor="border.muted">

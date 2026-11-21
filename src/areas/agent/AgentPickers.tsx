@@ -60,7 +60,7 @@ export function AgentQuestionsPanel({ itemHref }: { itemHref?: ItemHref }) {
     <ItemHrefProvider value={itemHref}>
       <Panel title={t('mine.title')} description={t('mine.hint')} data-testid="agent-questions">
         {questions.data?.length === 0 ? (
-          <EmptyState size="sm" title={t('mine.none')} />
+          <EmptyState size="sm" art="agent" title={t('mine.none')} />
         ) : (
           <Stack gap="4" as="ul" listStyleType="none">
             {(questions.data ?? []).map((q) => (
