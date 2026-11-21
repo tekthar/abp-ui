@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- `FormDialog`: `size="wide"` with `preview` and `previewTitle` (the fields beside what they make, under them below
+  `md`; the aside is named by its heading), `dangerAction` (a red link at the footer's start that never submits), and
+  every Cancel in the `cancel` variant. `PreviewCard` draws what a form makes; `preview` is a new optional label.
+
 ## 0.2.0-next.29
 
 A prerelease under npm's `next` tag.
