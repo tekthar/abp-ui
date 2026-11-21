@@ -10,6 +10,8 @@ export interface AbpLabels {
   confirm: string;
   /** A confirm that needs a word typed first (deleting a project), `{value}` being the word. Optional: English by default. */
   typeToConfirm?: string;
+  /** A wide form dialog's aside, what the form makes as it's filled in. Optional: English by default. */
+  preview?: string;
   retry: string;
   loading: string;
   noData: string;
@@ -299,6 +301,7 @@ export const defaultQueryListLabels: QueryListLabels = {
 export const defaultLabels: AbpLabels = {
   close: 'Close',
   typeToConfirm: 'Type {value} to confirm',
+  preview: 'Preview',
   cancel: 'Cancel',
   confirm: 'Confirm',
   retry: 'Retry',

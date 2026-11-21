@@ -144,7 +144,7 @@ export { looksLikeCode, StepUpDialog } from './host/StepUpDialog';
 export { createPasskey, getPasskey, passkeysSupported } from './host/webauthn';
 export { formatMessage } from './texts/format';
 export { createAreaTexts, type AreaTexts } from './texts/area';
-export { FormDialog, type FormDialogProps } from './components/FormDialog';
+export { FormDialog, PreviewCard, type FormDialogProps, type PreviewCardProps } from './components/FormDialog';
 
 // Settings areas (ADR 0095, ADR 0109): sections and pages by weight, static and loaded, and their frame
 export { findSettingsPage, settingsArea, type SettingsArea, type SettingsPage, type SettingsSection } from './settings/registry';
