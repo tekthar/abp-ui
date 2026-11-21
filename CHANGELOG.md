@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.0-next.29
+
+A prerelease under npm's `next` tag.
+
+- `RowMenu`: a row's ⋯ menu. It takes items (with an icon, `danger` for red, `disabled`), separators, and a quiet note
+  saying who can use the items that are off.
+- `Button variant="cancel"`: the one Cancel look, a gray fill a step above the surface in either mode with no border.
+  `ConfirmDialog`'s Cancel uses it.
+- `ConfirmDialog typeToConfirm`: the confirm turns on only once the person types the given word (a project's key, to
+  delete it). Its prompt is `typeToConfirm`, an optional label ("Type {value} to confirm").
+- `QueryableList`: `trailingColumn` adds a column after the fields (a row's menu). `cards` with `layout="cards"` draws
+  the rows as cards in a grid, with placeholders while loading; filters, sort, saved views and pages work the same.
+
 ## 0.2.0-next.28
 
 A prerelease under npm's `next` tag.
