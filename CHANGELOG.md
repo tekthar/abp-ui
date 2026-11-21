@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0-next.25
+
+A prerelease under npm's `next` tag.
+
+- agent: the chat's delete icon is `danger`, red at all times, like every delete (trash) icon.
+
 ## 0.2.0-next.24
 
 A prerelease under npm's `next` tag.
