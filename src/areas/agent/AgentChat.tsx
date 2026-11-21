@@ -181,7 +181,9 @@ export function AgentChatPanel({ itemHref }: { itemHref?: ItemHref }) {
       <Drawer.Root open placement="end" size="md" modal={false} closeOnInteractOutside={false} trapFocus={false} preventScroll={false}
         onOpenChange={(e) => !e.open && close()}>
         <Portal>
-          <Drawer.Positioner pointerEvents="none">
+          {/* The page keeps its scrollbar (preventScroll off), so the positioner spans the page (100%), not the window
+              (100vw): 100vw reaches under the scrollbar and pushed the panel past the screen's edge by its width. */}
+          <Drawer.Positioner pointerEvents="none" width="100%">
             <Drawer.Content pointerEvents="auto" borderStartWidth="1px" borderColor="border.muted" data-testid="agent-chat">
               {view.kind === 'list' ? (
                 <ChatList onOpen={(id) => setView({ kind: 'chat', id })} onNew={() => setView({ kind: 'new', target: {} })} />
