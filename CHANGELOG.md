@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.0-next.24
+
+A prerelease under npm's `next` tag.
+
+- `AddButton`: the one look for every add action inside a page, a panel or a dialog (Add filter, Add condition, Add
+  member, a create row). It draws link-coloured bold text after a plus, with no fill, no border and no chevron, and is
+  underlined on hover. A page's one main action stays a `primary` Button.
+- `IconButton remove`: taking a row out of a list or a form. It is gray at rest and turns red, on a light red fill, only
+  on hover. A delete (trash) icon stays `danger`, red at all times.
+- `QueryableList`'s Add filter, `FilterBuilder`'s Add condition and ai's Add an alias and Add a limit use `AddButton`.
+  Their row icons use `remove`.
+
 ## 0.2.0-next.23
 
 A prerelease under npm's `next` tag.
