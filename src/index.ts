@@ -145,6 +145,7 @@ export { createPasskey, getPasskey, passkeysSupported } from './host/webauthn';
 export { formatMessage } from './texts/format';
 export { createAreaTexts, type AreaTexts } from './texts/area';
 export { FormDialog, PreviewCard, type FormDialogProps, type PreviewCardProps } from './components/FormDialog';
+export { SaveBar, type SaveBarProps } from './components/SaveBar';
 
 // Settings areas (ADR 0095, ADR 0109): sections and pages by weight, static and loaded, and their frame
 export { findSettingsPage, settingsArea, type SettingsArea, type SettingsPage, type SettingsSection } from './settings/registry';

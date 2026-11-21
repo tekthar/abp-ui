@@ -22,6 +22,7 @@ const WITHOUT = {
   'ListFooter.tsx': 'drawn once the first page has come, with the rows it counts; nothing before',
   'LoadingState.tsx': 'a placeholder itself',
   'RowMenu.tsx': "a row's IconButton, which draws its own ghost in a loading row; the menu opens on a click",
+  'SaveBar.tsx': 'shown only once something was changed, after the page loaded what it changes',
   'SearchPicker.tsx': 'an input that is there at once; its list says it is searching while results come',
   'TranslatedInput.tsx': 'an input with the value it is given; suggestions come while typing, after the page has loaded',
   'Pagination.tsx': 'its pages come with the result it pages through; before that there are none to show',

@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+
+- `SaveBar`: a page edited in place with unsaved changes. A bar on the selected tint floats at the foot of the window,
+  centred, with the question, how many changes wait (`count`, or the host's `message`), Discard and Save (`busy`,
+  `saveDisabled`). New optional labels: `saveBar`, `unsavedChanges` (ICU plural on `{count}`), `discard`, `save`.
+- guard: the types come from AbpGuard 0.9.0's document. The page answers are `GuardPagedResultDto` (`groups` beside
+  `items`), and `types.ts` names the people actions' inputs and answers.
+- guard › Sign-up, the design canvas's board:
+  - the allowed domains are a list, with Add domain and Remove, each checked as a domain and listed once;
+  - with sign-up on, the directory is required, and the field says so;
+  - the save bar replaces the Save button, and Discard puts back what's saved;
+  - never set up, the page is its empty state, with Turn on sign-up.
+
+  Words: `off`, `directoryRequired`, `anyDomain`, `addDomain`, `add`, `removeDomain`, `domainInvalid`, `domainTwice`,
+  `emptyTitle`, `emptyText` and `turnOn` are new; `enabled`, `directory` and `domains` say it as the canvas does;
+  `domainsHint` and `save` are gone.
+
 ## 0.2.0-next.30
 
 A prerelease under npm's `next` tag.

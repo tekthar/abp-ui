@@ -12,6 +12,11 @@ export interface AbpLabels {
   typeToConfirm?: string;
   /** A wide form dialog's aside, what the form makes as it's filled in. Optional: English by default. */
   preview?: string;
+  /** A page edited in place with unsaved changes (`SaveBar`): its question, the waiting changes (`{count}`, ICU plural), Discard and Save. Optional: English by default. */
+  saveBar?: string;
+  unsavedChanges?: string;
+  discard?: string;
+  save?: string;
   retry: string;
   loading: string;
   noData: string;
@@ -302,6 +307,10 @@ export const defaultLabels: AbpLabels = {
   close: 'Close',
   typeToConfirm: 'Type {value} to confirm',
   preview: 'Preview',
+  saveBar: 'Save your changes?',
+  unsavedChanges: "{count, plural, one {# change isn't saved yet} other {# changes aren't saved yet}}",
+  discard: 'Discard',
+  save: 'Save',
   cancel: 'Cancel',
   confirm: 'Confirm',
   retry: 'Retry',
