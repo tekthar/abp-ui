@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- `Panel` folds. `collapsible` makes its header a button with a chevron before the title (pointing to the end when
+  folded, down when open), and the body and the footer fold away while the actions stay and keep working.
+  `defaultCollapsed`, or `collapsed` with `onCollapsedChange`; `summary` is a line shown in the header while folded
+  ("2 groups"), hidden on narrow screens.
+
 ## 0.2.0-next.31
 
 A prerelease under npm's `next` tag.

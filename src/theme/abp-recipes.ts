@@ -330,7 +330,7 @@ export const pageHeaderSlotRecipe = defineSlotRecipe({
 // ---- Panel ---------------------------------------------------------------------------------
 export const panelSlotRecipe = defineSlotRecipe({
   className: 'abp-panel',
-  slots: ['root', 'header', 'titleGroup', 'title', 'description', 'actions', 'body', 'footer'],
+  slots: ['root', 'header', 'titleGroup', 'title', 'description', 'actions', 'body', 'footer', 'toggle', 'chevron', 'summary'],
   base: {
     root: {
       layerStyle: 'panel',
@@ -355,6 +355,44 @@ export const panelSlotRecipe = defineSlotRecipe({
     title: { textStyle: 'heading.section', color: 'fg', display: 'flex', alignItems: 'center', gap: '2' },
     description: { textStyle: 'caption', color: 'fg.muted' },
     actions: { display: 'flex', alignItems: 'center', gap: '2', flexWrap: 'wrap' },
+    // A collapsible panel's header: the whole title line folds it, the chevron first (the design canvas's settings card).
+    toggle: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '2',
+      flex: '1',
+      minW: '0',
+      mx: '-1.5',
+      px: '1.5',
+      py: '1',
+      borderRadius: 'l2',
+      bg: 'transparent',
+      color: 'inherit',
+      textAlign: 'start',
+      cursor: 'pointer',
+      _hover: { bg: 'bg.muted' },
+      focusVisibleRing: 'inside',
+    },
+    chevron: {
+      flex: 'none',
+      display: 'inline-flex',
+      color: 'fg.muted',
+      transition: 'transform 150ms ease',
+      _rtl: { transform: 'scaleX(-1)' },
+      '&[data-open]': { transform: 'rotate(90deg)' },
+      _motionReduce: { transition: 'none' },
+    },
+    summary: {
+      flex: 'none',
+      maxW: '40%',
+      ms: 'auto',
+      textStyle: 'sm',
+      color: 'fg.muted',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+      hideBelow: 'md',
+    },
     body: { p: 'panel', flex: '1', minW: '0' },
     footer: {
       display: 'flex',
@@ -373,6 +411,11 @@ export const panelSlotRecipe = defineSlotRecipe({
       true: { body: { p: '0', overflow: 'hidden', borderBottomRadius: 'l3' } },
       false: {},
     },
+    /** Folded (`collapsible`): only the header, without its rule. */
+    collapsed: {
+      true: { header: { borderBottomWidth: '0' } },
+      false: {},
+    },
     /**
      * `card`: the bordered surface. `section`: no box, a heading over a rule and its content under it, for pages where
      * blocks follow one another in one column (the record's page, UI round 8) and a stack of boxes reads heavy.
@@ -388,7 +431,7 @@ export const panelSlotRecipe = defineSlotRecipe({
     },
   },
   compoundVariants: [{ flush: true, tone: 'section', css: { body: { borderBottomRadius: '0', pt: '1' } } }],
-  defaultVariants: { flush: false, tone: 'card' },
+  defaultVariants: { flush: false, tone: 'card', collapsed: false },
 });
 
 // ---- StatusPill ----------------------------------------------------------------------------
