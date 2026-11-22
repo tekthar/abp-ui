@@ -20,8 +20,8 @@ export interface PanelProps extends Omit<HTMLChakraProps<'section'>, 'title'> {
   tone?: 'card' | 'section';
   /**
    * The header folds and unfolds the panel: it becomes a button with a chevron before the title (pointing to the end
-   * when folded, down when open). The actions stay where they are and work while it's folded; the body and the footer
-   * go.
+   * when folded, down when open). The actions stay where they are and work while it's folded; the description, the
+   * body and the footer go.
    */
   collapsible?: boolean;
   /** Folded when it first draws (`collapsible`, not controlled). */
@@ -68,7 +68,7 @@ export const Panel = forwardRef<HTMLElement, PanelProps>(function Panel(
           {title}
         </chakra.h2>
       )}
-      {description != null && <chakra.p css={styles.description}>{description}</chakra.p>}
+      {description != null && !folded && <chakra.p css={styles.description}>{description}</chakra.p>}
     </chakra.div>
   );
   const content = (
