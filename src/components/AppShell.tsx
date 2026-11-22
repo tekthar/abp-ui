@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useState, type ReactNode } from 'react';
-import { chakra, Drawer, Portal, SkipNavContent, SkipNavLink, useSlotRecipe, type SystemStyleObject } from '@chakra-ui/react';
+import { chakra, Drawer, Menu, Portal, SkipNavContent, SkipNavLink, useSlotRecipe, type SystemStyleObject } from '@chakra-ui/react';
 import { ChevronDown, Menu as MenuIcon, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
 import { ArriveOnChange, Collapse, FadeIn, Indicator, Swap } from '../motion/components';
 import { useAbpLabels } from '../provider/labels';
@@ -18,8 +18,15 @@ export interface AppShellNavItem {
   icon?: ReactNode;
   /** Marks the item as the current page (aria-current). */
   current?: boolean;
-  /** Pages under this one (a person's favourite views under Views), indented below it; hidden in the rail. */
+  /**
+   * Pages under this one (a person's favourite views under Views), indented below it; hidden in the rail. In the top bar
+   * they open from a small menu beside its name.
+   */
   children?: AppShellNavItem[];
+  /** The heading over the pages under it in the top bar's menu ("Starred"). */
+  childrenTitle?: string;
+  /** The top bar's menu button, named for screen readers ("Starred projects"); the item's name unless given. */
+  childrenLabel?: string;
 }
 
 export interface AppShellNavSection {
@@ -240,16 +247,50 @@ export function AppShell({
 
 type ShellStyles = Record<string, SystemStyleObject>;
 
-/** A site page in the top bar: its name (icons are for the drawer), on the pill when it's current. */
+/**
+ * A site page in the top bar: its name (icons are for the drawer), on the pill when it's current. With pages under it
+ * (a person's starred projects under Projects), a chevron beside the name opens them in a menu; the name still opens
+ * the page.
+ */
 function TopNavItem({ item, styles }: { item: AppShellNavItem; styles: ShellStyles }) {
   const Link = useLinkComponent();
-  return (
+  const link = (
     <chakra.a asChild css={styles.topNavItem}>
       <Link href={item.href} aria-current={item.current ? 'page' : undefined}>
         {item.current && <Indicator group="abp-top-nav" css={styles.topNavIndicator} />}
         <chakra.span css={styles.topNavLabel}>{item.label}</chakra.span>
       </Link>
     </chakra.a>
+  );
+  if (!item.children?.length) return link;
+  return (
+    <chakra.span display="inline-flex" alignItems="center" data-top-nav-menu="">
+      {link}
+      <Menu.Root positioning={{ placement: 'bottom-start' }} lazyMount unmountOnExit>
+        <Menu.Trigger asChild>
+          <IconButton size="xs" variant="ghost" color="fg.muted" ms="-1" aria-label={item.childrenLabel ?? item.label}>
+            <ChevronDown />
+          </IconButton>
+        </Menu.Trigger>
+        <Portal>
+          <Menu.Positioner>
+            <Menu.Content minW="56" maxW="80">
+              <Menu.ItemGroup>
+                {item.childrenTitle != null && <Menu.ItemGroupLabel>{item.childrenTitle}</Menu.ItemGroupLabel>}
+                {item.children.map((child) => (
+                  <Menu.Item key={child.id} value={child.id} asChild>
+                    <Link href={child.href} aria-current={child.current ? 'page' : undefined}>
+                      {child.icon}
+                      <chakra.span truncate>{child.label}</chakra.span>
+                    </Link>
+                  </Menu.Item>
+                ))}
+              </Menu.ItemGroup>
+            </Menu.Content>
+          </Menu.Positioner>
+        </Portal>
+      </Menu.Root>
+    </chakra.span>
   );
 }
 

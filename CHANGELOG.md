@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `AppShell`: a top-bar item with `children` (a person's starred projects under Projects) gets a chevron beside its
+  name that opens them in a menu; the name still opens the page. `childrenTitle` heads the menu ("Starred") and
+  `childrenLabel` names the chevron for screen readers. The drawer lists them under the item, as before.
 - `Panel` folds. `collapsible` makes its header a button with a chevron before the title (pointing to the end when
   folded, down when open), and the body and the footer fold away while the actions stay and keep working.
   `defaultCollapsed`, or `collapsed` with `onCollapsedChange`; `summary` is a line shown in the header while folded
