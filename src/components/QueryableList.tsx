@@ -17,6 +17,8 @@ import { Pagination } from './Pagination';
 import type { PaginationForm } from './pageList';
 import { SelectField } from './Field';
 import { InlineAlert } from './InlineAlert';
+import { toaster } from './Toaster';
+import { ExportDialog, type ExportChoice } from './query/ExportDialog';
 import { EmptyState } from './EmptyState';
 import { Panel } from './Panel';
 import { useLoading } from '../skeleton/loading';
@@ -100,6 +102,20 @@ export interface QueryableListView {
 /** The files an export can be: CSV, or an Excel workbook. */
 export type QueryExportFormat = 'csv' | 'xlsx';
 
+/** A CSV's separator (UI round 10 step 76's export dialog). */
+export type QueryExportSeparator = 'comma' | 'semicolon' | 'tab';
+
+/** What the person chose in the export dialog, and the signal that their Cancel aborts. */
+export interface QueryExportOptions {
+  /** The columns to write, in order. */
+  columns: string[];
+  /** Every row the list reaches, not only those its query finds. */
+  all: boolean;
+  /** A CSV's separator; Excel ignores it. */
+  separator: QueryExportSeparator;
+  signal: AbortSignal;
+}
+
 /** What an export held (from the response's headers): rows in the file, rows that matched, and the limit that cut it. */
 export interface QueryableListExport {
   rows: number;
@@ -172,10 +188,12 @@ export interface QueryableListProps {
   onSaveView?: (name: string, replaceId: string | null) => void;
   onDeleteView?: (id: string) => void;
   /**
-   * Downloads what the list shows (its query and columns, every page) as a file; without it there's no Export menu.
-   * Resolves with what the file held, so the list can say when it was cut short; a rejection is shown as an error.
+   * Downloads what the list shows as a file; without it there's no Export menu. The menu's format opens a dialog where
+   * the person picks the rows (what the query finds, or all), the columns and a CSV's separator, then this runs with
+   * their choice; their Cancel aborts `options.signal`. Resolves with what the file held, so the list can say when it
+   * was cut short; a rejection is shown as an error.
    */
-  onExport?: (format: QueryExportFormat) => Promise<QueryableListExport | void>;
+  onExport?: (format: QueryExportFormat, options?: QueryExportOptions) => Promise<QueryableListExport | void>;
   /** Extra buttons on the toolbar (e.g. "Create record"). */
   actions?: ReactNode;
   empty?: ReactNode;
@@ -300,6 +318,7 @@ export function QueryableList({
   const [adding, setAdding] = useState(false);
   const [naming, setNaming] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [exportFormat, setExportFormat] = useState<QueryExportFormat | null>(null);
   const [exported, setExported] = useState<{ tone: 'warning' | 'danger'; message: string } | null>(null);
 
   const complex = conditions === null;
@@ -336,12 +355,24 @@ export function QueryableList({
   const groupable = (fields ?? []).filter((f) => f.groupable);
   const activeView = views?.find((v) => v.id === activeViewId) ?? null;
 
-  async function runExport(format: QueryExportFormat) {
+  /**
+   * Runs the export the dialog asked for (the canvas's Export in progress and Export ready): the dialog closes, a toast
+   * says it's being prepared, with Cancel, while the person keeps working; then that it's ready, or why it failed.
+   */
+  async function runExport(format: QueryExportFormat, choice: ExportChoice) {
     if (!onExport) return;
+    setExportFormat(null);
     setExporting(true);
     setExported(null);
+    const controller = new AbortController();
+    const toast = toaster.create({
+      type: 'loading',
+      title: labels.exportPreparing ?? 'Preparing the file… You can keep working.',
+      action: { label: labels.exportCancel ?? 'Cancel', onClick: () => controller.abort() },
+    });
     try {
-      const done = await onExport(format);
+      const done = await onExport(format, { ...choice, signal: controller.signal });
+      toaster.update(toast, { type: 'success', title: labels.exportReady ?? 'Your file is ready', action: undefined });
       if (done?.truncated) {
         setExported({
           tone: 'warning',
@@ -349,7 +380,12 @@ export function QueryableList({
         });
       }
     } catch (e) {
-      setExported({ tone: 'danger', message: e instanceof Error ? e.message : String(e) });
+      if (controller.signal.aborted) {
+        toaster.dismiss(toast);
+      } else {
+        toaster.dismiss(toast);
+        setExported({ tone: 'danger', message: e instanceof Error ? e.message : String(e) });
+      }
     } finally {
       setExporting(false);
     }
@@ -500,8 +536,13 @@ export function QueryableList({
               </Portal>
             </Menu.Root>
             <ColumnsPopover fields={fields ?? []} columns={state.columns} onChange={(next) => onStateChange({ ...state, rql: result?.rql ?? state.rql, query: undefined, columns: next })} />
-            {onExport && !exportTarget && <ExportMenu busy={exporting} disabled={!result || Boolean(loading)} onExport={runExport} />}
-            {onExport && exportTarget && createPortal(<ExportMenu busy={exporting} disabled={!result || Boolean(loading)} onExport={runExport} />, exportTarget)}
+            {onExport && !exportTarget && <ExportMenu busy={exporting} disabled={!result || Boolean(loading)} onExport={setExportFormat} />}
+            {onExport && exportTarget && createPortal(<ExportMenu busy={exporting} disabled={!result || Boolean(loading)} onExport={setExportFormat} />, exportTarget)}
+            {onExport && (
+              <ExportDialog format={exportFormat} onClose={() => setExportFormat(null)} fields={fields ?? []} shown={state.columns} columnLabels={columnLabels}
+                found={total} filtered={Boolean((result?.rql ?? state.rql ?? '').trim())} sample={result?.items ?? []}
+                onExport={(choice) => exportFormat && void runExport(exportFormat, choice)} />
+            )}
             {actions}
           </HStack>
         </HStack>

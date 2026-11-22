@@ -191,6 +191,23 @@ export interface QueryListLabels {
   exporting: string;
   /** "The file holds {rows} of {total} rows: an export stops at {limit}." */
   exportCut: string;
+  /** The export dialog (UI round 10 step 76). Optional: English by default. `exportFound` takes `{count}`. */
+  exportTitleCsv?: string;
+  exportTitleExcel?: string;
+  exportRows?: string;
+  exportFound?: string;
+  exportAll?: string;
+  exportColumns?: string;
+  exportSeparator?: string;
+  exportComma?: string;
+  exportSemicolon?: string;
+  exportTab?: string;
+  exportPreview?: string;
+  exportRun?: string;
+  exportCancel?: string;
+  /** The toast while the file is made, and once it's downloaded. */
+  exportPreparing?: string;
+  exportReady?: string;
   exportFailed: string;
   dismiss: string;
   /** Operator names by JSON-form op: eq, ne, in, notIn, contains… */
@@ -280,6 +297,21 @@ export const defaultQueryListLabels: QueryListLabels = {
   exportExcel: 'Excel (.xlsx)',
   exporting: 'Exporting…',
   exportCut: 'The file holds {rows} of {total} rows: an export stops at {limit}. Narrow the query to get the rest.',
+  exportTitleCsv: 'Export to CSV',
+  exportTitleExcel: 'Export to Excel',
+  exportRows: 'Rows',
+  exportFound: 'Filtered ({count})',
+  exportAll: 'All',
+  exportColumns: 'Columns',
+  exportSeparator: 'Separator',
+  exportComma: 'Comma ( , )',
+  exportSemicolon: 'Semicolon ( ; )',
+  exportTab: 'Tab',
+  exportPreview: 'Preview',
+  exportRun: 'Export',
+  exportCancel: 'Cancel',
+  exportPreparing: 'Preparing the file… You can keep working.',
+  exportReady: 'Your file is ready',
   exportFailed: 'The export failed',
   dismiss: 'Dismiss',
   operators: {

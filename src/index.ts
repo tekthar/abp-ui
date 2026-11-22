@@ -183,6 +183,8 @@ export {
   type QueryableListView,
   type QueryConditionJson,
   type QueryExportFormat,
+  type QueryExportOptions,
+  type QueryExportSeparator,
   type QueryField,
   type QueryGroup,
   type QueryJson,
