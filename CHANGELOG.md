@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- `AgentPermissionsPanel` (the design canvas's "Agents you always allow"): one row per agent and scope, with who made
+  the agent, its tools together by title, the scope, since when and when last used; Remove takes the whole row back
+  after a confirm ("It will ask you again before using these tools"). On the person's page, "Allow an agent" opens a
+  dialog: the agent, the scope and "Tools without asking", only those AbpAgent says "Always" could answer for
+  (`me/permissions/allowable`), with the ones already given checked. On an agent's page, one row per person. Needs
+  AbpAgent.HttpApi 0.7.0. New and changed `permissions.*` agent texts; `permissions.what`, `forAgent`, `byPerson`,
+  `given`, `takeBack` and `takeBackTitle` are gone.
+- The agent area's types are AbpAgent.HttpApi 0.7.0's (`AgentAllowablePlace`, `AgentAllowableAgent`,
+  `AgentAllowableTool`; `AgentPermissionInfo` gains `toolTitle`, `madeBy` and `agentNames`).
+
 ## 0.2.0-next.32
 
 A prerelease under npm's `next` tag.

@@ -986,6 +986,70 @@ export interface paths {
             };
         };
         put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AgentPermissionGive"];
+                    "text/json": components["schemas"]["AgentPermissionGive"];
+                    "application/*+json": components["schemas"]["AgentPermissionGive"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["AgentPermissionInfo"][];
+                        "application/json": components["schemas"]["AgentPermissionInfo"][];
+                        "text/json": components["schemas"]["AgentPermissionInfo"][];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/me/permissions/allowable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["AgentAllowablePlace"][];
+                        "application/json": components["schemas"]["AgentAllowablePlace"][];
+                        "text/json": components["schemas"]["AgentAllowablePlace"][];
+                    };
+                };
+            };
+        };
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -1317,6 +1381,19 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AgentAllowableAgent: {
+            agent: components["schemas"]["AskableAgent"];
+            tools: components["schemas"]["AgentAllowableTool"][];
+        };
+        AgentAllowablePlace: {
+            scope: components["schemas"]["AgentScopeRef"];
+            agents: components["schemas"]["AgentAllowableAgent"][];
+        };
+        AgentAllowableTool: {
+            name: string;
+            title: string;
+            given: boolean;
+        };
         AgentAnswerInput: {
             answer: string;
         };
@@ -1491,6 +1568,13 @@ export interface components {
             /** Format: int32 */
             uses: number | string;
         };
+        AgentPermissionGive: {
+            /** Format: uuid */
+            agentId: string;
+            /** Format: uuid */
+            scopeId: string;
+            tools: string[];
+        };
         AgentPermissionInfo: {
             person: null | components["schemas"]["AgentPerson"];
             /** Format: uuid */
@@ -1507,13 +1591,18 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             lastUsedAt: null | string;
+            toolTitle?: null | string;
+            madeBy?: null | components["schemas"]["AgentPerson"];
+            agentNames?: {
+                [key: string]: string;
+            };
         };
         AgentPermissionRemoveInput: {
             /** Format: uuid */
             personId: string;
             /** Format: uuid */
             agentId: string;
-            tool: string;
+            tool: null | string;
             /** Format: uuid */
             scopeId: string;
         };

@@ -3,7 +3,8 @@
 The screens of [AbpAgent](https://github.com/tekthar/abp-agent)'s agents: the site's switch and agents, a scope's own
 agents and the site's it takes on, one agent's settings (what it does, its tools, its run limits, its memory and the
 graph made of it, the standing permissions people gave it), the runs on an item with their questions, the questions
-waiting for the person, and the chat with an agent beside any page. They call **AbpAgent.HttpApi 0.6.1** or later.
+waiting for the person, and the chat with an agent beside any page. They call **AbpAgent.HttpApi 0.6.1** or later;
+`AgentPermissionsPanel`'s "Allow an agent" and its rows need **0.7.0** (allowing ahead of time, a row's names and titles).
 The types in `api.d.ts` come from that version's document, `docs/openapi/abpagent.json` in abp-agent, with
 `openapi-typescript docs/openapi/abpagent.json --output src/areas/agent/api.d.ts`.
 
@@ -57,7 +58,8 @@ the site's agents. That default title is English: a host passes `title` (and `ab
   list, a chat, or a new chat about an item or in a scope; `AgentChatButton` for the top bar; `AskAgentButton` for an
   item's header. `onItemChanged` on the provider hears when a chat's run about an item ended or a reply was posted.
 - `ItemAgentRuns` (`kind`, `itemKey`): an item's runs. `AgentQuestionsPanel`: the questions waiting for the person.
-  `AgentPermissionsPanel`: their standing permissions (or an agent's, with `agentId`). `AgentSelect` (`scope`): an
+  `AgentPermissionsPanel`: their standing permissions, one row per agent and scope with its tools together, removed
+  as a whole, and "Allow an agent" to give some ahead of time (or an agent's, with `agentId`, one row per person). `AgentSelect` (`scope`): an
   agent picked by key, for a workflow step or a rule. `AgentBadge`: marks an agent's account where people are named.
 
 ## Exports
