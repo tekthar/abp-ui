@@ -1,7 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.2.0-next.32
 
+A prerelease under npm's `next` tag.
+
+- `QueryableList` export dialog (the design canvas's Export to CSV and Excel): the Export menu's format opens a dialog
+  with the rows (what the query finds, or all of them), the columns (those shown picked first), a CSV's separator
+  (comma, semicolon or tab) and the first rows as the file will hold them. Export closes it; a toast says the file
+  is being prepared, with Cancel, then that it's ready. `onExport(format, options)` gets `QueryExportOptions`
+  (`columns`, `all`, `separator`, `signal`). New optional `queryList` labels: `exportTitleCsv`, `exportTitleExcel`,
+  `exportRows`, `exportFound`, `exportAll`, `exportColumns`, `exportSeparator`, `exportComma`, `exportSemicolon`,
+  `exportTab`, `exportPreview`, `exportRun`, `exportCancel`, `exportPreparing`, `exportReady`.
 - `AppShell`: a top-bar item with `children` (a person's starred projects under Projects) gets a chevron beside its
   name that opens them in a menu; the name still opens the page. `childrenTitle` heads the menu ("Starred") and
   `childrenLabel` names the chevron for screen readers. The drawer lists them under the item, as before.
