@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.2.0-next.36
+
+A prerelease under npm's `next` tag.
 
 - `WidgetBoard`, the design canvas's dashboard widget container and layout, beside `DashboardGrid` (which is unchanged,
   12 columns by default). Widgets lie on 60 tracks counted from the start edge, each as tall as its content, packed in
