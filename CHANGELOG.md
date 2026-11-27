@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+- `WidgetBoard`, the design canvas's dashboard widget container and layout, beside `DashboardGrid` (which is unchanged,
+  12 columns by default). Widgets lie on 60 tracks counted from the start edge, each as tall as its content, packed in
+  order as high as they fit; `y` is only their order and comes back renumbered 0, 1, 2…. Every widget gets one
+  container: its title, then a move grip, Expand / Restore width and the ⋯ menu (grip and Expand show on hover, focus
+  or touch, their space kept). Expand stretches it across the board in place and isn't saved. A handle on the end edge
+  sets the width (pointer, arrow keys, Home and End), never under the widget's readable minimum (`minWidth`). Dragging
+  from the grip moves a ghost and a dashed slot, snapped to neighbours' edges within 2 tracks; over a widget's top half
+  it takes that place; Escape cancels. With the grip focused, Left and Right move 5 tracks (Shift 1), Up and Down past
+  the neighbour above or below, Home to the top, End to the end, mirrored right to left; each move is announced. The
+  ⋯ menu has the host's items, the width presets (half, two-thirds, full) and Move up / down, then the host's red items.
+  Below 720 px every widget is full width in order, without handles. `onLayoutChange` fires once per finished gesture.
+  `fromTwelve` reads a 12-column layout on 60 tracks; `appendAt` places a new widget.
+
 ## 0.2.0-next.35
 
 A prerelease under npm's `next` tag.

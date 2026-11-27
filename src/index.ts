@@ -98,6 +98,9 @@ export {
 export { CalendarGrid, type CalendarGridProps, type CalendarItem } from './components/CalendarGrid';
 export { Chart, type ChartProps, type ChartSeries } from './components/Chart';
 export { compactLayout, DashboardGrid, placeItem, type DashboardGridProps, type GridItem } from './components/DashboardGrid';
+export {
+  appendAt, fromTwelve, PRESETS as WIDGET_WIDTHS, renumber, TRACKS as WIDGET_TRACKS, WidgetBoard, type BoardItem, type WidgetBoardLabels, type WidgetBoardProps,
+} from './components/WidgetBoard';
 export { CategoryProgress, type CategoryProgressProps } from './components/CategoryProgress';
 export { DirectionalIcon } from './components/DirectionalIcon';
 export { EmptyState, type EmptyStateProps } from './components/EmptyState';
