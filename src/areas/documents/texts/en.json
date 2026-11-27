@@ -51,12 +51,12 @@
   "name": "Name",
   "changeClass": "Change class",
   "classTitle": "Change the class of {name}",
-  "classHint": "Its text is embedded again, through a model allowed this class. Ask's model gets its passages only if it's allowed the class too.",
+  "classHint": "Its text is embedded again, through a model allowed this class. An assistant's model gets its passages only if it's allowed the class too.",
   "save": "Save",
   "cancel": "Cancel",
   "delete": "Delete",
   "deleteTitle": "Delete {name}?",
-  "deleteDescription": "Its file and its text go, and Ask no longer answers from it. This can't be undone.",
+  "deleteDescription": "Its file and its text go, and answers no longer come from it. This can't be undone.",
   "deleted": "{name} was deleted.",
   "uploadSummary": "{done} of {total} added",
   "uploadAnnounce": "{total, plural, one {{done} of # file added} other {{done} of # files added}}",
@@ -82,7 +82,7 @@
   "viewer.next": "Next page",
   "viewer.goTo": "Go to page",
   "viewer.text": "Text as read",
-  "viewer.textHint": "What Ask reads and cites, page by page.",
+  "viewer.textHint": "What answers read and cite, page by page.",
   "viewer.original": "The file",
   "viewer.fromImage": "Read from the page's image by a model: it may differ from what's written.",
   "viewer.noPreview": "A {kind} file isn't shown here: download it to see it as written.",
@@ -93,5 +93,7 @@
   "viewer.highlight": "Shown: {query}",
   "viewer.loading": "Loading the document",
   "uploadSizeKb": "{size} KB",
-  "columns.actions": "Actions"
+  "columns.actions": "Actions",
+  "notAKind": "Not a kind that's read",
+  "emptyFile": "The file is empty"
 }

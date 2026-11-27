@@ -3,6 +3,7 @@ import { Grid, HStack, Input, Stack, Text, chakra } from '@chakra-ui/react';
 import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import {
   Button,
+  DirectionalIcon,
   errorText,
   HostSlot,
   IconButton,
@@ -17,7 +18,8 @@ import {
   type HostFile,
 } from '@abpjs/ui';
 import { useDocumentsTexts } from './texts';
-import { IN_PROGRESS, type DocumentInfo, type DocumentPages } from './types';
+import { pageOf, pollDelay, shownType } from './rules';
+import type { DocumentInfo, DocumentPages } from './types';
 
 export interface DocumentViewerProps {
   /** The document. The host keys the viewer by it, so nothing of one document's carries over to the next. */
@@ -32,9 +34,6 @@ export interface DocumentViewerProps {
   onPage?: (page: number) => void;
 }
 
-/** How long after each answer a document still being read is read again. */
-const POLL_MS = 3000;
-
 /**
  * One document at a page: the text as it was read (what an answer cites), the words asked about marked, with its file
  * beside it for a PDF (the browser's own viewer, at the page) or a picture, and a download for anything else. Pages go
@@ -45,35 +44,37 @@ export function DocumentViewer({ documentId, page = 1, highlight, libraryHref, o
   const t = useDocumentsTexts();
   const doc = useApiQuery<DocumentInfo>('documents', `/${documentId}`);
   const d = doc.data;
-  const ready = d?.status === 'ready' || (d != null && Number(d.pages) > 0 && d.status !== 'reading');
+  // Its pages are shown when they're current: read, or kept while only its passages are embedded again (queued,
+  // indexing, or waiting on a limit with pages). A failed reading shows why, never the old text as if it were current.
+  const ready = d != null && (d.status === 'ready' || (Number(d.pages) > 0 && ['queued', 'indexing', 'waiting'].includes(d.status)));
   const pages = Math.max(1, Number(d?.pages ?? 1));
-  const [at, setAt] = useState(() => Math.max(1, Math.floor(page)));
-  const current = Math.min(Math.max(1, at), pages);
-  useEffect(() => setAt(Math.max(1, Math.floor(page))), [page]);
+  const [at, setAt] = useState(() => pageOf(page));
+  const current = pageOf(at, pages);
+  useEffect(() => setAt(pageOf(page)), [page]);
 
-  // A document still being read is read again a few seconds after each answer until it's done.
+  // A document on its way is read again a while after each answer until it's done (at its retry when it waits on a limit).
   const { reload } = doc;
-  const reading = d != null && IN_PROGRESS.includes(d.status);
+  const delay = d ? pollDelay([d]) : null;
   useEffect(() => {
-    if (!reading) return;
+    if (delay == null) return;
     let stopped = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const next = () => {
       timer = setTimeout(async () => {
         await reload();
         if (!stopped) next();
-      }, POLL_MS);
+      }, delay);
     };
     next();
     return () => {
       stopped = true;
       clearTimeout(timer);
     };
-  }, [reading, reload]);
+  }, [delay, reload]);
 
   const text = useApiQuery<DocumentPages>('documents', ready ? `/${documentId}/pages?from=${current}&to=${current}` : null);
   const go = (n: number) => {
-    const to = Math.min(Math.max(1, Math.floor(n)), pages);
+    const to = pageOf(n, pages);
     setAt(to);
     onPage?.(to);
   };
@@ -100,6 +101,8 @@ export function DocumentViewer({ documentId, page = 1, highlight, libraryHref, o
           </HStack>
         }
       />
+      {/* A reading again that failed while the page is open: said, over what was shown. */}
+      {d && <InlineAlert tone="danger">{doc.error}</InlineAlert>}
       {d && !ready && (
         <InlineAlert tone={d.status === 'failed' ? 'danger' : 'info'}>{d.status === 'failed' ? (d.problem ?? status) : t('viewer.notReady', { status })}</InlineAlert>
       )}
@@ -135,7 +138,9 @@ function PageControls({ current, pages, onGo }: { current: number; pages: number
   return (
     <HStack gap="2" justify="center" flexWrap="wrap" data-testid="document-pages">
       <IconButton aria-label={t('viewer.previous')} size="sm" variant="secondary" disabled={current <= 1} onClick={() => onGo(current - 1)}>
-        <ChevronLeft />
+        <DirectionalIcon>
+          <ChevronLeft />
+        </DirectionalIcon>
       </IconButton>
       <chakra.form
         display="flex"
@@ -144,7 +149,7 @@ function PageControls({ current, pages, onGo }: { current: number; pages: number
         onSubmit={(e) => {
           e.preventDefault();
           const n = Number(typed);
-          if (Number.isFinite(n)) onGo(n);
+          if (Number.isFinite(n) && n >= 1) onGo(n);
           else setTyped(String(current));
         }}
       >
@@ -159,7 +164,9 @@ function PageControls({ current, pages, onGo }: { current: number; pages: number
         </Text>
       </chakra.form>
       <IconButton aria-label={t('viewer.next')} size="sm" variant="secondary" disabled={current >= pages} onClick={() => onGo(current + 1)}>
-        <ChevronRight />
+        <DirectionalIcon>
+          <ChevronRight />
+        </DirectionalIcon>
       </IconButton>
     </HStack>
   );
@@ -248,7 +255,9 @@ function Marked({ text, words }: { text: string; words: string[] }): ReactNode {
 function Original({ document: d, page }: { document: DocumentInfo; page: number }) {
   const t = useDocumentsTexts();
   const request = useAreaRequest('documents');
-  const shown = d.kind === 'pdf' || ['png', 'jpeg', 'webp'].includes(d.kind);
+  // Shown as the document's own kind, whatever the response said, so nothing else (HTML, SVG) renders on this site.
+  const type = shownType(d.kind);
+  const shown = type != null;
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -258,7 +267,7 @@ function Original({ document: d, page }: { document: DocumentInfo; page: number 
     request<HostFile>(`/${d.id}/file`, { as: 'file' })
       .then((file) => {
         if (stopped) return;
-        made = URL.createObjectURL(file.blob);
+        made = URL.createObjectURL(new Blob([file.blob], { type: type! }));
         setUrl(made);
       })
       .catch((e) => !stopped && setError(errorText(e)));
@@ -266,7 +275,7 @@ function Original({ document: d, page }: { document: DocumentInfo; page: number 
       stopped = true;
       if (made) URL.revokeObjectURL(made);
     };
-  }, [shown, d.id, request]);
+  }, [shown, type, d.id, request]);
 
   if (!shown) {
     return (

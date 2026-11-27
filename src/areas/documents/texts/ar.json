@@ -51,12 +51,12 @@
   "name": "الاسم",
   "changeClass": "تغيير التصنيف",
   "classTitle": "تغيير تصنيف {name}",
-  "classHint": "يُضمَّن نصه مجددًا عبر نموذج يُسمح له بهذا التصنيف. ولا يتلقى نموذجُ Ask مقاطعه إلا إذا سُمح له بالتصنيف أيضًا.",
+  "classHint": "يُضمَّن نصه مجددًا عبر نموذج يُسمح له بهذا التصنيف. ولا يتلقى نموذجُ المساعد مقاطعه إلا إذا سُمح له بالتصنيف أيضًا.",
   "save": "حفظ",
   "cancel": "إلغاء",
   "delete": "حذف",
   "deleteTitle": "حذف {name}؟",
-  "deleteDescription": "يُحذف ملفه ونصه، ولن يجيب Ask منه بعد ذلك. لا يمكن التراجع عن هذا.",
+  "deleteDescription": "يُحذف ملفه ونصه، ولن تأتي الإجابات منه بعد ذلك. لا يمكن التراجع عن هذا.",
   "deleted": "حُذف {name}.",
   "uploadSummary": "أُضيف {done} من {total}",
   "uploadAnnounce": "{total, plural, zero {لا ملفات} one {أُضيف {done} من ملف واحد} two {أُضيف {done} من ملفين} few {أُضيف {done} من # ملفات} many {أُضيف {done} من # ملفًا} other {أُضيف {done} من # ملف}}",
@@ -82,7 +82,7 @@
   "viewer.next": "الصفحة التالية",
   "viewer.goTo": "انتقل إلى الصفحة",
   "viewer.text": "النص كما قُرئ",
-  "viewer.textHint": "ما يقرؤه Ask ويستشهد به، صفحةً صفحة.",
+  "viewer.textHint": "ما تقرؤه الإجابات وتستشهد به، صفحةً صفحة.",
   "viewer.original": "الملف",
   "viewer.fromImage": "قرأه نموذجٌ من صورة الصفحة: قد يختلف عمّا هو مكتوب.",
   "viewer.noPreview": "لا يُعرض ملف {kind} هنا: نزّله لتراه كما كُتب.",
@@ -93,5 +93,7 @@
   "viewer.highlight": "المعروض: {query}",
   "viewer.loading": "جارٍ تحميل المستند",
   "uploadSizeKb": "{size} كيلوبايت",
-  "columns.actions": "الإجراءات"
+  "columns.actions": "الإجراءات",
+  "notAKind": "ليس من الأنواع التي تُقرأ",
+  "emptyFile": "الملف فارغ"
 }

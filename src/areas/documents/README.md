@@ -48,11 +48,15 @@ The library belongs to a scope, so it's a page of the host's, not a settings pag
 routes and keys each by its id.
 
 - `DocumentsScreen` (`scopeId`, `viewerHref(documentId, page?)`, `title`, `onChanged`): the library. Uploads go one at
-  a time; leaving while any is on its way asks first, for a link inside the app too. A list with documents on their way
-  is read again three seconds after each answer, and a change of reading is said in a live region.
+  a time; a file the server would refuse (empty, over its most bytes, an extension it doesn't read) is refused before
+  it's sent. Leaving while any is on its way asks first, for a link inside the app and the row's Open too, and leaving
+  stops them. A list with documents being read is read again three seconds after each answer; one whose documents only
+  wait on a limit, at the soonest retry (15 s to 5 min). A change of reading is said in a live region.
 - `DocumentViewer` (`documentId`, `page`, `highlight`, `libraryHref`, `onPage`): one document at a page, kept within its
-  pages. The host keeps the page in its address through `onPage`. The file is fetched through the host's request and
-  shown from a local copy: a PDF in the browser's own viewer at the page, a picture as itself.
+  pages (a page that isn't a number is page 1). The host keeps the page in its address through `onPage`. A document
+  whose reading failed shows why, not its old text. The file is fetched through the host's request and shown from a
+  local copy typed as the document's own kind (never the response's): a PDF in the browser's own viewer at the page, a
+  picture as itself.
 - `DocumentStatusPill` (`status`): a document's reading as a pill, for a host's own lists.
 
 `data-testid`s kept for a host's checks: `documents-add` (the drop area), `documents-list` (the library),

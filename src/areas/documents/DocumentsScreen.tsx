@@ -34,7 +34,8 @@ import {
   type UploadRow,
 } from '@abpjs/ui';
 import { useDocumentsTexts } from './texts';
-import { IN_PROGRESS, type DocumentInfo, type DocumentsList, type DocumentsSettings } from './types';
+import { pollDelay, refusalOf } from './rules';
+import type { DocumentInfo, DocumentsList, DocumentsSettings } from './types';
 
 export interface DocumentsScreenProps {
   /** The scope (a project) whose documents these are. The host keys the screen by it. */
@@ -48,12 +49,10 @@ export interface DocumentsScreenProps {
 }
 
 const PAGE_SIZE = 25;
-/** How long after each answer a list with documents still being read is read again. */
-const POLL_MS = 3000;
 /** How long after the last keystroke a search of names is asked. */
 const SEARCH_MS = 300;
 
-type QueuedFile = { id: string; file: File; dataClass: string; state: UploadRow['state']; fraction: number; error?: string; controller?: AbortController };
+type QueuedFile = { id: string; file: File; dataClass: string; state: UploadRow['state']; fraction: number; error?: string };
 
 const STATUS_TONES: Record<string, StatusTone> = {
   queued: 'neutral',
@@ -100,31 +99,37 @@ export function DocumentsScreen({ scopeId, viewerHref, title, onChanged }: Docum
     if (list.data && page > pages) setPage(pages);
   }, [list.data, page, pages]);
 
-  // Read again a few seconds after each answer while any document is on its way, never on a fixed beat.
+  // Read again a while after each answer while any document is on its way, never on a fixed beat: every few seconds
+  // while one is being read, at the soonest retry while some only wait on a limit.
   const { reload } = list;
-  const reading = items.some((d) => IN_PROGRESS.includes(d.status));
+  const delay = pollDelay(items);
   useEffect(() => {
-    if (!reading) return;
+    if (delay == null) return;
     let stopped = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const next = () => {
       timer = setTimeout(async () => {
         await reload();
         if (!stopped) next();
-      }, POLL_MS);
+      }, delay);
     };
     next();
     return () => {
       stopped = true;
       clearTimeout(timer);
     };
-  }, [reading, reload]);
+  }, [delay, reload]);
 
   const announce = useStatusAnnouncements(items);
-  const uploads = useUploads(scopeId, async () => {
-    await reload();
-    await onChanged?.();
-  });
+  const uploads = useUploads(
+    scopeId,
+    async () => {
+      await reload();
+      await onChanged?.();
+    },
+    settings.data,
+  );
+  const go = useLeaveGuard(uploads.inFlight);
 
   const changed = useCallback(async () => {
     await reload();
@@ -137,13 +142,13 @@ export function DocumentsScreen({ scopeId, viewerHref, title, onChanged }: Docum
     <Stack gap="section">
       <PageHeader title={title ?? t('title')} description={t('description')} actions={<HostSlot name="documents.list.actions" context={{ scopeId }} />} />
       <InlineAlert tone="danger">{settings.error}</InlineAlert>
-      {mayAdd && <AddFiles settings={settings.data} defaultClass={defaultClass} mayManage={mayManage} onFiles={uploads.add} />}
+      {mayAdd && <AddFiles settings={settings.data} settingsLoading={settings.loading} defaultClass={defaultClass} mayManage={mayManage} onFiles={uploads.add} />}
       {uploads.rows.length > 0 && (
         <UploadList
           rows={uploads.rows}
-          summary={t('uploadSummary', { done: uploads.done, total: uploads.rows.length })}
-          fraction={uploads.fraction}
-          announce={t('uploadAnnounce', { done: uploads.done, total: uploads.rows.length })}
+          summary={uploads.total > 0 ? t('uploadSummary', { done: uploads.done, total: uploads.total }) : undefined}
+          fraction={uploads.total > 0 ? uploads.fraction : undefined}
+          announce={uploads.total > 0 ? t('uploadAnnounce', { done: uploads.done, total: uploads.total }) : undefined}
           labels={{ cancel: (name) => t('uploadCancel', { name }), retry: (name) => t('uploadRetry', { name }), dismiss: (name) => t('uploadDismiss', { name }) }}
           onCancel={uploads.cancel}
           onRetry={uploads.retry}
@@ -175,6 +180,7 @@ export function DocumentsScreen({ scopeId, viewerHref, title, onChanged }: Docum
                 me={me?.accountId}
                 classes={settings.data?.dataClasses ?? []}
                 onChanged={changed}
+                go={go}
               />
             )
           )}
@@ -201,8 +207,9 @@ export function DocumentsScreen({ scopeId, viewerHref, title, onChanged }: Docum
 }
 
 /** The files' drop area, with the labelled input behind its button and the class new files get. */
-function AddFiles({ settings, defaultClass, mayManage, onFiles }: {
+function AddFiles({ settings, settingsLoading, defaultClass, mayManage, onFiles }: {
   settings?: DocumentsSettings;
+  settingsLoading: boolean;
   defaultClass: string;
   mayManage: boolean;
   onFiles: (files: File[], dataClass: string) => void;
@@ -295,7 +302,7 @@ function AddFiles({ settings, defaultClass, mayManage, onFiles }: {
             value={chosen}
             onChange={(e) => setDataClass(e.target.value)}
             options={classes.map((c, i) => ({ value: c, label: className(t, c), disabled: !mayManage && at >= 0 && i < at }))}
-            loading={!settings}
+            loading={settingsLoading && !settings}
           />
         </Field>
       </HStack>
@@ -310,7 +317,7 @@ const className = (t: ReturnType<typeof useDocumentsTexts>, c: string) => {
 };
 
 /** The documents as a table: each one's name (to the viewer), kind, pages, class, reading, when it was added, and its menu. */
-function DocumentsTable({ items, scopeId, viewerHref, mayManage, me, classes, onChanged }: {
+function DocumentsTable({ items, scopeId, viewerHref, mayManage, me, classes, onChanged, go }: {
   items: DocumentInfo[];
   scopeId: string;
   viewerHref: (documentId: string, page?: number) => string;
@@ -318,13 +325,14 @@ function DocumentsTable({ items, scopeId, viewerHref, mayManage, me, classes, on
   me?: string;
   classes: string[];
   onChanged: () => Promise<void>;
+  /** The way out to another page, through the leave guard while files are on their way. */
+  go: (href: string) => void;
 }) {
   const t = useDocumentsTexts();
   const { dateTime } = useFormatters();
   const request = useAreaRequest('documents');
   const download = useApiDownload('documents');
   const confirm = useConfirm();
-  const navigate = useNavigate();
   const [renaming, setRenaming] = useState<DocumentInfo | null>(null);
   const [classifying, setClassifying] = useState<DocumentInfo | null>(null);
 
@@ -406,7 +414,7 @@ function DocumentsTable({ items, scopeId, viewerHref, mayManage, me, classes, on
           <RowMenu
             label={t('rowMenu', { name: d.name })}
             items={[
-              { id: 'open', label: t('open'), onSelect: () => navigate(viewerHref(d.id)) },
+              { id: 'open', label: t('open'), onSelect: () => go(viewerHref(d.id)) },
               { id: 'download', label: t('download'), onSelect: () => void download(`/${d.id}/file?download=true`, {}, d.name).catch((e) => notify.error(errorText(e))) },
               ...(mayManage
                 ? [
@@ -546,60 +554,100 @@ function useStatusAnnouncements(items: DocumentInfo[]): string {
 }
 
 /**
- * The files being added: one at a time, each with its class and how much is sent, stopped, tried again or dismissed.
- * Leaving the page while any is on its way asks first (closing the tab, or a link inside the app).
+ * The files being added: one at a time, each with its class, stopped, tried again or dismissed (one being sent is
+ * stopped first). A file the server would refuse (empty, too big, a kind it doesn't read) is refused here, before it's
+ * sent. Leaving the page stops what's on its way; asking first is the leave guard's.
  */
-function useUploads(scopeId: string, onAdded: () => Promise<void>) {
+function useUploads(scopeId: string, onAdded: () => Promise<void>, settings?: DocumentsSettings) {
   const t = useDocumentsTexts();
   const request = useAreaRequest('documents');
   const [queue, setQueue] = useState<QueuedFile[]>([]);
   const running = useRef(false);
+  const mounted = useRef(true);
   const latest = useRef(queue);
-  latest.current = queue;
+  // Each file being sent, by its id: stopping it aborts its request.
+  const controllers = useRef(new Map<string, AbortController>());
+  // What's current when a file lands: the list as the person now filters and pages it, not as it was when the file began.
+  const added = useRef(onAdded);
+  added.current = onAdded;
+  const limits = useRef(settings);
+  limits.current = settings;
 
-  const update = useCallback((id: string, change: Partial<QueuedFile>) => setQueue((q) => q.map((u) => (u.id === id ? { ...u, ...change } : u))), []);
+  const set = useCallback((next: QueuedFile[]) => {
+    latest.current = next;
+    if (mounted.current) setQueue(next);
+  }, []);
+  const update = useCallback((id: string, change: Partial<QueuedFile>) => set(latest.current.map((u) => (u.id === id ? { ...u, ...change } : u))), [set]);
+
+  // Leaving the page (or the host keying it afresh) stops every file on its way, and the queue with them.
+  useEffect(() => {
+    mounted.current = true;
+    const sending = controllers.current;
+    return () => {
+      mounted.current = false;
+      for (const controller of sending.values()) controller.abort();
+      sending.clear();
+    };
+  }, []);
 
   const pump = useCallback(async () => {
     if (running.current) return;
     running.current = true;
     try {
-      for (;;) {
+      while (mounted.current) {
         const next = latest.current.find((u) => u.state === 'waiting');
         if (!next) break;
         const controller = new AbortController();
-        update(next.id, { state: 'sending', fraction: 0, controller });
-        latest.current = latest.current.map((u) => (u.id === next.id ? { ...u, state: 'sending' } : u));
+        controllers.current.set(next.id, controller);
+        update(next.id, { state: 'sending', fraction: 0 });
         const form = new FormData();
         form.append('file', next.file, next.file.name);
         form.append('scopeId', scopeId);
         form.append('dataClass', next.dataClass);
         try {
           await request('', { method: 'POST', body: form, signal: controller.signal });
-          update(next.id, { state: 'done', fraction: 1, controller: undefined });
-          await onAdded();
+          update(next.id, { state: 'done', fraction: 1 });
+          if (mounted.current) await added.current();
         } catch (e) {
           const stopped = controller.signal.aborted;
-          update(next.id, { state: stopped ? 'cancelled' : 'failed', error: stopped ? undefined : errorText(e), controller: undefined });
+          update(next.id, { state: stopped ? 'cancelled' : 'failed', error: stopped ? undefined : errorText(e) });
+        } finally {
+          controllers.current.delete(next.id);
         }
       }
     } finally {
       running.current = false;
     }
-  }, [request, scopeId, update, onAdded]);
+  }, [request, scopeId, update]);
 
   const add = useCallback(
     (files: File[], dataClass: string) => {
-      const added: QueuedFile[] = files.map((file) => ({ id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, file, dataClass, state: 'waiting', fraction: 0 }));
-      latest.current = [...latest.current, ...added];
-      setQueue(latest.current);
+      const s = limits.current;
+      const mb = s ? Math.round(Number(s.maxBytes) / (1024 * 1024)) : 0;
+      const queued: QueuedFile[] = files.map((file) => {
+        const why = refusalOf(file, s?.maxBytes, s?.extensions);
+        return {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          file,
+          dataClass,
+          state: why ? 'refused' : 'waiting',
+          fraction: 0,
+          error: why === 'tooBig' ? t('tooBig', { mb }) : why === 'kind' ? t('notAKind') : why === 'empty' ? t('emptyFile') : undefined,
+        };
+      });
+      set([...latest.current, ...queued]);
       void pump();
     },
-    [pump],
+    [pump, set, t],
   );
 
-  const inFlight = queue.filter((u) => u.state === 'waiting' || u.state === 'sending').length;
-  useLeaveGuard(inFlight);
+  const stop = (id: string) => {
+    const controller = controllers.current.get(id);
+    if (controller) controller.abort();
+    else update(id, { state: 'cancelled' });
+  };
 
+  const inFlight = queue.filter((u) => u.state === 'waiting' || u.state === 'sending').length;
   const rows: UploadRow[] = queue.map((u) => ({
     id: u.id,
     name: u.file.name,
@@ -608,37 +656,50 @@ function useUploads(scopeId: string, onAdded: () => Promise<void>) {
     detail: u.error ?? (u.file.size < 100 * 1024 ? t('uploadSizeKb', { size: Math.max(1, Math.round(u.file.size / 1024)) }) : t('uploadSize', { size: (u.file.size / (1024 * 1024)).toFixed(1) })),
     status: u.state === 'waiting' ? t('uploadWaiting') : u.state === 'sending' ? t('uploadSending') : u.state === 'done' ? t('uploadDone') : undefined,
   }));
-  const done = queue.filter((u) => u.state === 'done').length;
+  const counted = queue.filter((u) => u.state !== 'refused' && u.state !== 'cancelled');
   return {
     rows,
-    done,
-    fraction: queue.length ? queue.reduce((sum, u) => sum + (u.state === 'done' ? 1 : u.fraction), 0) / queue.length : 0,
+    inFlight,
+    done: counted.filter((u) => u.state === 'done').length,
+    total: counted.length,
+    fraction: counted.length ? counted.reduce((sum, u) => sum + (u.state === 'done' ? 1 : u.fraction), 0) / counted.length : 0,
     add,
-    cancel: (id: string) => {
-      const u = latest.current.find((x) => x.id === id);
-      if (u?.controller) u.controller.abort();
-      else update(id, { state: 'cancelled' });
-    },
+    cancel: stop,
     retry: (id: string) => {
-      latest.current = latest.current.map((u) => (u.id === id ? { ...u, state: 'waiting', fraction: 0, error: undefined } : u));
-      setQueue(latest.current);
+      set(latest.current.map((u) => (u.id === id ? { ...u, state: 'waiting', fraction: 0, error: undefined } : u)));
       void pump();
     },
     dismiss: (id: string) => {
-      latest.current = latest.current.filter((u) => u.id !== id);
-      setQueue(latest.current);
+      controllers.current.get(id)?.abort();
+      set(latest.current.filter((u) => u.id !== id));
     },
   };
 }
 
 /**
- * Leaving while files are on their way asks first: closing or reloading the tab (the browser's own question), and
- * following a link inside the app, which then waits for the person's answer.
+ * Leaving while files are on their way asks first: closing or reloading the tab (the browser's own question), following
+ * a link inside the app, and the screen's own ways out (`go`), each then waiting for the person's answer. Leaving stops
+ * them (`useUploads`).
  */
-function useLeaveGuard(inFlight: number) {
+function useLeaveGuard(inFlight: number): (href: string) => void {
   const t = useDocumentsTexts();
   const confirm = useConfirm();
   const navigate = useNavigate();
+  const count = useRef(inFlight);
+  count.current = inFlight;
+  const ask = useCallback(
+    (href: string) => {
+      if (!count.current) {
+        navigate(href);
+        return;
+      }
+
+      void confirm({ title: t('leaveTitle'), description: t('leaveDescription', { count: count.current }), confirmLabel: t('leave'), danger: true }).then((leave) => {
+        if (leave) navigate(href);
+      });
+    },
+    [t, confirm, navigate],
+  );
   useEffect(() => {
     if (!inFlight) return;
     const warn = (e: BeforeUnloadEvent) => e.preventDefault();
@@ -649,11 +710,10 @@ function useLeaveGuard(inFlight: number) {
       const to = new URL(link.href, window.location.href);
       const here = window.location;
       if (to.origin !== here.origin || (to.pathname === here.pathname && to.search === here.search)) return;
+      // Ahead of the host's router, which listens further down: the link waits for the answer.
       e.preventDefault();
       e.stopPropagation();
-      void confirm({ title: t('leaveTitle'), description: t('leaveDescription', { count: inFlight }), confirmLabel: t('leave'), danger: true }).then((leave) => {
-        if (leave) navigate(`${to.pathname}${to.search}${to.hash}`);
-      });
+      ask(`${to.pathname}${to.search}${to.hash}`);
     };
     window.addEventListener('beforeunload', warn);
     document.addEventListener('click', click, true);
@@ -661,5 +721,6 @@ function useLeaveGuard(inFlight: number) {
       window.removeEventListener('beforeunload', warn);
       document.removeEventListener('click', click, true);
     };
-  }, [inFlight, t, confirm, navigate]);
+  }, [inFlight, ask]);
+  return ask;
 }
