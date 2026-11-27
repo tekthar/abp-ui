@@ -49,6 +49,11 @@
       "import": "./dist/guard.js",
       "default": "./dist/guard.js"
     },
+    "./languages": {
+      "types": "./dist/languages.d.ts",
+      "import": "./dist/languages.js",
+      "default": "./dist/languages.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

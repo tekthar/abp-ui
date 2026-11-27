@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- The `languages` area, `@abpjs/ui/languages`: AbpLanguages' screens on AbpLanguages.HttpApi 0.7.0 (`paths.languages`,
+  `languages.site.admin`). `languagesPages` gives Settings one page: the site's languages (direction, fallback, how far
+  each is translated; add, edit, turn on or off, make the default, remove) and each language's translation editor
+  (every text beside its English source and what ships, filtered by status and catalog, searched, saved from a
+  `SaveBar`, exported and imported as a translator's file). `onChanged` lets the host read its languages and texts again
+  after a change, without starting the editor afresh; `mainCatalog` and `catalogName` name the catalogs; the
+  `languages.list.actions` slot takes the host's own links. Words in English and Arabic.
 - `AgentPermissionsPanel` (the design canvas's "Agents you always allow"): one row per agent and scope, with who made
   the agent, its tools together by title, the scope, since when and when last used; Remove takes the whole row back
   after a confirm ("It will ask you again before using these tools"). On the person's page, "Allow an agent" opens a
