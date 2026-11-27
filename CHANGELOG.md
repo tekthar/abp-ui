@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.2.0-next.35
+
+A prerelease under npm's `next` tag.
 
 - guard › Directories, the design canvas's board:
   - **New directory**, and a directory's name, open a wide `FormDialog` beside a preview: the name, the type, how often
