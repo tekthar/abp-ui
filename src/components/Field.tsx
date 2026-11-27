@@ -28,7 +28,10 @@ export const Field = forwardRef<HTMLDivElement, FieldProps>(function Field(
       {label != null && (
         <ChakraField.Label>
           {label}
-          <ChakraField.RequiredIndicator fallback={optionalText} />
+          {/* "Optional" reads apart from the label: a space before it, quieter, not bold. */}
+          <ChakraField.RequiredIndicator
+            fallback={optionalText != null ? <chakra.span ms="1.5" color="fg.muted" fontWeight="normal" textStyle="caption">{optionalText}</chakra.span> : undefined}
+          />
         </ChakraField.Label>
       )}
       {loading ? (

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0-next.41
+
+A prerelease under npm's `next` tag.
+
+- `Field`: `optionalText` ("Optional") reads apart from its label: a space before it, quieter and not bold. It ran into
+  the label ("MessageOptional").
+
 ## 0.2.0-next.40
 
 A prerelease under npm's `next` tag.
