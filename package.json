@@ -59,6 +59,11 @@
       "import": "./dist/storage.js",
       "default": "./dist/storage.js"
     },
+    "./documents": {
+      "types": "./dist/documents.d.ts",
+      "import": "./dist/documents.js",
+      "default": "./dist/documents.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
