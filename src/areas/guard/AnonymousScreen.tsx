@@ -19,14 +19,14 @@ import {
   SelectField,
   StatusPill,
   errorText,
-  useAbpLocale,
   useApiAction,
   useApiQuery,
   useAreaRequest,
   useConfirm,
   useFormatters,
 } from '@abpjs/ui';
-import { placeKept, placesOffering, rolesOffered } from './anonymousRules';
+import { placeKept, placesOffering, rolesOffered, takenBy } from './anonymousRules';
+import { useWrittenName } from './names';
 import { useGuardNs } from './texts';
 import type { AnonymousGrantDto, AnonymousPlaceDto, AnonymousRoleDto } from './types';
 
@@ -49,35 +49,48 @@ type Editing = { mode: 'give' } | { mode: 'change'; grant: AnonymousGrantDto; pl
 export function AnonymousScreen({ roleName, roleDescription }: AnonymousScreenProps = {}) {
   const t = useGuardNs('anonymousAccess');
   const fmt = useFormatters();
-  const { locale } = useAbpLocale();
+  const written = useWrittenName();
   const confirm = useConfirm();
   const request = useAreaRequest('guard');
   const action = useApiAction();
   const grants = useApiQuery<AnonymousGrantDto[]>('guard', '/anonymous');
   const places = useApiQuery<AnonymousPlaceDto[]>('guard', '/anonymous/places');
   const [editing, setEditing] = useState<Editing | null>(null);
+  // What the dialog last showed: kept while it closes, so its words don't switch to Give's mid-animation.
+  const [shown, setShown] = useState<Editing>({ mode: 'give' });
   const [roleId, setRoleId] = useState('');
   const [scopeKey, setScopeKey] = useState('');
 
   const placeOf = useMemo(() => new Map((places.data ?? []).map((p) => [p.scopeKey, p])), [places.data]);
-  const nameOf = (r: Pick<AnonymousRoleDto, 'key' | 'name'> & { names?: Record<string, string> }) =>
-    r.names?.[locale] ?? roleName?.(r.key, r.name) ?? r.name;
-  const grantRole = (g: AnonymousGrantDto) => roleName?.(g.roleKey, g.roleName) ?? g.roleName;
+  const roleOf = useMemo(() => new Map((places.data ?? []).flatMap((p) => p.roles).map((r) => [r.id, r])), [places.data]);
+  // One name for a role wherever it shows: the host's for its own roles, then the role's names by language.
+  const nameOf = (r: Pick<AnonymousRoleDto, 'key' | 'name' | 'names'>) => written(roleName?.(r.key, r.name) ?? r.name, r.names);
+  const describe = (r: AnonymousRoleDto) =>
+    written(roleDescription?.(r.key, r.description) ?? r.description ?? '', r.descriptions) || undefined;
+  const grantRole = (g: AnonymousGrantDto) => {
+    const known = g.roleId ? roleOf.get(g.roleId) : undefined;
+    return known ? nameOf(known) : written(roleName?.(g.roleKey, g.roleName) ?? g.roleName);
+  };
   // A place the host lists names itself (its name, its code); a scope it doesn't is named as its describer says.
   const whereOf = (g: AnonymousGrantDto) => {
     const place = g.scopeKey ? placeOf.get(g.scopeKey) : undefined;
     return { label: place?.label ?? g.scope ?? g.scopeKey ?? '', code: place?.code ?? g.code ?? null, href: place?.href ?? g.href };
   };
 
+  // Pairs given already aren't offered again (the server would answer with the same grant); a change keeps its own.
+  const taken = useMemo(() => takenBy(grants.data ?? [], shown.mode === 'change' ? shown.grant.id : undefined), [grants.data, shown]);
   // The roles offered: the place's when one is chosen, else every role some place offers (each once).
-  const chosenPlace = editing?.mode === 'change' ? editing.place : placeOf.get(scopeKey);
-  const roleOptions = useMemo(() => rolesOffered(places.data ?? [], chosenPlace), [chosenPlace, places.data]);
+  const chosenPlace = shown.mode === 'change' ? shown.place : placeOf.get(scopeKey);
+  const roleOptions = useMemo(() => rolesOffered(places.data ?? [], chosenPlace, taken), [chosenPlace, places.data, taken]);
   const chosenRole = roleOptions.find((r) => r.id === roleId);
-  // The places offered: those whose roles include the chosen one.
-  const placeOptions = placesOffering(places.data ?? [], roleId);
+  // The places offered: those that still offer the chosen role; a place with nothing left to give isn't one.
+  const placeOptions = placesOffering(places.data ?? [], roleId, taken);
+  // A change is saved only when it changes the role.
+  const unchanged = shown.mode === 'change' && roleId === (shown.grant.roleId ?? '');
 
   function open(next: Editing) {
     setEditing(next);
+    setShown(next);
     setRoleId(next.mode === 'change' ? (next.grant.roleId ?? '') : '');
     setScopeKey(next.mode === 'change' ? next.place.scopeKey : '');
     action.setError(null);
@@ -108,14 +121,14 @@ export function AnonymousScreen({ roleName, roleDescription }: AnonymousScreenPr
     }
   }
 
-  const canGive = (places.data?.length ?? 0) > 0;
+  const canGive = placesOffering(places.data ?? [], '', takenBy(grants.data ?? [])).length > 0;
   const giveButton = canGive && (
     <Button variant="primary" onClick={() => open({ mode: 'give' })}>{t('giveRole')}</Button>
   );
-  const loaded = grants.data !== undefined && places.data !== undefined;
-  const empty = loaded && grants.data!.length === 0;
+  // The grants decide what the page is; the places only what can be given (a failure there shows, the grants stay).
+  const empty = grants.data !== undefined && grants.data.length === 0;
 
-  const whereLabel = (p: AnonymousPlaceDto) => (p.code ? `${p.label} · ${p.code}` : p.label);
+  const whereLabel = (p: AnonymousPlaceDto) => (p.code ? t('placeWithCode', { place: p.label, code: p.code }) : p.label);
   const previewWhere = chosenPlace ? whereLabel(chosenPlace) : undefined;
 
   return (
@@ -129,7 +142,7 @@ export function AnonymousScreen({ roleName, roleDescription }: AnonymousScreenPr
           kind="first-use"
           illustration="views"
           title={t('emptyTitle')}
-          description={canGive ? t('emptyText') : `${t('emptyText')} ${t('noPlaces')}`}
+          description={canGive || places.data === undefined ? t('emptyText') : t('emptyTextNoPlaces')}
           action={giveButton || undefined}
         />
       ) : (
@@ -137,7 +150,7 @@ export function AnonymousScreen({ roleName, roleDescription }: AnonymousScreenPr
           <DataTable
             aria-label={t('tableLabel')}
             rows={grants.data}
-            loading={!loaded}
+            loading={grants.loading}
             getRowId={(g) => g.id}
             columns={[
               {
@@ -188,8 +201,9 @@ export function AnonymousScreen({ roleName, roleDescription }: AnonymousScreenPr
       <FormDialog
         open={editing !== null}
         onOpenChange={(o) => { if (!o) setEditing(null); }}
-        title={editing?.mode === 'change' ? t('changeTitle', { scope: editing.place.label }) : t('dialogTitle')}
-        submitLabel={editing?.mode === 'change' ? t('change') : t('give')}
+        title={shown.mode === 'change' ? t('changeTitle', { scope: shown.place.label }) : t('dialogTitle')}
+        submitLabel={shown.mode === 'change' ? t('change') : t('give')}
+        submitDisabled={unchanged}
         onSubmit={save}
         busy={action.busy}
         error={action.error}
@@ -200,7 +214,7 @@ export function AnonymousScreen({ roleName, roleDescription }: AnonymousScreenPr
             subtitle={chosenRole ? nameOf(chosenRole) : undefined}
             items={[
               { label: t('scope'), value: previewWhere },
-              { label: t('can'), wrap: true, value: chosenRole ? (chosenRole.descriptions?.[locale] ?? roleDescription?.(chosenRole.key, chosenRole.description) ?? chosenRole.description ?? undefined) : undefined },
+              { label: t('can'), wrap: true, value: chosenRole ? describe(chosenRole) : undefined },
             ]}
           />
         }
@@ -212,15 +226,17 @@ export function AnonymousScreen({ roleName, roleDescription }: AnonymousScreenPr
               const next = e.target.value;
               setRoleId(next);
               // A place that doesn't offer the new role is let go, so what's chosen always goes together.
-              if (editing?.mode === 'give') setScopeKey(placeKept(places.data ?? [], scopeKey, next));
+              if (shown.mode === 'give') setScopeKey(placeKept(places.data ?? [], scopeKey, next, taken));
             }}
             options={[{ value: '', label: t('chooseRole') }, ...roleOptions.map((r) => ({ value: r.id, label: nameOf(r) }))]}
           />
         </Field>
-        {editing?.mode === 'change' ? (
-          <Field label={t('scope')}>
-            <Text textStyle="body.sm" py="2">{whereLabel(editing.place)}</Text>
-          </Field>
+        {shown.mode === 'change' ? (
+          // The place a change keeps: a label and its value, not a field (there's nothing to fill in).
+          <Stack gap="1.5">
+            <Text id="anonymous-change-where" textStyle="label">{t('scope')}</Text>
+            <Text textStyle="body.sm" aria-labelledby="anonymous-change-where">{whereLabel(shown.place)}</Text>
+          </Stack>
         ) : (
           <Field label={t('scope')} required>
             <SelectField

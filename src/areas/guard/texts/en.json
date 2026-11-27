@@ -442,9 +442,10 @@
   "anonymousAccess.changed": "Role changed.",
   "anonymousAccess.emptyTitle": "Anonymous visitors have no roles",
   "anonymousAccess.emptyText": "People must sign in to see anything.",
-  "anonymousAccess.noPlaces": "Nothing on this site can be opened to anonymous visitors yet.",
   "anonymousAccess.tableLabel": "Roles for anonymous visitors",
   "anonymousAccess.actions": "Actions",
   "anonymousAccess.menuLabel": "Actions for {role} in {scope}",
-  "anonymousAccess.notListed": "This place doesn't offer roles to anonymous visitors now. Remove the role instead."
+  "anonymousAccess.notListed": "This place doesn't offer roles to anonymous visitors now. Remove the role instead.",
+  "anonymousAccess.emptyTextNoPlaces": "People must sign in to see anything. Nothing on this site can be opened to anonymous visitors yet.",
+  "anonymousAccess.placeWithCode": "{place} · {code}"
 }

@@ -442,9 +442,10 @@
   "anonymousAccess.changed": "تغيّر الدور.",
   "anonymousAccess.emptyTitle": "ليس للزوار المجهولين أي دور",
   "anonymousAccess.emptyText": "يجب تسجيل الدخول لرؤية أي شيء.",
-  "anonymousAccess.noPlaces": "لا شيء في هذا الموقع يمكن فتحه للزوار المجهولين بعد.",
   "anonymousAccess.tableLabel": "أدوار الزوار المجهولين",
   "anonymousAccess.actions": "الإجراءات",
   "anonymousAccess.menuLabel": "إجراءات {role} في {scope}",
-  "anonymousAccess.notListed": "لم يعد هذا المكان يتيح أدوارًا للزوار المجهولين. اسحب الدور بدلًا من ذلك."
+  "anonymousAccess.notListed": "لم يعد هذا المكان يتيح أدوارًا للزوار المجهولين. اسحب الدور بدلًا من ذلك.",
+  "anonymousAccess.emptyTextNoPlaces": "يجب تسجيل الدخول لرؤية أي شيء. لا شيء في هذا الموقع يمكن فتحه للزوار المجهولين بعد.",
+  "anonymousAccess.placeWithCode": "{place} · {code}"
 }

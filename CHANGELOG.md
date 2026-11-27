@@ -15,11 +15,13 @@
   - The rows show the role as a tag, the place's name and code (as the places list names them), and since when.
   - A row's menu changes the role in one step or removes it.
   - With no roles given, the page is its empty state, with Give a role.
+  - A role already given in a place isn't offered there again, and a place with nothing left to give isn't offered.
+    Change role saves only a different role.
 
   `roleDescription` joins `roleName` for a host's own roles. `anonymousRules.ts` holds the choosing, tested in
   `tests/anonymous-rules.test.mjs`. New words: `giveRole`, `dialogTitle`, `changeTitle`, `chooseRole`, `chooseWhere`,
-  `warning`, `who`, `can`, `give`, `change`, `given`, `changed`, `emptyTitle`, `emptyText`, `noPlaces`, `tableLabel`,
-  `actions`, `menuLabel` and `notListed`. `revoke`, `revokeTitle` and `revoked` now say Remove role, and `empty` is gone.
+  `warning`, `who`, `can`, `give`, `change`, `given`, `changed`, `emptyTitle`, `emptyText`, `emptyTextNoPlaces`,
+  `placeWithCode`, `tableLabel`, `actions`, `menuLabel` and `notListed`. `revoke`, `revokeTitle` and `revoked` now say Remove role, and `empty` is gone.
 - `PreviewCard`: an item's `wrap` lets a long value (a description) run to three lines.
 
 ## 0.2.0-next.33
