@@ -1,7 +1,7 @@
 # The screens' areas
 
 Each folder here is one server package's screens: `ai` (AbpAi.HttpApi), `guard` (AbpGuard.HttpApi), `agent`
-(AbpAgent.HttpApi), `languages` (AbpLanguages.HttpApi). Each builds to its own entry (`@abpjs/ui/ai`) and, once complete, moves into its own package
+(AbpAgent.HttpApi), `languages` (AbpLanguages.HttpApi), `storage` (AbpCluster.Storage.HttpApi). Each builds to its own entry (`@abpjs/ui/ai`) and, once complete, moves into its own package
 (`@abpjs/ai`) with the same exports: only the import path changes. `tests/areas-boundary.test.mjs` keeps that true.
 
 ## An area's rules

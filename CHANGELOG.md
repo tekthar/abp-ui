@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.0-next.37
+
+A prerelease under npm's `next` tag.
+
+- The `storage` area (`@abpjs/ui/storage`), AbpCluster.Storage's screen on AbpCluster.Storage.HttpApi 0.6.0 or later:
+  where the site keeps its files (the provider and its place, never a key) and what's kept there, a test of each store
+  with its time and the storage's own reason when it fails, and, while a previous storage is being left, the copy from
+  it, read again every second while it runs, with its counts and first problems. Starting the copy is the one sensitive
+  action: a host's step-up answers its 403 through the host's request. `storagePages({ section, href, ... })` gives the
+  settings page (one component per address), `StorageScreen` the page itself; the right is `storage.site.admin`, the
+  slot `storage.page.actions`, and a host names its stores with the words `storeNames.<store>` or `storeName`. Words in
+  English and Arabic, counts with plurals; the store list joins in the reader's language.
+
 ## 0.2.0-next.36
 
 A prerelease under npm's `next` tag.
