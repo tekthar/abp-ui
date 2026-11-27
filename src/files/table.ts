@@ -4,8 +4,8 @@ import { parseCsv, tableKind } from './csv';
 import { readXlsx, type XlsxSheet } from './xlsx';
 
 /**
- * A file's rows as text cells, the header first, from a CSV or an Excel workbook (its first visible sheet, named in
- * `sheet` when the workbook has several). Throws `XlsxError` for a workbook it can't read, and an Error for a file
+ * A file's rows as text cells, the header first, from a CSV or an Excel workbook (its first visible sheet). For a
+ * workbook, `sheet` is `{ sheet, sheets }`: the name of the sheet read and how many visible sheets it has. Throws `XlsxError` for a workbook it can't read, and an Error for a file
  * that is neither.
  */
 export async function readTable(file: File): Promise<{ rows: string[][]; sheet?: Pick<XlsxSheet, 'sheet' | 'sheets'> }> {

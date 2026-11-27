@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.0-next.43
+
+A prerelease under npm's `next` tag.
+
+- The `documents` area, `@abpjs/ui/documents`, on AbpDocuments.HttpApi: `DocumentsScreen` (a scope's library: upload
+  with the server's kinds and size limit checked before sending, a data class, indexing statuses polled while any is
+  in progress, search, rename, re-read and delete; a failed one says why), `DocumentViewer` (a document at a page, its
+  text with the cited passage highlighted, a page picker, the original PDF or picture inline, download) and
+  `DocumentStatusPill`; rights `documents.scope.read`, `.add`, `.manage`; slots `documents.list.actions` and
+  `documents.viewer.actions`; words in English and Arabic.
+- `readTable`'s doc says what `sheet` is: `{ sheet, sheets }`, the sheet read and how many visible sheets there are.
+
 ## 0.2.0-next.42
 
 A prerelease under npm's `next` tag.
