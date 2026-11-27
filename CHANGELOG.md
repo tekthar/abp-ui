@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.0-next.38
+
+A prerelease under npm's `next` tag.
+
+- Files as tables, for any "import from a file" flow: `readTable(file)` gives a CSV's or an Excel workbook's rows as
+  text cells, the header first (a workbook's first visible sheet, named in `sheet` when there are several).
+  `readXlsx` reads an .xlsx in the browser with no library (numbers as Excel shows them, date-styled cells as
+  yyyy-MM-dd in either date system, formulas as their last values) and throws `XlsxError` (`old` for an .xls or a
+  file with a password, `broken`, `tooBig`, `noSheet`). `parseCsv` (RFC 4180, the separator guessed by
+  `guessSeparator`), `writeCsv` and `remapCsv` (columns renamed or left out) prepare rows for an import on a server;
+  `tableKind` tells a CSV, a workbook and an older Excel file apart by name and type.
+
 ## 0.2.0-next.37
 
 A prerelease under npm's `next` tag.
