@@ -100,6 +100,8 @@ export { Chart, type ChartProps, type ChartSeries } from './components/Chart';
 export { compactLayout, DashboardGrid, placeItem, type DashboardGridProps, type GridItem } from './components/DashboardGrid';
 export { guessSeparator, parseCsv, remapCsv, tableKind, writeCsv, XLSX_TYPE } from './files/csv';
 export { readTable } from './files/table';
+export { columnCounts, columnProblems, guessTargets, guessType, headerKey, type ColumnField, type ColumnTarget, type ValueKind } from './files/columns';
+export { ColumnMatcher, type ColumnMatcherLabels, type ColumnMatcherProps } from './components/ColumnMatcher';
 export { readXlsx, XlsxError, type XlsxProblem, type XlsxSheet } from './files/xlsx';
 export {
   appendAt, fromTwelve, PRESETS as WIDGET_WIDTHS, renumber, TRACKS as WIDGET_TRACKS, WidgetBoard, type BoardItem, type WidgetBoardLabels, type WidgetBoardProps,

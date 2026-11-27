@@ -10,6 +10,7 @@ const components = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'src
 
 /** Components with no skeleton of their own, and why. */
 const WITHOUT = {
+  'ColumnMatcher.tsx': "a file's columns, drawn once the file the person picked has been read in the browser; nothing loads",
   'CommandPalette.tsx': 'opens when asked; while its results come it says so beside the box',
   'ConfirmDialog.tsx': 'a dialog opens on an action, after the data it acts on',
   'FormDialog.tsx': 'a dialog opens on an action, with fields the person fills; the form it holds loads nothing',

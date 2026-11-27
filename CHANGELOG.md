@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.0-next.42
+
+A prerelease under npm's `next` tag.
+
+- `ColumnMatcher`, matching a file's columns to fields before an import: one row per column with its header and first
+  values, then where it goes (a field there already, a new field named in place with its type, or nowhere) and the
+  host's own controls (`renderExtra`); a line counts them ("5 columns: 1 new, 3 matched, 1 skipped") and says what must
+  be fixed (a field picked twice, a new field without a name, two new fields with one name). Controlled; words through
+  `labels`. A column turned into a new field starts on the type its values suggest (`typeOf`).
+- Helpers: `guessType(values)` (integer, decimal, boolean, date, timestamp, uuid or text), `guessTargets(headers,
+  samples, fields?)` (a header to the field of that name or label, ignoring case and spacing, else a new field),
+  `columnCounts` and `columnProblems`; `ColumnTarget` is `{kind: 'skip'}`, `{kind: 'field', name}` or
+  `{kind: 'new', name, type}`.
+
 ## 0.2.0-next.41
 
 A prerelease under npm's `next` tag.
