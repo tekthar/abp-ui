@@ -1,23 +1,29 @@
-import { useState } from 'react';
-import { HStack, Stack } from '@chakra-ui/react';
-import { ArrowDown, ArrowUp, RefreshCw } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { chakra, Stack, Text } from '@chakra-ui/react';
+import { ArrowDown, ArrowUp, ExternalLink, FolderTree, Pencil, Power, PowerOff, RefreshCw, Trash2 } from 'lucide-react';
 import {
-  AppLink,
   Button,
   DataTable,
-  IconButton,
+  FormDialog,
+  IconTile,
   InlineAlert,
   Loading,
   PageHeader,
   Panel,
+  PreviewCard,
+  RowMenu,
   StatusPill,
-  Tooltip,
+  errorText,
   useApiAction,
   useApiQuery,
   useAreaRequest,
+  useConfirm,
+  useNavigate,
   type DataTableColumn,
+  type RowMenuEntry,
 } from '@abpjs/ui';
-import { DirectoryForm, DirectoryWarnings } from './DirectoryForm';
+import { DirectoryFields, DirectoryWarnings } from './DirectoryForm';
+import { editInput, moved, syncs } from './directoryRules';
 import { guardRoutes, type GuardRoutes } from './routes';
 import { FlagPill, SyncStatus } from './status';
 import { useGuardNs } from './texts';
@@ -32,30 +38,88 @@ const EMPTY_INPUT: DirectoryInput = {
   settings: {},
 };
 
+/** The dialog: a new directory, or a quick edit of one (its type fixed). */
+type Editing = { mode: 'create' } | { mode: 'edit'; dir: DirectoryDto };
+
 /**
- * The site's directories, in the order sign-in tries them: added, reordered, synced now. A connector a directory needs
- * that isn't there (its plugin turned off) says so, and what a connector warns of in its settings is shown.
+ * The site's directories, in the order sign-in tries them (the design canvas's board). New directory and a directory's
+ * name open the dialog with a preview: its name, type, sync, whether it's active and signs people in, and its
+ * connector's settings. A row's menu edits it, opens its page (sync runs, connection tests, everything else), syncs it
+ * now, moves it up or down, turns it off or on, or deletes it. A connector that isn't there (its plugin turned off) says
+ * so, and what a connector warns of in its settings is shown.
  */
 export function DirectoriesScreen({ routes = guardRoutes() }: { routes?: GuardRoutes }) {
   const t = useGuardNs('directories');
+  const tf = useGuardNs('directoryForm');
+  const td = useGuardNs('directoryDetail');
   const tc = useGuardNs('common');
   const request = useAreaRequest('guard');
+  const navigate = useNavigate();
+  const confirm = useConfirm();
   const dirs = useApiQuery<DirectoryDto[]>('guard', '/directories');
   const types = useApiQuery<DirectoryTypeDto[]>('guard', '/directory-types');
   const action = useApiAction();
-  const [adding, setAdding] = useState(false);
+  const dialog = useApiAction();
+  const [editing, setEditing] = useState<Editing | null>(null);
+  // What the dialog last showed: kept while it closes, so its words don't switch mid-animation.
+  const [shown, setShown] = useState<Editing>({ mode: 'create' });
+  const [input, setInput] = useState<DirectoryInput>(EMPTY_INPUT);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
   const [syncing, setSyncing] = useState<string | null>(null);
-  // The directory just added, when its connector warns of its settings: said once it's saved.
-  const [added, setAdded] = useState<DirectoryDto | null>(null);
+  // A directory just saved, when its connector warns of its settings: said once it's saved.
+  const [warned, setWarned] = useState<DirectoryDto | null>(null);
 
   const list = dirs.data ?? [];
+  // An internal directory, kept by the site itself: the accounts people make by signing up.
+  const allTypes = useMemo<DirectoryTypeDto[]>(
+    () => [{ type: 'internal', displayName: t('internalType'), capabilities: ['Authenticate'], settings: [], pluginKey: null }, ...(types.data ?? [])],
+    [types.data, t],
+  );
+  const typeOf = (type: string) => allTypes.find((x) => x.type === type);
+  // A type's short name: the internal one in the area's words, a connector's as it names itself.
+  const typeName = (type: string, displayName?: string | null) => (type === 'internal' ? t('internal') : displayName || typeOf(type)?.displayName || type);
+  const secretsOf = (type: string) => new Set((typeOf(type)?.settings ?? []).filter((s) => s.secret).map((s) => s.name));
 
-  async function move(index: number, delta: -1 | 1) {
-    const target = index + delta;
-    if (target < 0 || target >= list.length) return;
-    const ids = list.map((d) => d.id);
-    [ids[index], ids[target]] = [ids[target], ids[index]];
+  function open(next: Editing) {
+    setEditing(next);
+    setShown(next);
+    setInput(next.mode === 'edit' ? (editInput(next.dir, secretsOf(next.dir.type)) as DirectoryInput) : EMPTY_INPUT);
+    dialog.setError(null);
+  }
+
+  async function save() {
+    if (!editing) return;
+    const saved = await dialog.run(() =>
+      editing.mode === 'create'
+        ? request<DirectoryDto>('/directories', { method: 'POST', body: input })
+        : request<DirectoryDto>(`/directories/${editing.dir.id}`, { method: 'PUT', body: input }),
+    );
+    if (!saved) return;
+    setWarned((saved.warnings ?? []).length > 0 ? saved : null);
+    setEditing(null);
+    await dirs.reload();
+  }
+
+  async function remove(d: DirectoryDto) {
+    if (!(await confirm({ title: td('deleteTitle', { name: d.name }), description: td('deleteDescription'), confirmLabel: tc('delete'), danger: true }))) return;
+    const done = await action.run(async () => {
+      await request(`/directories/${d.id}`, { method: 'DELETE' });
+      return true;
+    });
+    if (done) {
+      setEditing(null);
+      await dirs.reload();
+    }
+  }
+
+  async function setActive(d: DirectoryDto, isActive: boolean) {
+    const body = { ...(editInput(d, secretsOf(d.type)) as DirectoryInput), isActive };
+    const saved = await action.run(() => request<DirectoryDto>(`/directories/${d.id}`, { method: 'PUT', body }));
+    if (saved) await dirs.reload();
+  }
+
+  async function move(d: DirectoryDto, delta: -1 | 1) {
+    const ids = moved(list.map((x) => x.id), d.id, delta);
     const result = await action.run(() => request<DirectoryDto[]>('/directories/reorder', { method: 'POST', body: { directoryIds: ids } }));
     if (result) dirs.setData(result);
   }
@@ -85,23 +149,37 @@ export function DirectoriesScreen({ routes = guardRoutes() }: { routes?: GuardRo
     await dirs.reload();
   }
 
-  async function create(input: DirectoryInput) {
-    const made = await request<DirectoryDto>('/directories', { method: 'POST', body: input });
-    setAdded((made.warnings ?? []).length > 0 ? made : null);
-    setAdding(false);
-    await dirs.reload();
+  function menu(d: DirectoryDto): RowMenuEntry[] {
+    const i = list.indexOf(d);
+    const canSync = d.connectorAvailable && syncs(typeOf(d.type)?.capabilities);
+    return [
+      { id: 'edit', label: t('edit'), icon: <Pencil />, onSelect: () => open({ mode: 'edit', dir: d }) },
+      { id: 'open', label: t('openPage'), icon: <ExternalLink />, onSelect: () => navigate(routes.directory(d.id)) },
+      { id: 'sync', label: t('syncNow'), icon: <RefreshCw />, disabled: !canSync || syncing != null, onSelect: () => void sync(d) },
+      ...(!d.connectorAvailable ? [{ note: t('connectorDisabled') }] : []),
+      { separator: true as const },
+      { id: 'up', label: t('moveUp', { name: d.name }), icon: <ArrowUp />, disabled: i <= 0 || action.busy, onSelect: () => void move(d, -1) },
+      { id: 'down', label: t('moveDown', { name: d.name }), icon: <ArrowDown />, disabled: i === list.length - 1 || action.busy, onSelect: () => void move(d, 1) },
+      { separator: true as const },
+      d.isActive
+        ? { id: 'deactivate', label: t('deactivate'), icon: <PowerOff />, onSelect: () => void setActive(d, false) }
+        : { id: 'activate', label: t('activate'), icon: <Power />, onSelect: () => void setActive(d, true) },
+      { id: 'delete', label: tc('delete'), icon: <Trash2 />, danger: true, onSelect: () => void remove(d) },
+    ];
   }
 
   const columns: DataTableColumn<DirectoryDto>[] = [
-    { id: 'order', header: tc('order'), numeric: true, width: '16', cell: (d) => d.order },
+    // The order sign-in tries them, counted from 1 (the server's is from 0).
+    { id: 'order', header: t('priority'), numeric: true, width: '16', cell: (d) => list.indexOf(d) + 1 },
     {
       id: 'name',
       header: tc('name'),
       cell: (d) => (
         <Stack gap="1" align="flex-start">
-          <AppLink href={routes.directory(d.id)} fontWeight="medium">
+          <chakra.button type="button" fontWeight="semibold" textAlign="start" color="fg" _hover={{ textDecoration: 'underline' }}
+            onClick={() => open({ mode: 'edit', dir: d })}>
             {d.name}
-          </AppLink>
+          </chakra.button>
           {!d.connectorAvailable && (
             <StatusPill tone="warning" title={d.pluginKey ? t('pluginDisabledHint', { plugin: d.pluginKey }) : undefined}>
               {t('connectorDisabled')}
@@ -115,95 +193,34 @@ export function DirectoriesScreen({ routes = guardRoutes() }: { routes?: GuardRo
         </Stack>
       ),
     },
-    { id: 'type', header: tc('type'), cell: (d) => d.typeDisplayName || d.type },
-    { id: 'active', header: tc('active'), cell: (d) => <FlagPill value={d.isActive} yes={tc('active')} no={tc('inactive')} />, skeleton: 'pill' },
-    { id: 'signIn', header: t('signIn'), cell: (d) => <FlagPill value={d.authenticationEnabled} yes={tc('enabled')} no={tc('disabled')} />, skeleton: 'pill' },
+    { id: 'type', header: tc('type'), cell: (d) => typeName(d.type, d.typeDisplayName) },
+    { id: 'active', header: tc('status'), cell: (d) => <FlagPill value={d.isActive} yes={tc('active')} no={tc('inactive')} />, skeleton: 'pill' },
+    { id: 'signIn', header: t('signIn'), cell: (d) => <FlagPill value={d.authenticationEnabled} yes={t('on')} no={t('off')} />, skeleton: 'pill' },
     { id: 'users', header: tc('users'), numeric: true, cell: (d) => d.userCount },
     { id: 'groups', header: tc('groups'), numeric: true, cell: (d) => d.groupCount },
     { id: 'lastSync', header: t('lastSync'), cell: (d) => <SyncStatus d={d} />, skeleton: 'pill' },
     {
       id: 'actions',
-      header: tc('actions'),
+      header: <Text as="span" srOnly>{tc('actions')}</Text>,
       align: 'end',
-      nowrap: true,
-      // Its buttons as their ghosts while the list loads, so a placeholder row is as tall as a real one.
-      skeleton: () => (
-        <Loading when>
-          <HStack gap="1" justify="flex-end">
-            <IconButton size="sm" aria-label={t('moveUp', { name: '' })}>
-              <ArrowUp />
-            </IconButton>
-            <IconButton size="sm" aria-label={t('moveDown', { name: '' })}>
-              <ArrowDown />
-            </IconButton>
-            <Button size="sm">
-              <RefreshCw />
-              {t('syncNow')}
-            </Button>
-          </HStack>
-        </Loading>
-      ),
-      cell: (d) => {
-        const i = list.indexOf(d);
-        return (
-          <HStack gap="1" justify="flex-end">
-            <IconButton size="sm" aria-label={t('moveUp', { name: d.name })} disabled={i === 0 || action.busy} onClick={() => move(i, -1)}>
-              <ArrowUp />
-            </IconButton>
-            <IconButton size="sm" aria-label={t('moveDown', { name: d.name })} disabled={i === list.length - 1 || action.busy} onClick={() => move(i, 1)}>
-              <ArrowDown />
-            </IconButton>
-            <Tooltip content={t('connectorDisabled')} disabled={d.connectorAvailable}>
-              <Button size="sm" disabled={syncing != null || !d.connectorAvailable} loading={syncing === d.id} onClick={() => sync(d)}>
-                <RefreshCw />
-                {t('syncNow')}
-              </Button>
-            </Tooltip>
-          </HStack>
-        );
-      },
+      cell: (d) => <RowMenu label={t('menuLabel', { name: d.name })} items={menu(d)} />,
     },
   ];
+
+  const type = typeOf(input.type);
+  const synced = !!type && syncs(type.capabilities);
+  const minutes = input.syncIntervalMinutes;
 
   return (
     <>
       <PageHeader
         title={t('title')}
         description={t('subtitle')}
-        actions={
-          !adding && (
-            <Button variant="primary" onClick={() => { setAdded(null); setAdding(true); }}>
-              {t('add')}
-            </Button>
-          )
-        }
+        actions={<Button variant="primary" onClick={() => { setWarned(null); open({ mode: 'create' }); }}>{t('add')}</Button>}
       />
       <Stack gap="section">
-        {adding && (
-          <Panel title={t('add')}>
-            {types.error ? (
-              <InlineAlert tone="danger">{types.error}</InlineAlert>
-            ) : (
-              // The form is there while the types load, its fields as their ghosts.
-              <Loading when={!types.data}>
-                <DirectoryForm
-                  mode="create"
-                  types={[
-                    // An internal directory, kept by the site itself: the accounts people make by signing up.
-                    { type: 'internal', displayName: t('internalType'), capabilities: ['Authenticate'], settings: [], pluginKey: null },
-                    ...(types.data ?? []),
-                  ]}
-                  initial={EMPTY_INPUT}
-                  onSubmit={create}
-                  onCancel={() => setAdding(false)}
-                />
-              </Loading>
-            )}
-          </Panel>
-        )}
-
         <InlineAlert tone="danger">{action.error}</InlineAlert>
-        {added && <DirectoryWarnings title={t('addedWithWarnings', { name: added.name })} warnings={added.warnings} />}
+        {warned && <DirectoryWarnings title={t('savedWithWarnings', { name: warned.name })} warnings={warned.warnings} />}
         {notice && <InlineAlert tone={notice.ok ? 'success' : 'warning'}>{notice.text}</InlineAlert>}
 
         <Panel flush>
@@ -219,6 +236,34 @@ export function DirectoriesScreen({ routes = guardRoutes() }: { routes?: GuardRo
           />
         </Panel>
       </Stack>
+
+      <FormDialog
+        open={editing !== null}
+        onOpenChange={(o) => { if (!o) setEditing(null); }}
+        title={shown.mode === 'edit' ? t('editTitle') : t('newTitle')}
+        submitLabel={shown.mode === 'edit' ? tf('save') : tf('create')}
+        onSubmit={save}
+        busy={dialog.busy}
+        error={dialog.error ?? (types.error ? errorText(types.error) : null)}
+        dangerAction={shown.mode === 'edit' ? { label: t('deleteDirectory'), onClick: () => shown.mode === 'edit' && void remove(shown.dir) } : undefined}
+        preview={
+          <PreviewCard
+            media={<IconTile size="md"><FolderTree /></IconTile>}
+            title={input.name || <Text as="span" color="fg.muted">{t('namePreview')}</Text>}
+            subtitle={type ? typeName(type.type, type.displayName) : undefined}
+            items={[
+              ...(type && !synced ? [] : [{ label: t('sync'), value: minutes ? t('syncEvery', { count: minutes }) : t('onRequest') }]),
+              { label: tc('status'), value: input.isActive ? tc('active') : tc('inactive') },
+              { label: t('signIn'), value: input.authenticationEnabled ? t('on') : t('off') },
+            ]}
+          />
+        }
+      >
+        {/* The form is there while the types load, its fields as their ghosts. */}
+        <Loading when={!types.data && !types.error}>
+          <DirectoryFields compact mode={shown.mode} types={allTypes} input={input} onChange={setInput} />
+        </Loading>
+      </FormDialog>
     </>
   );
 }

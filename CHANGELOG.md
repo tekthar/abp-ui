@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+- guard › Directories, the design canvas's board:
+  - **New directory**, and a directory's name, open a wide `FormDialog` beside a preview: the name, the type, how often
+    it syncs ("On request only" when empty), and whether it's active and lets people sign in. A connector's settings
+    come once its type is chosen. Editing keeps the type, and **Delete directory** is the red link at the footer's start.
+  - A row's menu edits the directory, opens its page (sync runs, connection tests, everything else), syncs it now
+    (off for a type that doesn't sync), moves it up or down in priority, turns it off or on, or deletes it.
+  - Priority counts from 1. The internal type is named in the area's words, and a type that doesn't sync has no sync
+    interval.
+
+  `DirectoryFields` are the directory's fields without a form of their own, shared by the dialog and the directory's
+  page (`DirectoryForm`); `compact` gives one column. Active and sign-in are switches. `directoryRules.ts` holds the
+  editing start (a stored secret starts empty, so it's kept), which types sync, and moving, tested in
+  `tests/directory-rules.test.mjs`. New words in `directories` (`priority`, `internal`, `on`, `off`, `menuLabel`, `edit`,
+  `openPage`, `deactivate`, `activate`, `newTitle`, `editTitle`, `deleteDirectory`, `namePreview`, `sync`, `syncEvery`,
+  `onRequest`, `savedWithWarnings`) and `directoryForm` (`minutes`, `namePlaceholder`). `add`, `syncInterval`,
+  `syncIntervalHint` and `signInEnabled` say it as the canvas does, and `addedWithWarnings` is gone.
+
 ## 0.2.0-next.34
 
 A prerelease under npm's `next` tag.
