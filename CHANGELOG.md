@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.2.0-next.34
+
+A prerelease under npm's `next` tag.
 
 - `EmptyState variant="page"`: on a screen narrower than its drawing (375 px), the drawing is clipped at its faded
   sides instead of pushing the page sideways.
