@@ -23,6 +23,7 @@ import {
   type DataTableColumn,
 } from '@abpjs/ui';
 import { DirectoryForm, DirectoryWarnings } from './DirectoryForm';
+import { editInput, MASKED_SECRET } from './directoryRules';
 import { guardRoutes, type GuardRoutes } from './routes';
 import { FlagPill, PassFail, SyncResultPill, SyncStatus } from './status';
 import { useGuardNs } from './texts';
@@ -59,20 +60,7 @@ export function DirectoryScreen({ id, routes = guardRoutes() }: { id: string; ro
 
   const secretNames = useMemo(() => new Set((type?.settings ?? []).filter((s) => s.secret).map((s) => s.name)), [type]);
 
-  const initial = useMemo<DirectoryInput | null>(() => {
-    if (!dir) return null;
-    const settings: Record<string, string> = {};
-    for (const [k, v] of Object.entries(dir.settings)) settings[k] = secretNames.has(k) || v === '********' ? '' : v;
-    return {
-      name: dir.name,
-      names: dir.names,
-      type: dir.type,
-      isActive: dir.isActive,
-      authenticationEnabled: dir.authenticationEnabled,
-      syncIntervalMinutes: dir.syncIntervalMinutes,
-      settings,
-    };
-  }, [dir, secretNames]);
+  const initial = useMemo<DirectoryInput | null>(() => (dir ? (editInput(dir, secretNames) as DirectoryInput) : null), [dir, secretNames]);
 
   // When the connector type is not registered (its plugin turned off), still show the stored settings.
   const fallbackSettings = useMemo<DirectorySettingDefinition[]>(
@@ -81,7 +69,7 @@ export function DirectoryScreen({ id, routes = guardRoutes() }: { id: string; ro
         name,
         label: name,
         required: false,
-        secret: dir?.settings[name] === '********',
+        secret: dir?.settings[name] === MASKED_SECRET,
         defaultValue: null,
         help: null,
       })),

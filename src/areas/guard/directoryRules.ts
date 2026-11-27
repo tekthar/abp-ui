@@ -39,7 +39,8 @@ export function editInput(dir: DirectoryRow, secretNames: ReadonlySet<string> = 
     type: dir.type,
     isActive: dir.isActive,
     authenticationEnabled: dir.authenticationEnabled,
-    syncIntervalMinutes: minutes !== null && Number.isFinite(minutes) ? minutes : null,
+    // 0 is "on request" as empty is: kept as empty, so the field's minimum of 1 doesn't stop a save.
+    syncIntervalMinutes: minutes !== null && Number.isFinite(minutes) && minutes > 0 ? minutes : null,
     settings,
   };
 }
@@ -60,4 +61,9 @@ export function moved(ids: readonly string[], id: string, delta: -1 | 1): string
   if (i < 0 || j < 0 || j >= out.length) return out;
   [out[i], out[j]] = [out[j], out[i]];
   return out;
+}
+
+/** The input as it's saved for its type: a type that doesn't sync has no interval, whatever the form held before. */
+export function forType<I extends { syncIntervalMinutes?: number | string | null }>(input: I, capabilities: readonly string[] | undefined): I {
+  return syncs(capabilities) ? input : { ...input, syncIntervalMinutes: null };
 }

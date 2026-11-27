@@ -23,7 +23,7 @@ import {
   type RowMenuEntry,
 } from '@abpjs/ui';
 import { DirectoryFields, DirectoryWarnings } from './DirectoryForm';
-import { editInput, moved, syncs } from './directoryRules';
+import { editInput, forType, moved, syncs } from './directoryRules';
 import { guardRoutes, type GuardRoutes } from './routes';
 import { FlagPill, SyncStatus } from './status';
 import { useGuardNs } from './texts';
@@ -79,6 +79,8 @@ export function DirectoriesScreen({ routes = guardRoutes() }: { routes?: GuardRo
   // A type's short name: the internal one in the area's words, a connector's as it names itself.
   const typeName = (type: string, displayName?: string | null) => (type === 'internal' ? t('internal') : displayName || typeOf(type)?.displayName || type);
   const secretsOf = (type: string) => new Set((typeOf(type)?.settings ?? []).filter((s) => s.secret).map((s) => s.name));
+  // A directory is edited only once the types are known, so its type's secrets start empty and are never sent back.
+  const typesReady = types.data !== undefined;
 
   function open(next: Editing) {
     setEditing(next);
@@ -89,10 +91,12 @@ export function DirectoriesScreen({ routes = guardRoutes() }: { routes?: GuardRo
 
   async function save() {
     if (!editing) return;
+    // A type that doesn't sync saves no interval, whatever the form held when its type was another.
+    const body = forType(input, typeOf(input.type)?.capabilities);
     const saved = await dialog.run(() =>
       editing.mode === 'create'
-        ? request<DirectoryDto>('/directories', { method: 'POST', body: input })
-        : request<DirectoryDto>(`/directories/${editing.dir.id}`, { method: 'PUT', body: input }),
+        ? request<DirectoryDto>('/directories', { method: 'POST', body })
+        : request<DirectoryDto>(`/directories/${editing.dir.id}`, { method: 'PUT', body }),
     );
     if (!saved) return;
     setWarned((saved.warnings ?? []).length > 0 ? saved : null);
@@ -100,9 +104,11 @@ export function DirectoriesScreen({ routes = guardRoutes() }: { routes?: GuardRo
     await dirs.reload();
   }
 
-  async function remove(d: DirectoryDto) {
+  /** Deletes it, after a confirm. From the dialog, a refusal shows in the dialog; from the list, on the page. */
+  async function remove(d: DirectoryDto, from: 'dialog' | 'list') {
     if (!(await confirm({ title: td('deleteTitle', { name: d.name }), description: td('deleteDescription'), confirmLabel: tc('delete'), danger: true }))) return;
-    const done = await action.run(async () => {
+    const run = from === 'dialog' ? dialog : action;
+    const done = await run.run(async () => {
       await request(`/directories/${d.id}`, { method: 'DELETE' });
       return true;
     });
@@ -153,7 +159,7 @@ export function DirectoriesScreen({ routes = guardRoutes() }: { routes?: GuardRo
     const i = list.indexOf(d);
     const canSync = d.connectorAvailable && syncs(typeOf(d.type)?.capabilities);
     return [
-      { id: 'edit', label: t('edit'), icon: <Pencil />, onSelect: () => open({ mode: 'edit', dir: d }) },
+      { id: 'edit', label: t('edit'), icon: <Pencil />, disabled: !typesReady, onSelect: () => open({ mode: 'edit', dir: d }) },
       { id: 'open', label: t('openPage'), icon: <ExternalLink />, onSelect: () => navigate(routes.directory(d.id)) },
       { id: 'sync', label: t('syncNow'), icon: <RefreshCw />, disabled: !canSync || syncing != null, onSelect: () => void sync(d) },
       ...(!d.connectorAvailable ? [{ note: t('connectorDisabled') }] : []),
@@ -161,10 +167,11 @@ export function DirectoriesScreen({ routes = guardRoutes() }: { routes?: GuardRo
       { id: 'up', label: t('moveUp', { name: d.name }), icon: <ArrowUp />, disabled: i <= 0 || action.busy, onSelect: () => void move(d, -1) },
       { id: 'down', label: t('moveDown', { name: d.name }), icon: <ArrowDown />, disabled: i === list.length - 1 || action.busy, onSelect: () => void move(d, 1) },
       { separator: true as const },
+      // One write at a time: these wait, as moving does, while another is running.
       d.isActive
-        ? { id: 'deactivate', label: t('deactivate'), icon: <PowerOff />, onSelect: () => void setActive(d, false) }
-        : { id: 'activate', label: t('activate'), icon: <Power />, onSelect: () => void setActive(d, true) },
-      { id: 'delete', label: tc('delete'), icon: <Trash2 />, danger: true, onSelect: () => void remove(d) },
+        ? { id: 'deactivate', label: t('deactivate'), icon: <PowerOff />, disabled: !typesReady || action.busy, onSelect: () => void setActive(d, false) }
+        : { id: 'activate', label: t('activate'), icon: <Power />, disabled: !typesReady || action.busy, onSelect: () => void setActive(d, true) },
+      { id: 'delete', label: tc('delete'), icon: <Trash2 />, danger: true, disabled: action.busy, onSelect: () => void remove(d, 'list') },
     ];
   }
 
@@ -177,7 +184,7 @@ export function DirectoriesScreen({ routes = guardRoutes() }: { routes?: GuardRo
       cell: (d) => (
         <Stack gap="1" align="flex-start">
           <chakra.button type="button" fontWeight="semibold" textAlign="start" color="fg" _hover={{ textDecoration: 'underline' }}
-            onClick={() => open({ mode: 'edit', dir: d })}>
+            disabled={!typesReady} onClick={() => open({ mode: 'edit', dir: d })}>
             {d.name}
           </chakra.button>
           {!d.connectorAvailable && (
@@ -245,7 +252,7 @@ export function DirectoriesScreen({ routes = guardRoutes() }: { routes?: GuardRo
         onSubmit={save}
         busy={dialog.busy}
         error={dialog.error ?? (types.error ? errorText(types.error) : null)}
-        dangerAction={shown.mode === 'edit' ? { label: t('deleteDirectory'), onClick: () => shown.mode === 'edit' && void remove(shown.dir) } : undefined}
+        dangerAction={shown.mode === 'edit' ? { label: t('deleteDirectory'), disabled: dialog.busy, onClick: () => shown.mode === 'edit' && void remove(shown.dir, 'dialog') } : undefined}
         preview={
           <PreviewCard
             media={<IconTile size="md"><FolderTree /></IconTile>}

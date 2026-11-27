@@ -1,7 +1,7 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
 import { Fieldset, HStack, Input, InputGroup, SimpleGrid, Stack, Text } from '@chakra-ui/react';
 import { Button, errorText, Field, HostSlot, InlineAlert, SelectField, SwitchField, TranslatedInput } from '@abpjs/ui';
-import { syncs } from './directoryRules';
+import { forType, syncs } from './directoryRules';
 import { fromNamesValue, toNamesValue } from '@abpjs/ui/rules';
 import { useGuardNs } from './texts';
 import type { DirectoryInput, DirectorySettingDefinition, DirectoryTypeDto } from './types';
@@ -68,7 +68,8 @@ export interface DirectoryFieldsProps {
   mode: 'create' | 'edit';
   types: DirectoryTypeDto[];
   input: DirectoryInput;
-  onChange: (input: DirectoryInput) => void;
+  /** Takes an updater, so changes made one after another (a preset's) each build on the last. */
+  onChange: Dispatch<SetStateAction<DirectoryInput>>;
   /** Fallback definitions when the directory's type is not registered (its connector's plugin turned off). */
   fallbackSettings?: DirectorySettingDefinition[];
   /** One column, for a dialog's fields beside its preview. */
@@ -86,20 +87,21 @@ export function DirectoryFields({ mode, types, input, onChange, fallbackSettings
   const columns = compact ? 1 : { base: 1, md: 2 };
 
   function set<K extends keyof DirectoryInput>(key: K, value: DirectoryInput[K]) {
-    onChange({ ...input, [key]: value });
+    onChange((prev) => ({ ...prev, [key]: value }));
   }
 
   function setSetting(name: string, value: string) {
-    onChange({ ...input, settings: { ...input.settings, [name]: value } });
+    onChange((prev) => ({ ...prev, settings: { ...prev.settings, [name]: value } }));
   }
 
   function changeType(next: string) {
     const nextType = types.find((x) => x.type === next);
-    onChange({ ...input, type: next, settings: defaultsFor(nextType) });
+    // A type that doesn't sync drops the interval the form held, so it isn't saved unseen.
+    onChange((prev) => forType({ ...prev, type: next, settings: defaultsFor(nextType) }, nextType?.capabilities ?? ['Sync']));
   }
 
   function applyPreset(settings: Record<string, string>) {
-    onChange({ ...input, settings: { ...input.settings, ...settings } });
+    onChange((prev) => ({ ...prev, settings: { ...prev.settings, ...settings } }));
   }
 
   return (
@@ -112,7 +114,7 @@ export function DirectoryFields({ mode, types, input, onChange, fallbackSettings
             placeholder={t('namePlaceholder')}
             onChange={(v) => {
               const { name, names } = fromNamesValue(v);
-              onChange({ ...input, name, names });
+              onChange((prev) => ({ ...prev, name, names }));
             }}
           />
         </Field>

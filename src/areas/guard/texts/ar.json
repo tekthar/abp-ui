@@ -462,7 +462,7 @@
   "directories.sync": "المزامنة",
   "directories.syncEvery": "{count, plural, one {كل دقيقة} two {كل دقيقتين} few {كل # دقائق} many {كل # دقيقة} other {كل # دقيقة}}",
   "directories.onRequest": "عند الطلب فقط",
-  "directories.savedWithWarnings": "حُفظ {name}. في إعداداته تنبيهات:",
+  "directories.savedWithWarnings": "حُفظ {name}. في إعداداته تحذيرات:",
   "directoryForm.minutes": "دقيقة",
   "directoryForm.namePlaceholder": "مثال: دليل الشركة",
   "directories.internal": "داخلي"
