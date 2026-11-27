@@ -21,8 +21,11 @@ import {
   StatusPill,
   TextBone,
   TextSlot,
+  useApiDownload,
   useApiQuery,
   useAreaRequest,
+  useConfirm,
+  useNavigate,
   type StatusTone,
 } from '@abpjs/ui';
 import { useLanguagesTexts } from './texts';
@@ -34,6 +37,8 @@ type StatusFilter = (typeof STATUSES)[number];
 const TONES: Record<string, StatusTone> = { missing: 'danger', outdated: 'warning', translated: 'success', bundled: 'info', source: 'neutral' };
 
 const keyOf = (e: { catalog: string; key: string }) => `${e.catalog}:${e.key}`;
+/** Where a suggestion goes in its button's words, to mark its own language there. */
+const MARK = '';
 
 export interface TranslateScreenProps {
   /** The language's code, as the address names it. */
@@ -67,15 +72,8 @@ export function TranslateScreen({ code, listHref, onChanged, mainCatalog = 'app'
   const [page, setPage] = useState(0);
   const [busy, setBusy] = useState(false);
   const [importing, setImporting] = useState(false);
+  const download = useApiDownload('languages');
   const dirty = changes.size > 0;
-
-  // Leaving with unsaved texts asks first.
-  useEffect(() => {
-    if (!dirty) return;
-    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [dirty]);
 
   const all = useMemo(() => entries.data?.entries ?? [], [entries.data]);
   const catalogs = useMemo(() => [...new Set(all.map((e) => e.catalog))], [all]);
@@ -90,28 +88,35 @@ export function TranslateScreen({ code, listHref, onChanged, mainCatalog = 'app'
     }
     return found;
   }, [all, changes]);
+  // The search matches what's saved, not what's being typed, so a row doesn't leave the list while it's edited.
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return all.filter(
       (e) =>
         (catalog === 'all' || e.catalog === catalog) &&
         (status === 'all' || e.status === status) &&
-        (!q || e.key.toLowerCase().includes(q) || e.source.toLowerCase().includes(q) || (changes.get(keyOf(e)) ?? e.value ?? e.bundled ?? '').toLowerCase().includes(q)),
+        (!q || e.key.toLowerCase().includes(q) || e.source.toLowerCase().includes(q) || (e.value ?? e.bundled ?? '').toLowerCase().includes(q)),
     );
-  }, [all, catalog, status, search, changes]);
+  }, [all, catalog, status, search]);
   useEffect(() => setPage(0), [catalog, status, search]);
+  useLeaveGuard(changes.size);
 
-  if (entries.error) return <InlineAlert tone="danger">{entries.error}</InlineAlert>;
+  const failed = entries.error ?? languages.error;
+  if (failed) return <InlineAlert tone="danger">{failed}</InlineAlert>;
 
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE));
-  const shown = filtered.slice(page * PAGE, page * PAGE + PAGE);
+  // A save can leave fewer texts under the filter than the page shown: the last page there is.
+  const current = Math.min(page, pages - 1);
+  const shown = filtered.slice(current * PAGE, current * PAGE + PAGE);
   const nameOf = (c: string) => (c === mainCatalog ? t('editor.mainCatalog') : catalogName?.(c) ?? c);
 
   function edit(e: TextEntry, text: string) {
-    const next = new Map(changes);
-    if (text === (e.value ?? '')) next.delete(keyOf(e));
-    else next.set(keyOf(e), text);
-    setChanges(next);
+    setChanges((prev) => {
+      const next = new Map(prev);
+      if (text === (e.value ?? '')) next.delete(keyOf(e));
+      else next.set(keyOf(e), text);
+      return next;
+    });
   }
 
   async function reloadAll() {
@@ -121,13 +126,19 @@ export function TranslateScreen({ code, listHref, onChanged, mainCatalog = 'app'
 
   async function save() {
     setBusy(true);
+    const sent = new Map(changes);
     try {
-      const texts = [...changes.entries()].map(([k, value]) => {
+      const texts = [...sent.entries()].map(([k, value]) => {
         const at = k.indexOf(':');
         return { catalog: k.slice(0, at), key: k.slice(at + 1), value: value.trim() ? value : null };
       });
       const result = await request<SaveTextsResult>(`/texts/${encodeURIComponent(code)}`, { method: 'PUT', body: { texts } });
-      setChanges(new Map());
+      // Only what was sent is saved: a text typed while it was on its way stays waiting.
+      setChanges((prev) => {
+        const next = new Map(prev);
+        for (const [k, value] of sent) if (next.get(k) === value) next.delete(k);
+        return next;
+      });
       notify.success(t('editor.saved', { saved: Number(result.saved), removed: Number(result.removed) }));
       await reloadAll();
     } catch (e) {
@@ -139,13 +150,7 @@ export function TranslateScreen({ code, listHref, onChanged, mainCatalog = 'app'
 
   async function exportCatalog(name: string) {
     try {
-      const json = await request<Record<string, unknown>>(`/texts/${encodeURIComponent(code)}/export?catalog=${encodeURIComponent(name)}`);
-      const url = URL.createObjectURL(new Blob([JSON.stringify(json, null, 2) + '\n'], { type: 'application/json' }));
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${name}.${code}.json`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 0);
+      await download(`/texts/${encodeURIComponent(code)}/export?catalog=${encodeURIComponent(name)}`, {}, `${name}.${code}.json`);
     } catch (e) {
       notify.error(errorText(e));
     }
@@ -237,9 +242,9 @@ export function TranslateScreen({ code, listHref, onChanged, mainCatalog = 'app'
 
         {pages > 1 && (
           <HStack justify="center" gap="2">
-            <Button size="sm" variant="ghost" disabled={page === 0} onClick={() => setPage(page - 1)}>{t('editor.previous')}</Button>
-            <Text textStyle="caption">{t('editor.page', { page: page + 1, pages, count: filtered.length })}</Text>
-            <Button size="sm" variant="ghost" disabled={page >= pages - 1} onClick={() => setPage(page + 1)}>{t('editor.next')}</Button>
+            <Button size="sm" variant="ghost" disabled={current === 0} onClick={() => setPage(current - 1)}>{t('editor.previous')}</Button>
+            <Text textStyle="caption">{t('editor.page', { page: current + 1, pages, count: filtered.length })}</Text>
+            <Button size="sm" variant="ghost" disabled={current >= pages - 1} onClick={() => setPage(current + 1)}>{t('editor.next')}</Button>
           </HStack>
         )}
 
@@ -260,6 +265,43 @@ export function TranslateScreen({ code, listHref, onChanged, mainCatalog = 'app'
       </Stack>
     </Loading>
   );
+}
+
+/**
+ * Leaving with unsaved texts asks first: closing or reloading the tab (the browser's own question), and following a link
+ * inside the app (a breadcrumb, the host's menu), which then waits for the person's answer. The browser's Back isn't
+ * asked about.
+ */
+function useLeaveGuard(unsaved: number) {
+  const t = useLanguagesTexts();
+  const confirm = useConfirm();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!unsaved) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    const click = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const link = e.target instanceof Element ? e.target.closest<HTMLAnchorElement>('a[href]') : null;
+      if (!link || (link.target && link.target !== '_self') || link.hasAttribute('download')) return;
+      const to = new URL(link.href, window.location.href);
+      const here = window.location;
+      if (to.origin !== here.origin || (to.pathname === here.pathname && to.search === here.search)) return;
+      // Ahead of the host's router, which listens further down: the link waits for the answer.
+      e.preventDefault();
+      e.stopPropagation();
+      void confirm({ title: t('editor.leaveTitle'), description: t('editor.leaveDescription', { count: unsaved }), confirmLabel: t('editor.leave'), danger: true }).then(
+        (leave) => {
+          if (leave) navigate(`${to.pathname}${to.search}${to.hash}`);
+        },
+      );
+    };
+    window.addEventListener('beforeunload', warn);
+    document.addEventListener('click', click, true);
+    return () => {
+      window.removeEventListener('beforeunload', warn);
+      document.removeEventListener('click', click, true);
+    };
+  }, [unsaved, t, confirm, navigate]);
 }
 
 /** An entry while the texts load: its key, status and English coming, its box as its ghost. */
@@ -328,11 +370,17 @@ function EntryRow({ entry, catalogs, catalogName, language, direction, value, ch
       {memory.length > 0 && !value.trim() && (
         <HStack gap="1" mt="2" wrap="wrap" data-testid="translation-memory">
           <Text textStyle="caption" color="fg.muted">{t('editor.memory')}</Text>
-          {memory.map((text) => (
-            <Button key={text} size="xs" variant="ghost" onClick={() => onChange(text)}>
-              <span lang={language} dir={direction}>{t('editor.useMemory', { text })}</span>
-            </Button>
-          ))}
+          {memory.map((text) => {
+            // The words around it are the page's language; only the text itself is the language being translated.
+            const [before, after = ''] = t('editor.useMemory', { text: MARK }).split(MARK);
+            return (
+              <Button key={text} size="xs" variant="ghost" onClick={() => onChange(text)}>
+                {before}
+                <span lang={language} dir={direction}>{text}</span>
+                {after}
+              </Button>
+            );
+          })}
         </HStack>
       )}
       {entry.status === 'outdated' && <Text textStyle="caption" color="fg.warning" mt="1">{t('editor.outdatedHint')}</Text>}
@@ -393,7 +441,7 @@ function ImportDialog({ code, catalogs, catalogName, onClose, onImported }: {
         </Field>
       )}
       <Field label={t('editor.file')} required>
-        <input ref={file} type="file" accept="application/json,.json" />
+        <input ref={file} type="file" accept="application/json,.json" aria-label={t('editor.file')} />
       </Field>
       <CheckboxField label={t('editor.overwrite')} checked={overwrite} onCheckedChange={setOverwrite} />
     </FormDialog>

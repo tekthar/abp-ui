@@ -243,13 +243,13 @@ function LanguageDialog({ language, languages, onClose, onSaved }: {
     >
       <Grid templateColumns={{ base: '1fr', sm: '1fr 1fr' }} gap="field">
         <Field label={t('code')} required helperText={t('codeHelp')}>
-          <Input dir="ltr" value={code} disabled={language != null} placeholder="fr, tr, fr-CA" onChange={(e) => setCode(e.target.value)} autoFocus={!language} />
+          <Input dir="ltr" value={code} disabled={language != null} placeholder={t('codePlaceholder')} onChange={(e) => setCode(e.target.value)} autoFocus={!language} />
         </Field>
         <Field label={t('englishName')} required>
-          <Input value={englishName} placeholder="French" onChange={(e) => setEnglishName(e.target.value)} />
+          <Input value={englishName} placeholder={t('englishNamePlaceholder')} onChange={(e) => setEnglishName(e.target.value)} />
         </Field>
         <Field label={t('nativeName')} helperText={t('nativeNameHelp')}>
-          <Input value={nativeName} lang={code || undefined} dir={(direction || guessed) as 'ltr' | 'rtl'} placeholder="Français" onChange={(e) => setNativeName(e.target.value)} />
+          <Input value={nativeName} lang={code || undefined} dir={(direction || guessed) as 'ltr' | 'rtl'} placeholder={t('nativeNamePlaceholder')} onChange={(e) => setNativeName(e.target.value)} />
         </Field>
         <Field label={t('direction')}>
           <SelectField
