@@ -114,6 +114,15 @@ export function FormDialog({
     mark(e.target, wrong);
     if (problems.length > 0) setProblems(invalidControls(e.currentTarget).map(describe));
   }
+
+  // A change that puts a field right takes its mark and its line in the summary away at once (picking in a select
+  // doesn't leave the field); a field still wrong keeps them until it's left, so typing isn't scolded.
+  function changed(e: FormEvent<HTMLFormElement>) {
+    const el = e.target;
+    if (!isControl(el) || !el.willValidate || !el.checkValidity()) return;
+    mark(el, false);
+    if (problems.length > 0) setProblems(invalidControls(e.currentTarget).map(describe));
+  }
   return (
     <Dialog.Root open={open} onOpenChange={(e) => onOpenChange(e.open)} size={shape === 'wide' ? 'xl' : shape} placement="center" scrollBehavior="inside">
       <Portal>
@@ -123,7 +132,7 @@ export function FormDialog({
             {/* The element stays a form in both modes: swapping it would remount the content and close the dialog.
                 With hideSubmit, the content (a plugin's create view) submits on its own and must not render a form. */}
             <form onSubmit={hideSubmit ? (e) => e.preventDefault() : submit} onBlur={hideSubmit ? undefined : left}
-              onInput={(e) => typed.current.add(e.target)} noValidate>
+              onChange={hideSubmit ? undefined : changed} onInput={(e) => typed.current.add(e.target)} noValidate>
               <Dialog.Header>
                 <Dialog.Title>{title}</Dialog.Title>
               </Dialog.Header>

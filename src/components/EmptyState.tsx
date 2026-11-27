@@ -113,8 +113,10 @@ export function EmptyState({
   return (
     <ChakraEmptyState.Root size={size} py={size === 'md' ? '16' : '10'} px="6" minH={drawn ? '80' : undefined} display={drawn ? 'flex' : undefined}
       alignItems="center" justifyContent="center" role={role} aria-live={live ? 'polite' : undefined}>
-      <ChakraEmptyState.Content gap={drawn ? '5' : '4'} data-empty-kind={kind} data-empty-variant={variant}>
-        <ChakraEmptyState.Indicator>
+      <ChakraEmptyState.Content gap={drawn ? '5' : '4'} maxW="full" minW="0" data-empty-kind={kind} data-empty-variant={variant}>
+        {/* The drawing is wider than a phone; capped at the page's width, it's clipped at its faded sides instead of
+            pushing the page sideways. */}
+        <ChakraEmptyState.Indicator maxW="full" minW="0">
           {art ? (
             <EmptyArtDrawing art={art} width={size === 'md' ? '200px' : '150px'} height={size === 'md' ? '160px' : '120px'} />
           ) : drawn ? (

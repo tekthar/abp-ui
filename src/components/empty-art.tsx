@@ -140,7 +140,8 @@ export function PageIllustration({ of, searching, scale = 1 }: { of: EmptyIllust
       aria-hidden
       dir="ltr"
       position="relative"
-      flexShrink={0}
+      flexShrink={1}
+      minW="0"
       align="center"
       justify="center"
       gap="14px"

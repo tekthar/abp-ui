@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- `EmptyState variant="page"`: on a screen narrower than its drawing (375 px), the drawing is clipped at its faded
+  sides instead of pushing the page sideways.
+- `FormDialog`: a change that puts a field right (picking in a select, typing the missing value) takes its red border
+  and its line in the "Fix these fields" summary away at once, rather than when the field is left. A field still wrong
+  keeps them until it's left.
 - guard › Anonymous access, the design canvas's board:
   - **Give a role** opens a wide `FormDialog`. The role and the place are chosen from AbpGuard's places
     (`GET /anonymous/places`): a place offers only its own roles, and a role only the places offering it. The preview
