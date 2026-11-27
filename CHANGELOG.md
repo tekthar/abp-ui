@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+
+- guard › Anonymous access, the design canvas's board:
+  - **Give a role** opens a wide `FormDialog`. The role and the place are chosen from AbpGuard's places
+    (`GET /anonymous/places`): a place offers only its own roles, and a role only the places offering it. The preview
+    shows anonymous visitors, the role, where, and what the role can do, beside the warning that anyone on the
+    internet gets it.
+  - The rows show the role as a tag, the place's name and code (as the places list names them), and since when.
+  - A row's menu changes the role in one step or removes it.
+  - With no roles given, the page is its empty state, with Give a role.
+
+  `roleDescription` joins `roleName` for a host's own roles. `anonymousRules.ts` holds the choosing, tested in
+  `tests/anonymous-rules.test.mjs`. New words: `giveRole`, `dialogTitle`, `changeTitle`, `chooseRole`, `chooseWhere`,
+  `warning`, `who`, `can`, `give`, `change`, `given`, `changed`, `emptyTitle`, `emptyText`, `noPlaces`, `tableLabel`,
+  `actions`, `menuLabel` and `notListed`. `revoke`, `revokeTitle` and `revoked` now say Remove role, and `empty` is gone.
+- `PreviewCard`: an item's `wrap` lets a long value (a description) run to three lines.
+
 ## 0.2.0-next.33
 
 A prerelease under npm's `next` tag.

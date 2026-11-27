@@ -196,8 +196,9 @@ export interface PreviewCardProps {
   title: ReactNode;
   /** A line under the name: a username or a key, which may be a `RecordKey`. */
   subtitle?: ReactNode;
-  /** Its values, label then value; an empty value shows as the empty mark. */
-  items?: { label: ReactNode; value?: ReactNode }[];
+  /** Its values, label then value; an empty value shows as the empty mark. `wrap` lets a long one (a description) run
+   * to three lines instead of one. */
+  items?: { label: ReactNode; value?: ReactNode; wrap?: boolean }[];
 }
 
 /** What a form makes, in a `FormDialog`'s preview: a head (media, name, sub-line) and its values in a list. */
@@ -216,7 +217,7 @@ export function PreviewCard({ media, title, subtitle, items = [] }: PreviewCardP
           {items.map((item, i) => (
             <Fragment key={i}>
               <chakra.dt color="fg.muted">{item.label}</chakra.dt>
-              <chakra.dd m="0" minW="0" truncate>{item.value ?? EMPTY_VALUE}</chakra.dd>
+              <chakra.dd m="0" minW="0" {...(item.wrap ? { lineClamp: 3 } : { truncate: true })}>{item.value ?? EMPTY_VALUE}</chakra.dd>
             </Fragment>
           ))}
         </chakra.dl>
