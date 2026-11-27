@@ -29,5 +29,6 @@
   "copyCounts": "{total, plural, one {# file} other {# files}}: {copied} copied, {skipped} already there, {missing} in neither, {failed} couldn't be copied",
   "copyProblems": "Files that couldn't be copied",
   "copyFile": "File",
-  "copyProblem": "Why"
+  "copyProblem": "Why",
+  "notFound": "There is no such page."
 }

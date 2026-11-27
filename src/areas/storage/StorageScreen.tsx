@@ -29,8 +29,11 @@ export interface StorageScreenProps {
   storeName?: (store: string) => string;
 }
 
-/** How often a running copy is read again. */
+/** How long after each answer a running copy is read again. */
 const COPY_POLL_MS = 1000;
+
+/** A path or URL set apart from the sentence around it (U+2068 … U+2069), so it keeps its order in right-to-left text. */
+const isolate = (text: string) => `\u2068${text}\u2069`;
 
 /**
  * The site's storage (AbpCluster.Storage): where its files are kept (the provider and its place, never a key), what's
@@ -64,6 +67,8 @@ export function StorageScreen({ onChanged, storeName }: StorageScreenProps) {
   };
 
   async function test() {
+    // Last time's results go first, so a test that fails never leaves them saying "Works".
+    setTests(null);
     const result = await action.run(() => request<StorageTest[]>('/test', { method: 'POST' }));
     if (result) setTests(result);
   }
@@ -103,7 +108,7 @@ export function StorageScreen({ onChanged, storeName }: StorageScreenProps) {
             />
             {data?.previous && (
               <InlineAlert tone="info" title={t('previousTitle')}>
-                {t('previousBody', { provider: provider(data.previous.provider), location: data.previous.location })}
+                {t('previousBody', { provider: provider(data.previous.provider), location: isolate(data.previous.location) })}
               </InlineAlert>
             )}
           </Stack>
@@ -153,11 +158,23 @@ function CopyPanel({ onChanged }: { onChanged?: () => void | Promise<void> }) {
   const { number } = useFormatters();
   const running = copy.data?.state === 'running';
 
+  // Read again a second after each answer, never on a fixed beat, so slow answers don't pile up.
   const { reload } = copy;
   useEffect(() => {
     if (!running) return;
-    const timer = setInterval(() => void reload(), COPY_POLL_MS);
-    return () => clearInterval(timer);
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const next = () => {
+      timer = setTimeout(async () => {
+        await reload();
+        if (!stopped) next();
+      }, COPY_POLL_MS);
+    };
+    next();
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+    };
   }, [running, reload]);
 
   // A copy that was running and has now finished or stopped is a change the host may want to hear of.
@@ -178,6 +195,11 @@ function CopyPanel({ onChanged }: { onChanged?: () => void | Promise<void> }) {
 
   const c = copy.data;
   const n = (value: number | string) => number(Number(value));
+  const stateName = (value: string) => {
+    const key = `copyStates.${value}`;
+    const text = t(key);
+    return text !== key ? text : value;
+  };
   return (
     <Panel
       title={t('copyTitle')}
@@ -194,11 +216,11 @@ function CopyPanel({ onChanged }: { onChanged?: () => void | Promise<void> }) {
         <InlineAlert tone="danger">{copy.error ?? action.error}</InlineAlert>
         {c && c.state !== 'idle' && (
           <>
-            <HStack gap="2" flexWrap="wrap">
+            <HStack gap="2" flexWrap="wrap" role="status" aria-live="polite">
               <StatusPill
                 tone={c.state === 'done' ? (Number(c.failed) > 0 || Number(c.missing) > 0 ? 'warning' : 'success') : c.state === 'failed' ? 'danger' : 'info'}
               >
-                {t(`copyStates.${c.state}`)}
+                {stateName(c.state)}
               </StatusPill>
               <Text textStyle="sm">
                 {t('copyCounts', { total: Number(c.total), copied: n(c.copied), skipped: n(c.skipped), missing: n(c.missing), failed: n(c.failed) })}
@@ -207,15 +229,15 @@ function CopyPanel({ onChanged }: { onChanged?: () => void | Promise<void> }) {
             {c.problems.length > 0 && (
               <DataTable
                 aria-label={t('copyProblems')}
-                rows={c.problems}
-                getRowId={(p) => `${p.store}/${p.name}`}
+                rows={c.problems.map((p, i) => ({ ...p, row: i }))}
+                getRowId={(p) => String(p.row)}
                 columns={[
                   {
                     id: 'file',
                     header: t('copyFile'),
                     cell: (p) => (
                       <Text fontFamily="mono" textStyle="sm" dir="ltr">
-                        {p.store ? `${p.store}/${p.name}` : EMPTY_VALUE}
+                        {p.store ? `${p.store}/${p.name}` : p.name || EMPTY_VALUE}
                       </Text>
                     ),
                   },
@@ -228,4 +250,10 @@ function CopyPanel({ onChanged }: { onChanged?: () => void | Promise<void> }) {
       </Stack>
     </Panel>
   );
+}
+
+/** An address under the storage page, which has none: a header that says so, with the way back. */
+export function StorageNotFound({ href }: { href: string }) {
+  const t = useStorageTexts();
+  return <PageHeader breadcrumbs={[{ label: t('title'), href }]} title={t('notFound')} />;
 }

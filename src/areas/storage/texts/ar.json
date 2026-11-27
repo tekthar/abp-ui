@@ -29,5 +29,6 @@
   "copyCounts": "{total, plural, zero {لا ملفات} one {ملف واحد} two {ملفان} few {# ملفات} many {# ملفًا} other {# ملف}}: نُسخ {copied}، موجود أصلًا {skipped}، غير موجود في أي منهما {missing}، تعذّر نسخه {failed}",
   "copyProblems": "ملفات تعذّر نسخها",
   "copyFile": "الملف",
-  "copyProblem": "السبب"
+  "copyProblem": "السبب",
+  "notFound": "لا توجد صفحة كهذه."
 }

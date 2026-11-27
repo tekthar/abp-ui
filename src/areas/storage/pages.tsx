@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react';
 import type { AbpHost, SettingsPage } from '@abpjs/ui';
-import { StorageScreen } from './StorageScreen';
+import { StorageNotFound, StorageScreen } from './StorageScreen';
 import en from './texts/en.json';
 
 export interface StoragePageOptions {
@@ -34,8 +34,9 @@ function pageFor(href: string, options: StoragePageOptions): ComponentType<{ pat
   const entry = { options, component: (() => null) as ComponentType<{ path: string[] }> };
   const onChanged = () => entry.options.onChanged?.();
   const storeName = (store: string) => entry.options.storeName?.(store) ?? store;
-  entry.component = function StoragePage() {
-    return <StorageScreen onChanged={onChanged} storeName={storeName} />;
+  entry.component = function StoragePage({ path }: { path: string[] }) {
+    // The page has no pages under it: an address below it is one that doesn't exist.
+    return path.length > 0 ? <StorageNotFound href={href} /> : <StorageScreen onChanged={onChanged} storeName={storeName} />;
   };
   pages.set(href, entry);
   return entry.component;

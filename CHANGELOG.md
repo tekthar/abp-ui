@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0-next.39
+
+A prerelease under npm's `next` tag.
+
+- storage, from a review of next.37: a test that fails no longer leaves the last one's results; a running copy is read
+  again a second after each answer, so slow answers don't pile up; the copy's progress is announced (a polite live
+  region); a state the area doesn't know shows as itself; a problem without a store keeps its file's name and its own
+  row; the previous storage's place is set apart (U+2068 … U+2069), so a path or URL keeps its order in right-to-left
+  text; and an address under the page shows "There is no such page" with the way back, not the page.
+
 ## 0.2.0-next.38
 
 A prerelease under npm's `next` tag.
