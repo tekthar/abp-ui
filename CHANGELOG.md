@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0-next.40
+
+A prerelease under npm's `next` tag.
+
+- Agent area, deleting all of someone's chats at once (AbpAgent.HttpApi 0.9.0): "Delete all chats" in the chat panel's
+  list; `MyAgentChatsPanel` for a person's privacy page ("Your chats with agents", delete all); `PersonAgentChatsAction`
+  (`accountId`, `name`) for a site admin on someone's account page; `ForgetChatsOption` (`accountId`, `register`) for
+  the slots `guard.account.deactivate.options` and `guard.account.delete.options`, "Also delete their chats with
+  agents", which joins the dialog's save only when ticked; `useDeleteAllChats`. A toast says how many went, and how many
+  wait for their run's step. New `chats.*` texts in English and Arabic; the types are 0.9.0's (`AgentChatsDeleted`).
+
 ## 0.2.0-next.39
 
 A prerelease under npm's `next` tag.

@@ -30,6 +30,7 @@ export type AgentQuestionInfo = Schemas['AgentQuestionInfo'];
 export type AgentChatPlace = Schemas['AgentChatPlace'];
 export type AgentChatSummary = Schemas['AgentChatSummary'];
 export type AgentChatInfo = Schemas['AgentChatInfo'];
+export type AgentChatsDeleted = Schemas['AgentChatsDeleted'];
 
 /** A number the API may give as a string (its 64-bit counts and decimals). */
 export const num = (value: number | string | null | undefined): number =>

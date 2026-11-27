@@ -1096,6 +1096,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agent/people/{personId}/chats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    personId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["AgentChatsDeleted"];
+                        "application/json": components["schemas"]["AgentChatsDeleted"];
+                        "text/json": components["schemas"]["AgentChatsDeleted"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agent/chats/places": {
         parameters: {
             query?: never;
@@ -1191,7 +1230,28 @@ export interface paths {
                 };
             };
         };
-        delete?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["AgentChatsDeleted"];
+                        "application/json": components["schemas"]["AgentChatsDeleted"];
+                        "text/json": components["schemas"]["AgentChatsDeleted"];
+                    };
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -1437,6 +1497,12 @@ export interface components {
         AgentChatPlace: {
             scope: components["schemas"]["AgentScopeRef"];
             agents: components["schemas"]["AskableAgent"][];
+        };
+        AgentChatsDeleted: {
+            /** Format: int32 */
+            deleted: number | string;
+            /** Format: int32 */
+            stillGoing: number | string;
         };
         AgentChatStartInput: {
             /** Format: uuid */

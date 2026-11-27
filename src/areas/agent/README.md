@@ -59,7 +59,10 @@ the site's agents. That default title is English: a host passes `title` (and `ab
   item's header. `onItemChanged` on the provider hears when a chat's run about an item ended or a reply was posted.
 - `ItemAgentRuns` (`kind`, `itemKey`): an item's runs. `AgentQuestionsPanel`: the questions waiting for the person.
   `AgentPermissionsPanel`: their standing permissions, one row per agent and scope with its tools together, removed
-  as a whole, and "Allow an agent" to give some ahead of time (or an agent's, with `agentId`, one row per person). `AgentSelect` (`scope`): an
+  as a whole, and "Allow an agent" to give some ahead of time (or an agent's, with `agentId`, one row per person).
+  Deleting all of someone's chats (0.9.0): `MyAgentChatsPanel` (a person's own, for their privacy page),
+  `PersonAgentChatsAction` (`accountId`, `name`; a site admin, on someone's account page) and `ForgetChatsOption`
+  (`accountId`, `register`; for the slots `guard.account.deactivate.options` and `guard.account.delete.options`). `AgentSelect` (`scope`): an
   agent picked by key, for a workflow step or a rule. `AgentBadge`: marks an agent's account where people are named.
 
 ## Exports

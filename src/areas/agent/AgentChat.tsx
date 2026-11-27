@@ -5,6 +5,7 @@ import {
   Button, DirectionalIcon, EmptyState, Field, HostSlot, IconButton, InlineAlert, notify, SelectField, StatusPill, useApiAction, useApiQuery, useAreaEvents,
   useAreaRequest, useConfirm, useFormatters, useNames,
 } from '@abpjs/ui';
+import { useDeleteAllChats } from './AgentChatsErase';
 import { AgentQuestionCard, AgentText } from './AgentRuns';
 import { ItemHrefProvider, ItemLink, type ItemHref } from './links';
 import { useNameOf } from './names';
@@ -216,6 +217,7 @@ function ChatList({ onOpen, onNew }: { onOpen: (id: string) => void; onNew: () =
   const t = useAgentTexts();
   const fmt = useFormatters();
   const chats = useApiQuery<AgentChatSummary[]>('agent', '/chats');
+  const deleteAll = useDeleteAllChats();
 
   return (
     <>
@@ -226,9 +228,14 @@ function ChatList({ onOpen, onNew }: { onOpen: (id: string) => void; onNew: () =
         </Stack>
       </Drawer.Header>
       <Drawer.Body px="0">
-        <Box px="5" pb="3">
+        <HStack px="5" pb="3" justify="space-between">
           <Button size="sm" variant="primary" onClick={onNew} data-testid="agent-chat-new">{t('chat.new')}</Button>
-        </Box>
+          {!!chats.data?.length && (
+            <Button size="sm" variant="ghost" onClick={async () => { if (await deleteAll()) await chats.reload(); }} data-testid="agent-chats-delete-all">
+              {t('chats.deleteAll')}
+            </Button>
+          )}
+        </HStack>
         {chats.error && <Box px="5"><InlineAlert tone="danger">{chats.error}</InlineAlert></Box>}
         {chats.data?.length === 0 && <EmptyState size="sm" art="agent" title={t('chat.none')} description={t('chat.noneHint')} />}
         <Stack gap="0" as="ul" listStyleType="none" aria-label={t('chat.chats')}>
